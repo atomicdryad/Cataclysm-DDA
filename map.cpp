@@ -2110,17 +2110,17 @@ std::vector<item>& map::i_at(const int x, const int y)
 
 item map::water_from(const int x, const int y)
 {
- item ret((*itypes)["water"], 0);
- if (ter(x, y) == t_water_sh && one_in(3))
-  ret.poison = rng(1, 4);
- else if (ter(x, y) == t_water_dp && one_in(4))
-  ret.poison = rng(1, 4);
- else if (ter(x, y) == t_sewage)
-  ret.poison = rng(1, 7);
- else if (ter(x, y) == t_toilet && !one_in(3))
-  ret.poison = rng(1, 3);
+    item ret(item_controller->find_template("water"), 0);
+    if (ter(x, y) == t_water_sh && one_in(3))
+        ret.poison = rng(1, 4);
+    else if (ter(x, y) == t_water_dp && one_in(4))
+        ret.poison = rng(1, 4);
+    else if (ter(x, y) == t_sewage)
+        ret.poison = rng(1, 7);
+    else if (ter(x, y) == t_toilet && !one_in(3))
+        ret.poison = rng(1, 3);
 
- return ret;
+    return ret;
 }
 
 void map::i_rem(const int x, const int y, const int index)
@@ -2279,11 +2279,17 @@ void map::process_active_items_in_submap(game *g, const int nonant)
 						(*items)[n].charges = 0;
 					} else {
 						tmp = dynamic_cast<it_tool*>((*items)[n].type);
-						(use.*tmp->use)(g, &(g->u), &((*items)[n]), true);
+						if (tmp->use != &iuse::none)
+						{
+						    (use.*tmp->use)(g, &(g->u), &((*items)[n]), true);
+						}
 						if (tmp->turns_per_charge > 0 && int(g->turn) % tmp->turns_per_charge ==0)
 						(*items)[n].charges--;
 						if ((*items)[n].charges <= 0) {
-							(use.*tmp->use)(g, &(g->u), &((*items)[n]), false);
+						    if (tmp->use != &iuse::none)
+						    {
+							    (use.*tmp->use)(g, &(g->u), &((*items)[n]), false);
+							}
 							if (tmp->revert_to == "null" || (*items)[n].charges == -1) {
 								items->erase(items->begin() + n);
 								grid[nonant]->active_item_count--;
