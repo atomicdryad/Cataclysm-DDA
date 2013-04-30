@@ -8,6 +8,7 @@
 #include <string>
 
 option_table OPTIONS;
+rules_table RULES;
 
 option_key lookup_option_key(std::string id);
 bool option_is_bool(option_key id);

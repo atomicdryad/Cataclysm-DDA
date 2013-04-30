@@ -1820,7 +1820,7 @@ bool game::is_game_over()
     m.add_item(u.posx, u.posy, tmp[i]);
    std::stringstream playerfile;
    playerfile << "save/" << u.name << ".sav";
-   unlink(playerfile.str().c_str());
+   if(RULES[DEATH_DELETE] == 1) unlink(playerfile.str().c_str());
    uquit = QUIT_DIED;
    return true;
   }
@@ -1833,7 +1833,7 @@ void game::death_screen()
     gamemode->game_over(this);
     std::stringstream playerfile;
     playerfile << "save/" << u.name << ".sav";
-    unlink(playerfile.str().c_str());
+    if(RULES[DEATH_DELETE] == 1) unlink(playerfile.str().c_str());
 
     const std::string sText = "GAME OVER - Press Spacebar to Quit";
 
@@ -7050,7 +7050,7 @@ void game::plfire(bool burst)
   return;
  }
 
- int range = u.weapon.range(&u);
+ int range = u.weapon.range(&u)*RULES[RANGED_MULT];
  // TODO: [lightmap] This appears to redraw the screen for fireing,
  //                  check were lightmap needs to be shown
  int sight_range = u.sight_range(light_level());

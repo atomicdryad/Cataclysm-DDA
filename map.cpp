@@ -526,8 +526,10 @@ bool map::vehproceed(game* g){
       }
    }
    else if (pl_ctrl && rng(0, 4) > g->u.skillLevel("driving") && one_in(20)) {
-      g->add_msg("You fumble with the %s's controls.", veh->name.c_str());
-      veh->turn (one_in(2) ? -15 : 15);
+      if(!RULES[CAR_STABLE]) {
+         g->add_msg("You fumble with the %s's controls.", veh->name.c_str());
+         veh->turn (one_in(2) ? -15 : 15);
+      }
    }
    // eventually send it skidding if no control
    if (!veh->boarded_parts().size() && one_in (10))
