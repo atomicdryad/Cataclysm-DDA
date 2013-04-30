@@ -4,12 +4,14 @@ enum rules_key {
   MONSTERS_SUPERZOMBIES, MONSTERS_ROBOTS, MONSTERS_ALIENS, MONSTERS_SUPERBUGS, // TODO
   NUM_RULES
 };
-#define CUSTOMRULES
+
 #ifdef CUSTOMRULES
 #include "customrules.h"
 #else
 // Stub: cut and paste into customrules.h
+// Compile with: PROFILE=-DCUSTOMRULES=1 make
 // later these will be set via rulesets
+///// cut here /////
 struct rules_table {
   double rules[NUM_RULES];
   rules_table() {
@@ -29,6 +31,6 @@ struct rules_table {
   double& operator[] (rules_key i) { return rules[i]; };
   double& operator[] (int i) { return rules[i]; };
 };
+///// cut here /////
 #endif
 extern rules_table RULES;
-//rules_table RULES;
