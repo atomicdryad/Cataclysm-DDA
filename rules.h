@@ -2,6 +2,7 @@ enum rules_key {
   RANGED_MULT, DEATH_DELETE, CAR_STABLE,
   SPECIAL_PLACES, MONSTERS_SWAMP, MONSTERS_WORM, EYEBOT_EVENTS,
   MONSTERS_SUPERZOMBIES, MONSTERS_ROBOTS, MONSTERS_ALIENS, MONSTERS_SUPERBUGS, // TODO
+  MONSTERS_DND_REJECTS,
   NUM_RULES
 };
 
@@ -27,6 +28,7 @@ struct rules_table {
     rules[MONSTERS_SWAMP]=-1;		// giant skeeters(tm)
     rules[MONSTERS_WORM]=-1;		// graboids and junk
     rules[EYEBOT_EVENTS]=-1;		// random floating eyebot attacks
+    rules[MONSTERS_SUPERZOMBIES]=-1;
   };
   double& operator[] (rules_key i) { return rules[i]; };
   double& operator[] (int i) { return rules[i]; };

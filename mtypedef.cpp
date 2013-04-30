@@ -301,6 +301,7 @@ This zombie's jaw has been torn off, leaving\n\
 a gaping hole from mid-neck up."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_POISON, MF_NO_BREATHE, MF_VIS50);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("spitter zombie",species_zombie, 'Z',c_yellow,	MS_MEDIUM,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -312,6 +313,7 @@ yellow fluid."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_POISON,
       MF_ACIDPROOF, MF_NO_BREATHE, MF_VIS40);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("shocker zombie",species_zombie,'Z',c_ltcyan,	MS_MEDIUM,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -333,6 +335,7 @@ thick, obfuscating smoke."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_POISON,
       MF_HARDTOSHOOT, MF_FRIENDLY_SPECIAL, MF_NO_BREATHE, MF_VIS40);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("zombie dog",species_zombie, 'd',	c_ltgreen,	MS_MEDIUM,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -354,6 +357,7 @@ A hideous beast of a zombie, bulging with\n\
 distended muscles on both arms and legs."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_POISON, MF_NO_BREATHE, MF_VIS40);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("zombie hulk",species_zombie, 'Z',	c_blue,		MS_HUGE,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -364,6 +368,7 @@ A zombie that has somehow grown to the size of\n\
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES,
       MF_DESTROYS, MF_POISON, MF_ATTACKMON, MF_LEATHER, MF_NO_BREATHE, MF_VIS50);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("fungal zombie",species_fungus, 'Z',c_ltgray,	MS_MEDIUM,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -374,6 +379,7 @@ mouth and eyes, and thick gray mold grows all\n\
 over its translucent flesh."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_POISON, MF_NO_BREATHE, MF_VIS30);
+// Seems likely so no CATEGORIES(MC_SUPERZOMBIES);
 
 mon("boomer",	species_zombie, 'Z',	c_pink,		MS_LARGE,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -384,6 +390,7 @@ horrible odor, and putrid, pink sludge drips\n\
 from its mouth."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_POISON, MF_NO_BREATHE, MF_VIS40);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("fungal boomer",species_fungus, 'B',c_ltgray,	MS_LARGE,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -394,6 +401,7 @@ gray mold. Its flesh is translucent and gray,\n\
 and it dribbles a gray sludge from its mouth."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_POISON, MF_NO_BREATHE, MF_VIS30);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("skeleton",	species_zombie, 'Z',	c_white,	MS_MEDIUM,	STONE,
 //	 dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -404,6 +412,7 @@ rotten scraps of flesh, somehow still in\n\
 motion."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_BLEED, MF_HARDTOSHOOT, MF_NO_BREATHE, MF_VIS30);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("zombie necromancer",species_zombie, 'Z',c_dkgray,	MS_MEDIUM,	FLESH,
 //	 dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -415,6 +424,7 @@ feeling of dread and terror."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_POISON, MF_NO_BREATHE, MF_NO_BREATHE, MF_VIS50);
 ANGER(MTRIG_HURT, MTRIG_PLAYER_WEAK);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("zombie scientist",species_zombie, 'Z',c_ltgray,	MS_MEDIUM,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -460,6 +470,7 @@ a better grasp of movement than most..."
 );
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_WARM, MF_BASHES, MF_POISON, MF_NO_BREATHE, MF_VIS50);
 ANGER(MTRIG_HURT, MTRIG_PLAYER_WEAK);
+CATEGORIES(MC_SUPERZOMBIES);
 
 mon("scarred zombie",	species_zombie, 'Z',	c_yellow,	MS_MEDIUM,	FLESH,
 //	dif agr mor spd msk mdi m## cut dge bsh cut itm  HP special freq
@@ -482,7 +493,6 @@ a twinge of remorse looking at it."
 FLAGS(MF_SEES, MF_HEARS, MF_SMELLS, MF_STUMBLES, MF_WARM, MF_BASHES, MF_BLEED,
       MF_POISON, MF_GUILT, MF_NO_BREATHE, MF_VIS30);
 CATEGORIES(MC_CLASSIC);
-
 
 // PLANTS & FUNGI
 mon("triffid",	species_plant, 'F',	c_ltgreen,	MS_MEDIUM,	VEGGY,
