@@ -904,6 +904,10 @@ void iuse::primitive_fire(game *g, player *p, item *it, bool t)
 
 void iuse::sew(game *g, player *p, item *it, bool t)
 {
+ if(!p->can_see_fine_detail(g)){
+   g->add_msg("It's too dark to sew!");
+   return;
+ }
  char ch = g->inv_type("Repair what?", IC_ARMOR);
  item* fix = &(p->i_at(ch));
  if (fix == NULL || fix->is_null()) {
@@ -920,10 +924,6 @@ void iuse::sew(game *g, player *p, item *it, bool t)
   g->add_msg_if_player(p,"Your %s is not made of cotton or wool.", fix->tname().c_str());
   it->charges++;
   return;
- }
- if(g->light_level() < 8 && LL_LIT > g->m.light_at(p->posx, p->posy) && !g->u.has_active_item("glowstick_lit") && !g->u.has_active_item("lightstrip")){
-   g->add_msg("It's too dark to sew!");
-   return;
  }
  if (fix->damage < 0) {
   g->add_msg_if_player(p,"Your %s is already enhanced.", fix->tname().c_str());
@@ -1443,6 +1443,28 @@ static radio_tower *find_radio_station( game *g, int frequency )
         }
     }
     return NULL;
+}
+
+void iuse::directional_antenna(game *g, player *p, item *it, bool t)
+{
+    // Find out if we have an active radio
+    item radio = p->i_of_type("radio_on");
+    if( radio.typeId() != "radio_on" )
+    {
+        g->add_msg( "Must have an active radio to check for signal sirection." );
+        return;
+    }
+    // Find the radio station its tuned to (if any)
+    radio_tower *tower = find_radio_station( g, radio.mode );
+    if( tower == NULL )
+    {
+        g->add_msg( "You can't find the direction if your radio isn't tuned." );
+        return;
+    }
+    // Report direction.
+    direction angle = direction_from( g->levx, g->levy, tower->x, tower->y );
+    g->add_msg( ("The signal seems strongest to the " + direction_name(angle) + ".").c_str() );
+
 }
 
 void iuse::radio_on(game *g, player *p, item *it, bool t)
