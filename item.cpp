@@ -512,7 +512,7 @@ std::string item::info(bool showtext, std::vector<iteminfo> *dump)
   if (mod->damage != 0)
    dump->push_back(iteminfo("GUNMOD", " Damage: ", ((mod->damage > 0) ? "+" : ""), int(mod->damage)));
   if (mod->clip != 0)
-   dump->push_back(iteminfo("GUNMOD", " Magazine: ", ((mod->clip > 0) ? "+" : ""), int(mod->clip), "%"));
+   dump->push_back(iteminfo("GUNMOD", " Magazine: ", ((mod->clip > 0) ? "+" : ""), int(mod->clip), "%%"));
   if (mod->recoil != 0)
    dump->push_back(iteminfo("GUNMOD", " Recoil: ", ((mod->recoil > 0) ? "+" : ""), int(mod->recoil), "", true, true));
   if (mod->burst != 0)
@@ -566,9 +566,8 @@ std::string item::info(bool showtext, std::vector<iteminfo> *dump)
     {
         dump->push_back(iteminfo("ARMOR", " Encumberment: ", "", int(armor->encumber), "", true, true));
     }
-
-  dump->push_back(iteminfo("ARMOR", " Bashing protection: ", "", int(bash_resist())));
-  dump->push_back(iteminfo("ARMOR", " Cut protection: ", "", int(cut_resist())));
+  dump->push_back(iteminfo("ARMOR", " Protection: Bash: ", "", int(bash_resist()), "", false, true));
+  dump->push_back(iteminfo("ARMOR", "    Cut: ", "", int(cut_resist()), "", true, true));
   dump->push_back(iteminfo("ARMOR", " Environmental protection: ", "", int(armor->env_resist)));
   dump->push_back(iteminfo("ARMOR", " Warmth: ", "", int(armor->warmth)));
   dump->push_back(iteminfo("ARMOR", " Storage: ", "", int(armor->storage)));

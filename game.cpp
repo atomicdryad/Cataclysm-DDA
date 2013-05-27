@@ -77,6 +77,7 @@ game::game() :
  init_vehicles();     // Set up vehicles                  (SEE veh_typedef.cpp)
  init_autosave();     // Set up autosave
  load_keyboard_settings();
+ moveCount = 0;
 
  gamemode = new special_game;	// Nothing, basically.
 }
@@ -2103,6 +2104,14 @@ bool game::load_master()
 
 void game::load_artifacts()
 {
+    // check if artifacts.gsav exists
+    std::ifstream test;
+    test.open("save/artifacts.gsav");
+    if (test.is_open())
+        test.close();
+    else
+        return;
+
     catajson artifact_list(std::string("save/artifacts.gsav"));
     artifact_list.set_begin();
     while (artifact_list.has_curr())
@@ -2263,7 +2272,6 @@ void game::load_weather(std::ifstream &fin)
 
 void game::load(std::string name)
 {
- load_artifacts(); // artifacts have to be loaded before any items are created
  std::ifstream fin;
  std::stringstream playerfile;
  playerfile << "save/" << name << ".sav";
@@ -2406,8 +2414,6 @@ void game::save_artifacts()
     {
 	artifacts.push_back(itypes[*it]->save_data());
     }
-    artifact_itype_ids.erase(artifact_itype_ids.begin(),
-			     artifact_itype_ids.end());
     picojson::value out = picojson::value(artifacts);
     fout << out.serialize();
     fout.close();
@@ -4261,7 +4267,7 @@ void game::draw_footsteps()
 
          if (unseen_points.size() > 0)
          {
-             point selected = unseen_points[rng(0,unseen_points.size())];
+             point selected = unseen_points[rng(0,unseen_points.size() - 1)];
 
              mvwputch(w_terrain,
                       VIEWY + selected.y - u.posy - u.view_offset_y,
@@ -5334,28 +5340,11 @@ void game::examine()
 
  (xmine.*xter_t->examine)(this,&u,&m,examx,examy);
 
- if (m.has_flag(sealed, examx, examy)) {
-  if (m.trans(examx, examy)) {
-   std::string buff;
-   if (m.i_at(examx, examy).size() <= 3 && m.i_at(examx, examy).size() != 0) {
-    buff = "It contains ";
-    for (int i = 0; i < m.i_at(examx, examy).size(); i++) {
-     buff += m.i_at(examx, examy)[i].tname(this);
-     if (i + 2 < m.i_at(examx, examy).size())
-      buff += ", ";
-     else if (i + 1 < m.i_at(examx, examy).size())
-      buff += ", and ";
+    if (m.has_flag(sealed, examx, examy))
+    {
+        add_msg("The %s is firmly sealed.", m.tername(examx, examy).c_str());
     }
-    buff += ",";
-   } else if (m.i_at(examx, examy).size() != 0)
-    buff = "It contains many items,";
-   buff += " but is firmly sealed.";
-   add_msg(buff.c_str());
-  } else {
-   add_msg("There's something in there, but you can't see what it is, and the\
- %s is firmly sealed.", m.tername(examx, examy).c_str());
-  }
- } else {
+    else {
    //examx,examy has no traps, is a container and doesn't have a special examination function
   if (m.tr_at(examx, examy) == tr_null && m.i_at(examx, examy).size() == 0 && m.has_flag(container, examx, examy) &&
        xter_t->examine == &iexamine::none)
@@ -5662,6 +5651,8 @@ void game::advanced_inv()
 
     int src = left; // the active screen , 0 for left , 1 for right.
     int dest = right;
+    int max_inv = inv_chars.size() - u.worn.size() - ( u.is_armed() || u.weapon.is_style() ? 1 : 0 );
+
 
     while(!exit)
     {
@@ -5669,6 +5660,7 @@ void game::advanced_inv()
         if ( recalc ) redraw=true;
         if(redraw)
         {
+            max_inv = inv_chars.size() - u.worn.size() - ( u.is_armed() || u.weapon.is_style() ? 1 : 0 );
             for (int i = 0; i < 2; i++) {
                 // calculate the offset.
                 getsquare(panes[i].area, panes[i].offx, panes[i].offy, panes[i].area_string);
@@ -5749,7 +5741,7 @@ void game::advanced_inv()
                 }
                 advprintItems( panes[i], (src == i), this );
                 printHeader(canputitems, panes[i].window, panes[i].area);
-                mvwprintz(panes[i].window,1,(w_width/2)-7,(src==i ? c_ltgray : c_dkgray),"%2d/%d", panes[i].size, panes[i].area == isinventory ? 75 : MAX_ITEM_IN_SQUARE );
+                mvwprintz(panes[i].window,1,(w_width/2)-7,(src==i ? c_ltgray : c_dkgray),"%2d/%d", panes[i].size, panes[i].area == isinventory ? max_inv : MAX_ITEM_IN_SQUARE );
             }
 
             recalc=false;
@@ -5937,7 +5929,7 @@ void game::advanced_inv()
                             popup("This is too heavy!");
                             continue;
                         }
-                        else if(panes[src].size >= inv_chars.size())
+                        else if(panes[dest].size >= max_inv)
                         {
                             popup("Too many itens");
                             continue;
@@ -6273,8 +6265,9 @@ std::vector<map_item_stack> game::find_nearby_items(int iSearchX, int iSearchY)
     {
         for (int iCol = (iSearchX * -1); iCol <= iSearchX; iCol++)
         {
-            if (!m.has_flag(container, u.posx + iCol, u.posy + iRow) &&
-                u_see(u.posx + iCol, u.posy + iRow))
+            if (u_see(u.posx + iCol, u.posy + iRow) && 
+               (!m.has_flag(container, u.posx + iCol, u.posy + iRow) ||
+               (rl_dist(u.posx, u.posy, u.posx + iCol, u.posy + iRow) == 1 && !m.has_flag(sealed, u.posx + iCol, u.posy + iRow))))
             {
                 temp_items.clear();
                 here.clear();
@@ -6910,7 +6903,10 @@ void game::pickup(int posx, int posy, int min)
       } else if ( selected >= start + maxitems ) {
           start+=maxitems;
       }
-  } else if ( selected >= 0 && ( ch == KEY_RIGHT || ch == KEY_LEFT ) ) {
+  } else if ( selected >= 0 && ( 
+                 ( ch == KEY_RIGHT && !getitem[selected]) || 
+                 ( ch == KEY_LEFT && getitem[selected] ) 
+            ) ) {
       idx=selected;
   } else {
       idx = pickup_chars.find(ch);
@@ -7911,6 +7907,7 @@ void game::forage()
   else
   {
     add_msg("You didn't find anything.");
+    u.practice(turn, "survival", rng(3,6));
     if (!one_in(u.skillLevel("survival")))
     m.ter_set(u.activity.placement.x, u.activity.placement.y, t_dirt);
   }
@@ -8066,12 +8063,33 @@ single action.", u.weapon.tname().c_str());
 // Unload a containter, gun, or tool
 // If it's a gun, some gunmods can also be loaded
 void game::unload(char chInput)
-{
-    item& it = u.i_at(chInput);
-
+{	// this is necessary to prevent re-selection of the same item later
+    item it = (u.inv.remove_item_by_letter(chInput));
     if (!it.is_null())
     {
         unload(it);
+        u.i_add(it, this);
+    }
+    else
+    {
+        item ite;
+        if (u.weapon.invlet == chInput) {	// item is wielded as weapon.
+            if (std::find(martial_arts_itype_ids.begin(), martial_arts_itype_ids.end(), u.weapon.type->id) != martial_arts_itype_ids.end()){
+                return; //ABORT!
+            } else {
+                ite = u.weapon;
+                u.weapon = item(itypes["null"], 0); //ret_null;
+                unload(ite);
+                u.weapon = ite;
+                return;
+            }
+        } else {	//this is that opportunity for reselection where the original container is worn, see issue #808
+            item& itm = u.i_at(chInput);
+            if (!itm.is_null())
+            {
+                unload(itm);
+            }
+        }
     }
 }
 
@@ -9674,6 +9692,10 @@ void game::autosave()
     }
     add_msg("Saving game, this may take a while");
     save();
+
+    save_factions_missions_npcs();
+    save_artifacts();
+    save_maps();
 
     moves_since_last_save = 0;
     item_exchanges_since_save = 0;

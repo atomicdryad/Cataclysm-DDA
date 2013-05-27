@@ -10,6 +10,8 @@
 #include "bionics.h"
 #include "artifact.h"
 #include "picojson.h"
+#include "rng.h"
+#include "material.h"
 #include <string>
 #include <vector>
 #include <sstream>
@@ -78,6 +80,7 @@ AMMO_INCENDIARY,	// Sparks explosive terrain
 AMMO_EXPLOSIVE,		// Small explosion
 AMMO_FRAG,		// Frag explosion
 AMMO_NAPALM,		// Firey explosion
+AMMO_ACIDBOMB, // Acid bomb ammo
 AMMO_EXPLOSIVE_BIG,	// Big explosion!
 AMMO_TEARGAS,		// Teargas burst
 AMMO_SMOKE,  		// Smoke burst
@@ -490,6 +493,14 @@ struct it_armor : public itype
  virtual bool is_power_armor() { return power_armor; }
  virtual bool is_artifact() { return false; }
  virtual picojson::value save_data() { return picojson::value(); }
+ std::string bash_dmg_verb() { return m2 == MNULL || !one_in(3) ?
+         material_type::find_material_from_tag(m1)->bash_dmg_verb() :
+         material_type::find_material_from_tag(m2)->bash_dmg_verb();
+ }
+ std::string cut_dmg_verb() { return m2 == MNULL || !one_in(3) ?
+         material_type::find_material_from_tag(m1)->cut_dmg_verb() :
+         material_type::find_material_from_tag(m2)->cut_dmg_verb();
+ }
 
  it_armor() : itype()
  {
