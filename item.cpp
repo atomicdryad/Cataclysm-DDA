@@ -634,6 +634,11 @@ std::string item::info(bool showtext, std::vector<iteminfo> *dump)
         dump->push_back(iteminfo("DESCRIPTION", "\n\n"));
         dump->push_back(iteminfo("DESCRIPTION", "This piece of clothing fits you perfectly."));
     }
+    if (is_armor() && has_flag("POCKETS"))
+    {
+        dump->push_back(iteminfo("DESCRIPTION", "\n\n"));
+        dump->push_back(iteminfo("DESCRIPTION", "This piece of clothing has pockets to warm your hands."));
+    }
     if (is_tool() && has_flag("DOUBLE_AMMO"))
     {
         dump->push_back(iteminfo("DESCRIPTION", "\n\n"));
@@ -1059,6 +1064,7 @@ bool item::ready_to_revive(game *g)
         return false;
     }
     int age_in_hours = (int(g->turn) - bday) / (10 * 60);
+    age_in_hours -= ((float)burnt/volume()) * 24;
     int rez_factor = 48 - age_in_hours;
     if (age_in_hours > 6 && (rez_factor <= 0 || one_in(rez_factor)))
     {
