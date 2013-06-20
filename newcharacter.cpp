@@ -215,6 +215,7 @@ bool player::create(game *g, character_type type, std::string tempname)
   } while (!query_yn("Use this style?"));
   styles.push_back(ma_type);
  }
+<<<<<<< HEAD
 
     if (has_trait(PF_MARTIAL_ARTS2)) {
   itype_id ma_type;
@@ -276,6 +277,8 @@ bool player::create(game *g, character_type type, std::string tempname)
   } while (!query_yn("Use this style?"));
   styles.push_back(ma_type);
  }
+=======
+>>>>>>> parent of 106bd6e... Expanded Martial Arts Traits
  ret_null = item(g->itypes["null"], 0);
  if (!styles.empty())
   weapon = item(g->itypes[ styles[0] ], 0, ':');
