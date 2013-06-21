@@ -3356,6 +3356,7 @@ void game::draw()
      }
      wrefresh(w_void);
  }
+ mvprintz(VIEW_OFFSET_Y+3,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,"lev: %d,%d   u.pos: %d,%d",levx,levy,u.posx,u.posy);
 }
 
 bool game::isBetween(int test, int down, int up)
