@@ -6839,6 +6839,31 @@ point game::look_debug(point coords) {
     mvwprintw(w_look, off, 1, "%s %s", m.features(lx, ly).c_str(),extras.c_str());
     off++;
 
+    int uomx=(levx + int(MAPSIZE / 2)) / 2;
+    int uomy=(levy + int(MAPSIZE / 2)) / 2;
+    int unonant = int(u.posx / SEEX) + int(u.posy / SEEY) * m.my_MAPSIZE;
+    int usx = u.posx % SEEX;
+    int usy = u.posy % SEEY;
+
+    mvwprintw(w_look, off, 1, "om: %d,%d lev: %d,%d [%d] us: %d,%d ms %d",
+uomx,uomy,levx,levy,unonant,usx,usy,m.my_MAPSIZE
+);
+    off++;
+
+    int plevx=levx + (lx / SEEX);
+    int plevy=levy + (ly / SEEY);
+    int pomx=(plevx + int(MAPSIZE / 2)) / 2;
+    int pomy=(plevy + int(MAPSIZE / 2)) / 2;
+
+    int pnonant = int(lx / SEEX) + int(ly / SEEY) * m.my_MAPSIZE;
+    int psx = lx % SEEX;
+    int psy = ly % SEEY;
+
+    mvwprintw(w_look, off, 1, "pom: %d,%d psm: %d,%d [%d] psc: %d,%d",
+pomx,pomy,plevx,plevy,pnonant,psx,psy
+);off++;
+    
+
     field curfield = m.field_at(lx, ly);
     if (curfield.type != fd_null) {
        mvwprintz(w_look, off, 1, fieldlist[curfield.type].color[curfield.density-1], "field: %s (%d) density %d",
