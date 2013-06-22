@@ -86,7 +86,9 @@ void mapbuffer::save()
 {
  std::map<tripoint, submap*, pointcomp>::iterator it;
  std::ofstream fout;
+std::ofstream ifout;
  fout.open("save/maps.txt");
+ifout.open("save/maps.index");
 
  fout << submap_list.size() << std::endl;
  int num_saved_submaps = 0;
@@ -96,7 +98,8 @@ void mapbuffer::save()
   if (num_saved_submaps % 100 == 0)
    popup_nowait("Please wait as the map saves [%d/%d]",
                 num_saved_submaps, num_total_submaps);
-
+int spos,endpos;
+spos=(int)fout.tellp();
   fout << it->first.x << " " << it->first.y << " " << it->first.z << std::endl;
   submap *sm = it->second;
   fout << sm->turn_last_touched << std::endl;
@@ -179,11 +182,17 @@ void mapbuffer::save()
   }
  }
 
+///////////////////////
   fout << "----" << std::endl;
+  endpos=(int)fout.tellp();
+  ifout << it->first.x << " " << it->first.y << " " << 
+    it->first.z << " " << sm->turn_last_touched 
+    << " " << spos << " " << endpos << std::endl;
   num_saved_submaps++;
  }
  // Close the file; that's all we need.
  fout.close();
+ ifout.close();
 }
 
 void mapbuffer::load()
@@ -202,11 +211,12 @@ void mapbuffer::load()
  item it_tmp;
  std::string databuff;
  fin >> num_submaps;
-
+ int smfstart,smfend;
  while (!fin.eof()) {
+  smfstart=(int)fin.tellg();
   if (num_loaded % 100 == 0)
-   popup_nowait("Please wait as the map loads [%d/%d]",
-                num_loaded, num_submaps);
+   popup_nowait("Please wait as the map loads [%d/%d] @ byte %d",
+                num_loaded, num_submaps,(int)fin.tellg());
   int locx, locy, locz, turn;
   submap* sm = new submap;
   fin >> locx >> locy >> locz >> turn;
@@ -295,6 +305,7 @@ void mapbuffer::load()
     sm->graf[j][i] = graffiti(s);
    }
   } while (string_identifier != "----" && !fin.eof());
+  smfend=(int)fin.tellg();
 
   submap_list.push_back(sm);
   submaps[ tripoint(locx, locy, locz) ] = sm;
