@@ -8,6 +8,7 @@
 #include "mutation.h"
 #include "player.h"
 #include <sstream>
+#include <algorithm>
 
 #define RADIO_PER_TURN 25 // how many characters per turn of radio
 
@@ -53,6 +54,41 @@ static bool use_fire(game *g, player *p, item *it)
         return false;
     }
     return true;
+}
+
+static void inscribe_item( game *g, player *p, std::string verb, std::string gerund, bool carveable )
+{
+    char ch = g->inv(verb + " on what?");
+    item* cut = &(p->i_at(ch));
+    if (cut->type->id == "null")
+    {
+        g->add_msg("You do not have that item!");
+        return;
+    }
+    if (!cut->made_of(SOLID))
+    {
+        std::string lower_verb = verb;
+        std::transform(lower_verb.begin(), lower_verb.end(), lower_verb.begin(), ::tolower);
+        g->add_msg("You can't %s an item that's not solid!", lower_verb.c_str());
+        return;
+    }
+    if(carveable && !(cut->made_of("wood") || cut->made_of("plastic") || cut->made_of("glass") ||
+                      cut->made_of("chitin") || cut->made_of("iron") || cut->made_of("steel") ||
+                      cut->made_of("silver"))) {
+        std::string lower_verb = verb;
+        std::transform(lower_verb.begin(), lower_verb.end(), lower_verb.begin(), ::tolower);
+        g->add_msg("You can't %s an item made of %s!",
+                   lower_verb.c_str(), cut->get_material(1).c_str());
+        return;
+    }
+
+    std::map<std::string, std::string>::iterator ent = cut->item_vars.find("item_note");
+    std::string message = gerund + " on this " + cut->type->name + " is a note saying: ";
+    message = string_input_popup(verb + " what?", 64, (ent != cut->item_vars.end() ?
+                                                       cut->item_vars["item_note"] : message ));
+
+    if( message.size() > 0 ) { cut->item_vars["item_note"] = message; }
+    return;
 }
 
 void iuse::none(game *g, player *p, item *it, bool t)
@@ -3407,10 +3443,10 @@ void iuse::vacutainer(game *g, player *p, item *it, bool t)
 void iuse::knife(game *g, player *p, item *it, bool t)
 {
     int choice = menu(true,
-    "Using knife:", "Cut up fabric", "Cut up plastic/kevlar", "Carve wood", "Cauterize", "Cancel", NULL);
+                      "Using knife:", "Cut up fabric", "Cut up plastic/kevlar", "Carve wood", "Cauterize", "Carve writing on item", "Cancel", NULL);
     switch (choice)
     {
-        if (choice == 4)
+        if (choice == 5)
         break;
         case 1:
         {
@@ -3552,6 +3588,11 @@ void iuse::knife(game *g, player *p, item *it, bool t)
                 g->add_msg_if_player(p,"You need a lighter with 4 charges before you can cauterize yourself.");
             else
                 p->cauterize(g);
+            break;
+        }
+        case 5:
+        {
+            inscribe_item( g, p, "Carve", "Carved", true );
             break;
         }
     }
@@ -4512,17 +4553,7 @@ void iuse::spray_can(game *g, player *p, item *it, bool t) {
      if ( it->type->id ==  "permanent_marker"  ) {
         int ret=menu(true, "Write on what?", "The ground", "An item", "cancel", NULL );
         if (ret == 2 ) {
-            char ch = g->inv("Write on what?");
-            item* cut = &(p->i_at(ch));
-            if (cut->type->id == "null")
-            {
-                g->add_msg("You do not have that item!");
-                return;
-            }
-            std::map<std::string, std::string>::iterator ent = cut->item_vars.find("item_note");
-            std::string message = string_input_popup("Write what?", 64, (ent != cut->item_vars.end() ? cut->item_vars["item_note"] : "" ) );
-            if( message.size() > 0 ) cut->item_vars["item_note"] = message;
-            return;
+            inscribe_item( g, p, "Write", "Written", false );
         } else if ( ret != 1 ) {
            return;
         }
