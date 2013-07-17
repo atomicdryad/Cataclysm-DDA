@@ -71,6 +71,7 @@ public:
  void next_mode();
 
  std::string save_info() const;	// Formatted for save files
+ bool itag2ivar(std::string &item_tag );
  void load_info(std::string data, game *g);
  //std::string info(bool showtext = false);	// Formatted for human viewing
  std::string info(bool showtext = false);
@@ -176,6 +177,8 @@ public:
  std::string mode;    // Mode of operation, can be changed by the player.
  std::set<std::string> item_tags;		// generic item specific flags
  unsigned item_counter;	// generic counter to be used with item flags
+ int last_rot_check;
+ int accumulated_rot;
  int mission_id;// Refers to a mission in game's master list
  int player_id;	// Only give a mission to the right player!
  std::map<std::string, std::string> item_vars;
