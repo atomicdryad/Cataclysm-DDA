@@ -50,6 +50,10 @@ typedef std::vector<wrapped_vehicle> VehicleList;
 //        real_coords( lx, ly, px, py, true ); // will precalculate overmap as .true_om (point)
 //
 struct real_coords { 
+  static const int subsize = SEEX;
+  static const int subsizen = subsize - 1;
+  static const int omsize = OMAPX * 2;
+  static const int omsizen = omsize - 1;
   point rel_lev; // in: as in game.levx/y. The true coordinate of submap at pos 0,0 in playing area
                  // (Which is a 11x11 grid of submaps that shifts to ensure player remains in
                  // the center submap.)
@@ -63,7 +67,67 @@ struct real_coords {
                  // this is the actual overmap tile of sub.x, sub.y (unlike what game->om_location
                  // returns; the overmap tile of levx/y aka rel_lev. Most game functions are written
                  // for the latter.);
+
+    
+  point abs_pos;     // in: 1 per tile, starting from tile 0,0 of submap 0,0 of overmap 0,0
+  point abs_sub;     // 12 tiles per submap
+  point abs_sub_pos; // coordinate (0-11) in submap / abs_pos constrained to 12
+  point abs_om;      // 360 submaps per overmap.
+  point abs_om_pos;  // submap (0-359) in overmap / abs_sub constrained to 360. Divide by 2 to get overmap tile. 
+
+  real_coords() {
+  }
+  real_coords(point l, point p, bool getom=false ) {
+    rel2real(l.x, l.y, p.x, p.y, getom);
+  }
   real_coords(int lx, int ly, int px, int py, bool getom=false ) {
+    rel2real(lx, ly, px, py, getom);
+  }
+  void real2rel(int ox, int oy, int sx, int sy, int spx, int spy) {
+    
+  }
+  /* find appropriate submap/overmap for absolute tile coordinate. This is less obvious than one might think, for negative coordinates. */
+  /* usage: 
+     real_coords rc;
+     rc.fromabs ( g->m.getabs(g->u.posx, g->u.posy ) );
+     or rc.fromabs( g->m, 4,-2343 );
+   */
+
+  void fromabs(const int absx, const int absy) {
+    const int normx=abs(absx);
+    const int normy=abs(absy);
+    abs_pos = point(absx, absy);
+
+    if ( absx < 0 ) {
+      abs_sub.x=(absx-11)/12;
+      abs_sub_pos.x = 11-((normx-1) % 12);
+      abs_om.x=(abs_sub.x-omsizen)/omsize;
+      abs_om_pos.x = omsizen-(((normx-1)/12) % omsize);
+    } else {
+      abs_sub.x=normx/12;
+      abs_sub_pos.x = absx % 12;
+      abs_om.x=abs_sub.x/omsize;
+      abs_om_pos.x=abs_sub.x % omsize;
+    }
+
+    if ( absy < 0 ) {
+      abs_sub.y=(absy-11)/12;
+      abs_sub_pos.y = 11-((normy-1) % 12);
+      abs_om.y=(abs_sub.y-omsizen)/omsize;
+      abs_om_pos.y = omsizen-(((normy-1)/12) % omsize);
+    } else {
+      abs_sub.y=normy/12;
+      abs_sub_pos.y = absy % 12;
+      abs_om.y=abs_sub.y/omsize;
+      abs_om_pos.y=abs_sub.y % omsize;
+    }
+
+  }
+  void fromabs(point absolute) {
+    fromabs(absolute.x, absolute.y);
+  }
+
+  void rel2real(int lx, int ly, int px, int py, bool getom=false ) {
     rel_lev.x=lx;
     rel_lev.y=ly;
     rel_pos.x=px;
@@ -118,7 +182,7 @@ class map
 
 // File I/O
  virtual void save(overmap *om, unsigned const int turn, const int x, const int y, const int z);
- virtual void load(game *g, const int wx, const int wy, const int wz, const bool update_vehicles = true);
+ virtual void load(game *g, const int wx, const int wy, const int wz, const bool update_vehicles = true, overmap *om = NULL);
  void shift(game *g, const int wx, const int wy, const int wz, const int x, const int y);
  void spawn_monsters(game *g);
  void clear_spawns();
@@ -282,11 +346,17 @@ class map
  std::map< std::pair<int,int>, std::pair<vehicle*,int> > veh_cached_parts;
  bool veh_exists_at [SEEX * MAPSIZE][SEEY * MAPSIZE];
 
+ int mapsize() { return my_MAPSIZE; };
+ point get_abs_sub() {
+   //if(this->debugon==true) popup("%d,%d <=> %d,%d",grid[0]->x,grid[0]->y,abs_sub.x,abs_sub.y);
+   return abs_sub;
+ };
+ point getabs(const int x=0, const int y=0 );
 protected:
  void saven(overmap *om, unsigned const int turn, const int x, const int y, const int z,
             const int gridx, const int gridy);
  bool loadn(game *g, const int x, const int y, const int z, const int gridx, const int gridy,
-            const  bool update_vehicles = true);
+            const  bool update_vehicles = true, overmap *om = NULL);
  void copy_grid(const int to, const int from);
  void draw_map(const oter_id terrain_type, const oter_id t_north, const oter_id t_east,
                const oter_id t_south, const oter_id t_west, const oter_id t_above, const int turn,
@@ -299,6 +369,7 @@ protected:
  void generate_lightmap(game *g);
  void build_seen_cache(game *g);
 
+ bool inboundsabs(const int x, const int y);
  bool inbounds(const int x, const int y);
  int my_MAPSIZE;
  virtual bool is_tiny() { return false; };
@@ -314,7 +385,10 @@ protected:
  std::vector <itype_id> (*mapitems)[num_itloc];
 
  bool veh_in_active_range;
-
+ point abs_sub;
+ point abs_min;
+ point abs_max;
+ void set_abs_sub(const int x, const int y);
 private:
  long determine_wall_corner(const int x, const int y, const long orig_sym);
  void cache_seen(const int fx, const int fy, const int tx, const int ty, const int max_range);
