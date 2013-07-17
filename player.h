@@ -1,5 +1,6 @@
 #ifndef _PLAYER_H_
 #define _PLAYER_H_
+#include "object.h"
 
 #include "item.h"
 #include "monster.h"
@@ -33,7 +34,7 @@ struct special_attack
  special_attack() { bash = 0; cut = 0; stab = 0; };
 };
 
-class player {
+class player: public virtual baseobject {
   std::map<Skill*,SkillLevel> _skills;
 
 public:
@@ -41,6 +42,7 @@ public:
  player(const player &rhs);
  virtual ~player();
 
+ virtual void basefunc() {};
  player& operator= (const player & rhs);
 
 // newcharacter.cpp
@@ -312,6 +314,7 @@ public:
  int volume;
 
  std::string name;
+std::string getname() { return name; };
  bool male;
  profession* prof;
  bool my_traits[PF_MAX2];

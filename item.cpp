@@ -35,6 +35,9 @@ item::item()
  owned = -1;
  mission_id = -1;
  player_id = -1;
+
+ objtype=OBJECT_TYPE_ITEM;
+ parentref=&nullobject;
 }
 
 item::item(itype* it, unsigned int turn)
@@ -168,6 +171,8 @@ void item::make_corpse(itype* it, mtype* mt, unsigned int turn)
   type = it;
  corpse = mt;
  bday = turn;
+ objtype=OBJECT_TYPE_ITEM;
+ parentref=&nullobject;
 }
 
 itype * item::nullitem_m = new itype();
@@ -192,6 +197,8 @@ void item::make(itype* it)
  else
   type = it;
  contents.clear();
+ objtype=OBJECT_TYPE_ITEM;
+objstr="item::make";
 }
 
 void item::clear()

@@ -2504,16 +2504,19 @@ void game::load(std::string name)
   fin >> item_place;
   if (!fin.eof()) {
    getline(fin, itemdata);
-   if (item_place == 'I')
-    tmpinv.push_back(item(itemdata, this));
-   else if (item_place == 'C')
-    tmpinv.back().contents.push_back(item(itemdata, this));
-   else if (item_place == 'W')
-    u.worn.push_back(item(itemdata, this));
-   else if (item_place == 'w')
-    u.weapon = item(itemdata, this);
-   else if (item_place == 'c')
-    u.weapon.contents.push_back(item(itemdata, this));
+   item tmpitem(itemdata, this);
+   tmpitem.parentref=&u;
+   if (item_place == 'I') {
+    tmpinv.push_back(tmpitem);
+   } else if (item_place == 'C') {
+    tmpinv.back().contents.push_back(tmpitem);
+   } else if (item_place == 'W') {
+    u.worn.push_back(tmpitem);
+   } else if (item_place == 'w') {
+    u.weapon = tmpitem;
+   } else if (item_place == 'c') {
+    u.weapon.contents.push_back(tmpitem);
+   }
   }
  }
 // Now dump tmpinv into the player's inventory

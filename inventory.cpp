@@ -394,6 +394,7 @@ void inventory::restack(player *p)
                  ++stack_iter)
             {
                 stack_iter->invlet = iter->front().invlet;
+                stack_iter->parentref=static_cast<baseobject *>(p);
             }
         }
 
