@@ -66,6 +66,8 @@ class uimenu {
     void init();
     void show();
     void query(bool loop=true);
+    void addentry(const char *format, ...);
+    void settext(const char *format, ...);
     ~uimenu ();
     operator int() const;
 
