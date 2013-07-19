@@ -42,6 +42,8 @@ vehicle::vehicle(game *ag, vhtype_id type_id, int init_veh_fuel, int init_veh_st
         }
     }
     precalc_mounts(0, face.dir());
+    objtype=OBJECT_TYPE_VEHICLE;
+    parentref=&nullobject;
 }
 
 vehicle::~vehicle()
@@ -89,6 +91,8 @@ void vehicle::load (std::ifstream &stin)
     getline(stin, databuff); // Clear EoL
     getline(stin, name); // read name
     int itms = 0;
+    objtype=OBJECT_TYPE_VEHICLE;
+    parentref=&nullobject;
     for (int p = 0; p < prts; p++)
     {
         int pid, pdx, pdy, php, pam, pbld, pbig, pflag, pass, pnit;
@@ -110,6 +114,7 @@ void vehicle::load (std::ifstream &stin)
             getline(stin, databuff);
             item itm;
             itm.load_info (databuff, g);
+            itm.parentref=this;
             new_part.items.push_back (itm);
             int ncont;
             stin >> ncont; // how many items inside container
@@ -194,6 +199,8 @@ void vehicle::init_state(game* g, int init_veh_fuel, int init_veh_status)
 
     int consistent_bignesses[num_vparts];
     memset (consistent_bignesses, 0, sizeof(consistent_bignesses));
+    objtype=OBJECT_TYPE_VEHICLE;
+    parentref=&nullobject;
 
     // veh_fuel_multiplier is percentage of fuel
     // 0 is empty, 100 is full tank, -1 is random 1% to 7%
@@ -1800,6 +1807,9 @@ bool vehicle::add_item (int part, item itm)
     if ( cur_volume + add_volume > maxvolume ) {
       return false;
     }
+    itm.parentref=static_cast<baseobject*>(this);//&(*this);
+    itm.objstr="vadd";
+    itm.objtype=OBJECT_TYPE_ITEM;
     parts[part].items.push_back (itm);
     return true;
 }

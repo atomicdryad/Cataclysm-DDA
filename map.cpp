@@ -12,6 +12,7 @@
 #include "debug.h"
 #include "item_factory.h"
 #include "overmapbuffer.h"
+#include "object.h"
 
 #define SGN(a) (((a)<0) ? -1 : 1)
 #define INBOUNDS(x, y) \
@@ -2648,6 +2649,8 @@ void map::add_item(const int x, const int y, item new_item, const int maxitems)
 
  const int lx = x % SEEX;
  const int ly = y % SEEY;
+ new_item.parentref=&nullobject;
+ new_item.objstr="map";
  grid[nonant]->itm[lx][ly].push_back(new_item);
  if (new_item.active)
   grid[nonant]->active_item_count++;

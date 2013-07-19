@@ -1,6 +1,6 @@
 #ifndef _VEHICLE_H_
 #define _VEHICLE_H_
-
+#include "object.h"
 #include "tileray.h"
 #include "color.h"
 #include "item.h"
@@ -144,7 +144,7 @@ struct vehicle_part
 //   of external part. Some functional parts can be only in single instance per tile, i. e.,
 //   no two engines at one mount point.
 //   If you can't understand, why installation fails, try to assemble your vehicle in game first.
-class vehicle
+class vehicle: public virtual baseobject
 {
 private:
     game *g;
@@ -414,6 +414,8 @@ public:
     float of_turn;      // goes from ~1 to ~0 while proceeding every turn
     float of_turn_carry;// leftover from prev. turn
     int turret_mode;    // turret firing mode: 0 = off, 1 = burst fire
+    virtual void basefunc() {};
+    std::string getname() { return name; };
 };
 
 #endif

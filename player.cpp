@@ -88,6 +88,9 @@ player::player()
  }
  nv_cached = false;
  volume = 0;
+
+ objtype=OBJECT_TYPE_PLAYER;
+ parentref=&nullobject;
 }
 
 player::player(const player &rhs)
@@ -208,6 +211,9 @@ player& player::operator= (const player & rhs)
  addictions = rhs.addictions;
 
  nv_cached = false;
+
+ objtype=OBJECT_TYPE_PLAYER;
+ parentref=&nullobject;
 
  return (*this);
 }
@@ -4369,6 +4375,8 @@ item& player::i_add(item it, game *g)
   it_artifact_tool *art = dynamic_cast<it_artifact_tool*>(it.type);
   g->add_artifact_messages(art->effects_carried);
  }
+ it.parentref=(baseobject*)this;
+ it.objstr="padd";
  return inv.add_item(it);
 }
 
