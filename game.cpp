@@ -3466,6 +3466,53 @@ void game::list_missions()
  refresh_all();
 }
 
+void draw_location(game *g) {
+
+#define showpos 1
+//#define fullpos 1
+#ifdef showpos
+ real_coords abc;
+ abc.fromabs( g->m.getabs( g->u.posx, g->u.posy ) );
+
+
+
+#ifdef showfullpos
+ int lx = u.posx % SEEX;
+ int ly = u.posy % SEEY;
+ point ablp=g->m.getabs(0,0);
+ real_coords abl;
+ abl.fromabs( ablp );
+
+ mvprintz(VIEW_OFFSET_Y+3,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,
+  "lev: %d,%d u.pos: %d,%d %d,%d apos[%d,%d]",
+  levx,levy,
+  u.posx,u.posy,
+  lx,ly,
+  abc.abs_pos.x,abc.abs_pos.y
+);
+ mvprintz(VIEW_OFFSET_Y+4,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,
+  "asub[%d,%d:%d,%d] aom[%d,%d:%d,%d] %d,%d",
+  abc.abs_sub.x, abc.abs_sub.y, abc.abs_sub_pos.x, abc.abs_sub_pos.y,
+  abc.abs_om.x, abc.abs_om.y, abc.abs_om_pos.x, abc.abs_om_pos.y,
+  abc.abs_pos.x,abc.abs_pos.y
+);
+ mvprintz(VIEW_OFFSET_Y+5,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,
+  "lsub[%d,%d:%d,%d] lom[%d,%d:%d,%d] %d,%d",
+  abl.abs_sub.x, abl.abs_sub.y, abl.abs_sub_pos.x, abl.abs_sub_pos.y,
+  abl.abs_om.x, abl.abs_om.y, abl.abs_om_pos.x, abl.abs_om_pos.y,
+  ablp.x,ablp.y
+);
+#else
+ mvprintz(VIEW_OFFSET_Y+3,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,
+  "abs[%d,%d] sub[%d.%d,%d.%d] om[%d.%d,%d.%d]",
+  abc.abs_pos.x,abc.abs_pos.y,
+  abc.abs_sub.x, abc.abs_sub_pos.x, abc.abs_sub.y, abc.abs_sub_pos.y,
+  abc.abs_om.x, abc.abs_om_pos.x, abc.abs_om.y, abc.abs_om_pos.y
+);
+#endif
+#endif
+}
+
 void game::draw()
 {
     // Draw map
@@ -3573,6 +3620,7 @@ void game::draw()
         }
         wrefresh(w_void);
     }
+    draw_location(this);
 }
 
 bool game::isBetween(int test, int down, int up)
