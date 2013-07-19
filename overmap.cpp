@@ -1133,7 +1133,7 @@ int overmap::dist_from_city(point p)
 
 void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
                    int &origx, int &origy, signed char &ch, bool blink,
-                   overmap &hori, overmap &vert, overmap &diag)
+                   overmap &hori, overmap &vert, overmap &diag, int mode)
 {
  bool note_here = false, npc_here = false;
  std::string note_text;
@@ -1252,7 +1252,7 @@ void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
     } else
      debugmsg("No data loaded! omx: %d omy: %d", omx, omy);
 // </Out of bounds replacement>
-    if (see) {
+    if (see || mode > 0) {
      if (note_here && blink) {
       ter_color = c_yellow;
       if (note_text[1] == ':')
@@ -1353,13 +1353,18 @@ void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
   mvwprintz(w, 21, om_map_width + 1, c_magenta, "Esc or q - Return to game  ");
   char level_string[10];
   sprintf(level_string, "LEVEL %i",z);
-  mvwprintz(w, getmaxy(w)-1, om_map_width + 1, c_red, level_string);
+  mvwprintz(w, 22, om_map_width + 1, c_red, "LEVEL %i / %d,%d",z,cursx,cursy);
+  real_coords rc;
+  rc.fromomap( g->cur_om->pos().x, g->cur_om->pos().y, cursx, cursy );
+  mvwprintz(w, 22, om_map_width + 1, c_red, "abs: %d,%d @ %d,%d",
+    rc.abs_om_pos.x, rc.abs_om_pos.y, rc.abs_om.x, rc.abs_om.y );
+
 // Done with all drawing!
   wrefresh(w);
 }
 
 //Start drawing the overmap on the screen using the (m)ap command.
-point overmap::draw_overmap(game *g, int zlevel)
+point overmap::draw_overmap(game *g, int zlevel, int mode)
 {
  WINDOW* w_map = newwin(TERMY, TERMX, 0, 0);
  WINDOW* w_search = newwin(13, 27, 3, TERMX-27);
@@ -1373,7 +1378,7 @@ point overmap::draw_overmap(game *g, int zlevel)
  overmap hori, vert, diag; // Adjacent maps
 
  do {
-     draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag);
+     draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag, mode);
   ch = input();
   timeout(BLINK_SPEED);	// Enable blinking!
 
@@ -1401,6 +1406,18 @@ point overmap::draw_overmap(game *g, int zlevel)
    timeout(-1);
    add_note(cursx, cursy, zlevel, string_input_popup("Note (X:TEXT for custom symbol):", 45, note(cursx, cursy, zlevel))); // 45 char max
    timeout(BLINK_SPEED);
+  } else if (ch == 't') {
+    timeout(-1);
+    uimenu mmenu;
+    mmenu.entries.push_back(uimenu_entry("Default"));
+    mmenu.entries.push_back(uimenu_entry("mongroups"));
+    mmenu.entries.push_back(uimenu_entry("misc"));
+    mmenu.selected=mode;
+    mmenu.query();
+    if ( mmenu.ret >= 0 ) {
+      mode=mmenu.ret;
+    }
+    timeout(BLINK_SPEED);
   } else if(ch == 'D'){
    timeout(-1);
    if (has_note(cursx, cursy, zlevel)){
@@ -1423,7 +1440,7 @@ point overmap::draw_overmap(game *g, int zlevel)
    timeout(-1);
    std::string term = string_input_popup("Search term:");
    timeout(BLINK_SPEED);
-   draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag);
+   draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag, mode);
    point found = find_note(cursx, cursy, zlevel, term);
    if (found.x == -1) {	// Didn't find a note
     std::vector<point> terlist;
@@ -1456,7 +1473,7 @@ point overmap::draw_overmap(game *g, int zlevel)
       }
       cursx = terlist[i].x;
       cursy = terlist[i].y;
-      draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag);
+      draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag, mode);
       wrefresh(w_search);
       timeout(BLINK_SPEED);
      } while(ch != '\n' && ch != ' ' && ch != 'q');
