@@ -3,7 +3,8 @@
 #include "options.h"
 #include "game.h"
 #include "weather.h"
-
+#include "weather_const.h"
+#include "calendar.h"
 #define PLAYER_OUTSIDE (g->m.is_outside(g->u.posx, g->u.posy) && g->levz >= 0)
 #define THUNDER_CHANCE 50
 #define LIGHTNING_CHANCE 600
@@ -260,4 +261,145 @@ std::string print_temperature(float fahrenheit, int decimals)
 
     return ret.str();
 
+}
+
+////////////////////////////////////////////////////
+// helpful helper functions
+
+// stub, until there's more than wet/very wet.
+// returns 0, 300, 600 (since we use 10unit per min for rot anyway, and morale is -30 / -60)
+int wtype_to_hourly_precip (const weather_type wt) {
+  if (wt == WEATHER_DRIZZLE ) {
+    return 300;
+  } else if ( wt ==  WEATHER_RAINY || wt == WEATHER_THUNDER || wt == WEATHER_LIGHTNING ) {
+    return 600;
+  // todo; bucket of melted snow?
+  } else {
+    return 0;
+  }
+}
+
+// return sunlight, modified by weather. Absolutely no moonlight.
+int true_sunlight( const calendar& cal, const weather_type wtype ) {
+   calendar sunrise_time = cal.sunrise(), sunset_time = cal.sunset();
+   //int wsun[NUM_WEATHER_TYPES]={0,0,20,-20,-30,-40,-50,-30,-40,-30,-30,-55};
+
+   int wmod=weather_data[wtype].light_modifier;
+
+   int mins = 0, sunrise_mins = 0, sunset_mins = 0;
+   mins = cal.minutes_past_midnight();
+   sunrise_mins = sunrise_time.minutes_past_midnight();
+   sunset_mins = sunset_time.minutes_past_midnight();
+
+   int ret = 0;
+   if (mins > sunset_mins + TWILIGHT_MINUTES || mins < sunrise_mins) { 
+     return ret;
+   } else if ( mins >= sunrise_mins && mins <= sunrise_mins + TWILIGHT_MINUTES) {
+     double percent = double(mins - sunrise_mins) / TWILIGHT_MINUTES;
+     ret = int( double(DAYLIGHT_LEVEL + wmod ) * percent );
+   } else if ( mins >= sunset_mins && mins <= sunset_mins + TWILIGHT_MINUTES) {
+     double percent = double(mins - sunset_mins) / TWILIGHT_MINUTES;
+     ret = int( double(DAYLIGHT_LEVEL + wmod ) * (1. - percent) );
+   } else {
+     ret = DAYLIGHT_LEVEL;
+   }
+   return ( ret < 0 ? 0 : ret );
+}
+
+// generate struct for hourly weather log
+hourly_weather_ent mk_weather_log_ent(int temp, weather_type weathertype, int hour) {
+    calendar cal(hour*600);
+    hourly_weather_ent ent;
+    ent.temperature = temp;
+    ent.rot = get_hourly_rotpoints_at_temp(temp);
+    ent.rain = wtype_to_hourly_precip(weathertype); // todo; partial
+    ent.acid = ( weathertype == WEATHER_ACID_RAIN ? 600 : (
+        weathertype == WEATHER_ACID_DRIZZLE ? 300 :
+        0 )
+    );
+    ent.sun = true_sunlight( cal, weathertype );
+    return ent;
+}
+
+// iterate backwards through hourly weather log and populate quick-lookup fields
+void weather_log_cumulative_update( std::map <int, hourly_weather_ent> &wlog ) {
+  for(int hour = wlog.size()-1, ot=0, rt=0, pt=0, at=0, st=0; hour >= 0; hour--) {
+    ot += 600;
+    rt += wlog[hour].rot;
+    pt += wlog[hour].rain; // todo: calculate evaporation per some-unit^2 surface
+    at += wlog[hour].acid;
+    st += wlog[hour].sun;
+    wlog[hour].rot_since = rt;
+    wlog[hour].rain_since = pt;
+    wlog[hour].acid_since = at;
+    wlog[hour].sun_since = st;
+    //popup_nowait("%d %d %d",hour,wlog[hour].rot,rt);
+  }
+}
+
+// return logged temperature at turn/600, or 65 if hour's temperature isn't logged.
+int game::get_temp_at_hour( const int hour ) {
+  std::map <int, hourly_weather_ent>::iterator ent = weather_log.find(hour);
+  return (ent != weather_log.end() ? weather_log[ hour ].temperature : 65 );
+}
+
+// calc rot at turn/600, or 600 if hour isn't logged.
+int game::calc_rot_at_hour( const int hour ) {
+  std::map <int, hourly_weather_ent>::iterator ent = weather_log.find(hour);
+  if ( ent == weather_log.end() ) return 600;
+  return get_hourly_rotpoints_at_temp ( weather_log[ hour ].temperature );
+}
+
+// get cached rot at turn/600, or return 600
+int game::get_rot_at_hour( const int hour ) {
+  std::map <int, hourly_weather_ent>::iterator ent = weather_log.find(hour);
+  if (ent == weather_log.end()) return 600;
+  return weather_log[ hour ].rot;
+}
+
+// get cached accumulative rot since turn
+int game::get_rot_since( const int start_turn ) {
+  bool do_rem = true;            // full value, or just every full hour up to this?
+  int hrot=0,remrotstart=0,remrotnow=0, start_rem=0, now_rem=0;
+
+  const int now_temp=(int)temperature;         // game->temperature;
+  const int now_h=int(turn)/600; // game->turn.hour_param;
+
+  int start_h=(start_turn/600);
+
+  if(do_rem==true) {
+    now_rem=int(turn) % 600;       // game->turn.minute;
+    start_rem=start_turn % 600;
+  }
+
+  if ( now_h > 0 && start_h < now_h ) {
+    std::map <int, hourly_weather_ent>::iterator ent = weather_log.find(start_h);
+    if ( ent == weather_log.end() ) { // shouldn't happen
+      ent=weather_log.upper_bound(start_h+1);
+      if ( ent == weather_log.end() || ent->first >= now_h ) { // hrrrrm
+        hrot=(now_h-start_h) * defrot;
+        return hrot; // we'll just walk away now >.>
+      } else {
+        hrot=(start_h - ent->first) * defrot;
+        start_h=ent->first;
+        hrot+=weather_log[start_h].rot_since;
+        remrotstart=get_rot_at_hour(start_h);
+      }
+    } else {
+      hrot=weather_log[start_h].rot_since;
+      remrotstart=get_rot_at_hour(start_h);
+    }
+  } else {
+    now_rem=int(turn)-start_turn;
+    remrotnow=get_hourly_rotpoints_at_temp(now_temp);
+    hrot=0;
+  }
+  if ( do_rem == true && start_rem > 0 ) {
+    remrotstart=( ( get_rot_at_hour(start_h) * start_rem ) / 600 );
+    hrot+=remrotstart;
+    remrotnow=( ( remrotnow * now_rem ) / 600 );
+    hrot+=remrotnow;
+
+  }
+  return hrot;
 }
