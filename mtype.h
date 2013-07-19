@@ -185,6 +185,7 @@ enum m_category {
 MC_NULL = 0, // No category.
 MC_CLASSIC, // Only monsters we expect in a classic zombie movie.
 MC_WILDLIFE, // The natural animals.
+MC_SUPERZOMBIES, // Smokers boomers and necromancers, oh my!
 MC_MAX // Size of flag array.
 };
 

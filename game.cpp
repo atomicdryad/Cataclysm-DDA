@@ -25,6 +25,7 @@
 #include "mapdata.h"
 #include "catacharset.h"
 #include "translations.h"
+#include "rules.h"
 #include <map>
 #include <set>
 #include <algorithm>
@@ -377,7 +378,7 @@ void game::create_starting_npcs()
 
 void game::cleanup_at_end(){
  write_msg();
- if (uquit == QUIT_DIED || uquit == QUIT_SUICIDE || uquit == QUIT_SAVED)
+ if ( ( ( uquit == QUIT_DIED || uquit == QUIT_SUICIDE ) && RULES[DEATH_DELETE]==1 ) || uquit == QUIT_SAVED)
 	{
 		// Save the factions's, missions and set the NPC's overmap coords
 		// Npcs are saved in the overmap.
@@ -2132,7 +2133,7 @@ bool game::is_game_over()
    place_corpse();
    std::stringstream playerfile;
    playerfile << "save/" << u.name << ".sav";
-   unlink(playerfile.str().c_str());
+   if(RULES[DEATH_DELETE] == 1) unlink(playerfile.str().c_str());
    uquit = QUIT_DIED;
    return true;
   }
@@ -2199,7 +2200,7 @@ void game::death_screen()
 
             if (u.name == name_prefix)
             {
-                (void)unlink(save_dirent->d_name);
+                if(RULES[DEATH_DELETE] == 1) (void)unlink(save_dirent->d_name);
             }
         }
         (void)chdir("..");

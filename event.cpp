@@ -221,7 +221,7 @@ void event::per_turn(game *g)
  switch (type) {
   case EVENT_WANTED: {
    // About once every 10 minutes. Suppress in classic zombie mode.
-   if (g->levz >= 0 && one_in(100) && !OPTIONS[OPT_CLASSIC_ZOMBIES]) {
+   if (g->levz >= 0 && one_in(100) && RULES[EYEBOT_EVENTS]!=0 && ( !OPTIONS[OPT_CLASSIC_ZOMBIES] && RULES[EYEBOT_EVENTS]!=1 ) ) {
     monster eyebot(g->mtypes[mon_eyebot]);
     eyebot.faction_id = faction_id;
     point place = g->m.random_outdoor_tile();

@@ -99,5 +99,5 @@ void save_options();
 std::string option_string(option_key key);
 std::string option_name(option_key key);
 std::string option_desc(option_key key);
-
+#include "rules.h"
 #endif

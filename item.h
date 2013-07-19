@@ -6,6 +6,7 @@
 #include "itype.h"
 #include "mtype.h"
 //#include "npc.h"
+#include "rules.h"
 
 class player;
 class npc;

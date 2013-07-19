@@ -164,6 +164,8 @@ void game::show_options()
 
 void load_options()
 {
+    rules_init();
+
     std::ifstream fin;
     fin.open("data/options.txt");
     if(!fin.is_open()) {

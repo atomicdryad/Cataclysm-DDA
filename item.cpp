@@ -1112,6 +1112,10 @@ bool item::ready_to_revive(game *g)
         {
             return false;
         }
+        if ( (int)burnt > (int)RULES[REVIVE_BURNMAX] ) {
+            active = false;
+            return false;
+        }
         int age_in_hours = (int(g->turn) - bday) / (10 * 60);
         age_in_hours -= ((float)burnt/volume()) * 24;
         if (damage > 0)
@@ -1957,8 +1961,8 @@ int item::range(player *p)
    if (p->str_cur < 12)
      ret -= 2 * (12 - p->str_cur);
  }
-
- return ret;
+ return (int)( (double)ret * RULES[RANGED_MULT] );
+// return ret;
 }
 
 

@@ -2458,7 +2458,8 @@ void overmap::place_specials()
     int min = special.min_dist_from_city, max = special.max_dist_from_city;
     point pt(p.x, p.y);
     // Skip non-classic specials if we're in classic mode
-    if (OPTIONS[OPT_CLASSIC_ZOMBIES] && !(special.flags & mfb(OMS_FLAG_CLASSIC))) continue;
+    // .. unless RULES[SPECIAL_PLACES] is set
+    if (RULES[SPECIAL_PLACES]!=1 && OPTIONS[OPT_CLASSIC_ZOMBIES] && !(special.flags & mfb(OMS_FLAG_CLASSIC))) continue;
     if ((placed[ omspec_id(i) ] < special.max_appearances || special.max_appearances <= 0) &&
         (min == -1 || dist_from_city(pt) >= min) &&
         (max == -1 || dist_from_city(pt) <= max) &&
@@ -2755,7 +2756,7 @@ void overmap::place_mongroups()
   }
  }
 
- if (!OPTIONS[OPT_CLASSIC_ZOMBIES]) {
+ if ( (!OPTIONS[OPT_CLASSIC_ZOMBIES] || RULES[MONSTERS_SWAMP]==1 ) && RULES[MONSTERS_SWAMP]!=0 ) {
   // Figure out where swamps are, and place swamp monsters
   for (int x = 3; x < OMAPX - 3; x += 7) {
    for (int y = 3; y < OMAPY - 3; y += 7) {
@@ -2775,7 +2776,7 @@ void overmap::place_mongroups()
   }
  }
 
- if (!OPTIONS[OPT_CLASSIC_ZOMBIES]) {
+ if ( (!OPTIONS[OPT_CLASSIC_ZOMBIES] || RULES[MONSTERS_WORM]==1 ) && RULES[MONSTERS_WORM]!=0 ) {
   // Place the "put me anywhere" groups
   int numgroups = rng(0, 3);
   for (int i = 0; i < numgroups; i++) {

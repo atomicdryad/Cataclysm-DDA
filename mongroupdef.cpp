@@ -35,7 +35,9 @@ mon_id MonsterGroupManager::GetMonsterFromGroup( std::string group, std::vector 
         if((turn == -1 || (turn + 900 >= MINUTES(STARTING_MINUTES) + HOURS((*mtypes)[it->first]->difficulty))) &&
            (!OPTIONS[OPT_CLASSIC_ZOMBIES] ||
             (*mtypes)[it->first]->in_category(MC_CLASSIC) ||
-            (*mtypes)[it->first]->in_category(MC_WILDLIFE)))
+            (*mtypes)[it->first]->in_category(MC_WILDLIFE)) && 
+            (!(RULES[MONSTERS_SUPERZOMBIES]==0 && (*mtypes)[it->first]->in_category(MC_SUPERZOMBIES)))
+           )
         {   //Not too hard for us (or we dont care)
             if(it->second.first >= roll)
             {

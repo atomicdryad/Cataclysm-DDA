@@ -1001,7 +1001,7 @@ int vehicle::acceleration (bool fueled)
 
 int vehicle::max_velocity (bool fueled)
 {
-    return total_power (fueled) * 80;
+    return total_power (fueled) * 80 * RULES[VEHICLE_SPEED_MULT];
 }
 
 int vehicle::safe_velocity (bool fueled)
@@ -1026,7 +1026,7 @@ int vehicle::safe_velocity (bool fueled)
         }
     if (cnt > 0)
         pwrs = pwrs * 4 / (4 + cnt -1);
-    return (int) (pwrs * k_dynamics() * k_mass()) * 80;
+    return (int) (pwrs * k_dynamics() * k_mass()) * 80 * RULES[VEHICLE_SPEED_MULT];
 }
 
 int vehicle::noise (bool fueled, bool gas_only)
