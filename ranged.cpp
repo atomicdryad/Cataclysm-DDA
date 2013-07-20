@@ -8,12 +8,13 @@
 #include "rng.h"
 #include "item.h"
 #include "options.h"
+#include "uistate.h"
 
 int time_to_fire(player &p, it_gun* firing);
 int recoil_add(player &p);
 void make_gun_sound_effect(game *g, player &p, bool burst, item* weapon);
 int calculate_range(player &p, int tarx, int tary);
-double calculate_missed_by(player &p, int trange, item* weapon);
+double calculate_missed_by(player &p, int trange, item* weapon, std::string &dstr);
 void shoot_monster(game *g, player &p, monster &mon, int &dam, double goodhit, item* weapon);
 void shoot_player(game *g, player &p, player *h, int &dam, double goodhit);
 
@@ -275,7 +276,9 @@ int trange = rl_dist(p.posx, p.posy, tarx, tary);
 
   make_gun_sound_effect(this, p, burst, weapon);
   int trange = calculate_range(p, tarx, tary);
-  double missed_by = calculate_missed_by(p, trange, weapon);
+  std::string dstr = "";
+  if ( uistate.debug_ranged == true ) dstr=stringfmt("fire: range=%d, ",trange);
+  double missed_by = calculate_missed_by(p, trange, weapon, dstr);
 // Calculate a penalty based on the monster's speed
   double monster_speed_penalty = 1.;
   int target_index = mon_at(tarx, tary);
@@ -284,7 +287,10 @@ int trange = rl_dist(p.posx, p.posy, tarx, tary);
    if (monster_speed_penalty < 1.)
     monster_speed_penalty = 1.;
   }
-
+  if ( uistate.debug_ranged == true ) {
+     dstr=stringfmt("%s\nmonster_speed_penalty: %f\n\n>> %s <<",dstr.c_str(),monster_speed_penalty,missed_by >= .1 ? "MISS" : "HIT" );
+     popup("%s",dstr.c_str());
+  }
   if (curshot > 0) {
    if (recoil_add(p) % 2 == 1)
     p.recoil++;
@@ -664,6 +670,7 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
  wborder(w_target, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
                  LINE_OXXO, LINE_OOXX, LINE_XXOO, LINE_XOOX );
  mvwprintz(w_target, 0, 2, c_white, "< ");
+ if(uistate.debug_ranged==true) mvwprintw(w_target,12,2,"< debug on >-");
  if (!relevent) { // currently targetting vehicle to refill with fuel
    wprintz(w_target, c_red, "Select a vehicle");
  } else {
@@ -804,6 +811,9 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
    if (target == t.size()) target = 0;
    x = t[target].posx;
    y = t[target].posy;
+  } else if (ch == 't' ) {
+    uistate.debug_ranged=(!uistate.debug_ranged);
+    mvwprintw(w_target,12,2,"< debug %s >-",uistate.debug_ranged==true?"on":"off");
   } else if (ch == '.' || ch == 'f' || ch == 'F' || ch == '\n') {
    for (int i = 0; i < t.size(); i++) {
     if (t[i].posx == x && t[i].posy == y)
@@ -962,7 +972,7 @@ int calculate_range(player &p, int tarx, int tary)
  return trange;
 }
 
-double calculate_missed_by(player &p, int trange, item* weapon)
+double calculate_missed_by(player &p, int trange, item* weapon, std::string &dstring)
 {
     // No type for gunmods,so use player weapon.
     it_gun* firing = dynamic_cast<it_gun*>(p.weapon.type);
@@ -972,26 +982,36 @@ double calculate_missed_by(player &p, int trange, item* weapon)
     if (p.skillLevel(firing->skill_used) < 8) {
         deviation += rng(0, 3 * (8 - p.skillLevel(firing->skill_used)));
     }
+bool debugdevi=false;
+std::string dstr="";
+if ( dstring.size() > 0 ) debugdevi=true;
+if ( debugdevi==true ) dstr=stringfmt("dev: (range %d) wskill(%d)-> %f",trange,(int)p.skillLevel(firing->skill_used),deviation);
 
     // Up to 0.25 deg per each skill point < 9.
     if (p.skillLevel("gun") < 9) { deviation += rng(0, 9 - p.skillLevel("gun")); }
-
+if ( debugdevi==true ) dstr=stringfmt("%s\n gskill[%d]-> %f", dstr.c_str(),(int)p.skillLevel("gun"),deviation);
     deviation += rng(0, p.ranged_dex_mod());
+if ( debugdevi==true ) dstr=stringfmt("%s\n dex[%d]-> %f", dstr.c_str(),p.ranged_dex_mod(),deviation);
     deviation += rng(0, p.ranged_per_mod());
+if ( debugdevi==true ) dstr=stringfmt("%s\n per[%d]-> %f", dstr.c_str(),p.ranged_per_mod(),deviation);
 
     deviation += rng(0, 2 * p.encumb(bp_arms)) + rng(0, 4 * p.encumb(bp_eyes));
+if ( debugdevi==true ) dstr=stringfmt("%s\n enc[%d+%d]-> %f", dstr.c_str(),p.encumb(bp_arms),p.encumb(bp_eyes),deviation);
 
     deviation += rng(0, weapon->curammo->dispersion);
+if ( debugdevi==true ) dstr=stringfmt("%s\n ammodev[%d]-> %f", dstr.c_str(),weapon->curammo->dispersion,deviation);
     // item::dispersion() doesn't support gunmods.
     deviation += rng(0, p.weapon.dispersion());
+if ( debugdevi==true ) dstr=stringfmt("%s\n weapdev[%d]-> %f", dstr.c_str(),p.weapon.dispersion(),deviation);
     int adj_recoil = p.recoil + p.driving_recoil;
     deviation += rng(int(adj_recoil / 4), adj_recoil);
-
+if ( debugdevi==true ) dstr=stringfmt("%s\n recoil[%d]-> %f", dstr.c_str(),adj_recoil,deviation);
     if (deviation < 0) { return 0; }
     // .013 * trange is a computationally cheap version of finding the tangent.
     // (note that .00325 * 4 = .013; .00325 is used because deviation is a number
     //  of quarter-degrees)
     // It's also generous; missed_by will be rather short.
+if ( debugdevi==true ) dstring.append(stringfmt("%s\n>>> final: %f", dstr.c_str(),(.00325 * deviation * trange),deviation));
     return (.00325 * deviation * trange);
 }
 
