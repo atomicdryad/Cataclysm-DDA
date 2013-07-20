@@ -24,6 +24,8 @@
 #endif
 
 void exit_handler(int s);
+#include "bench.h";
+pfents pf;
 
 #ifdef USE_WINMAIN
 int APIENTRY	WinMain (HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nCmdShow)
