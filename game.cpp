@@ -44,7 +44,7 @@
 #include "artifactdata.h"
 #include "weather.h"
 #include "weather_const.h"
-
+#include "bench.h"
 #if (defined _WIN32 || defined __WIN32__)
 #include <windows.h>
 #include <tchar.h>
@@ -2893,6 +2893,7 @@ void game::debug()
                    "Spawn Clarivoyance Artifact", //15
                    "Map editor", // 16
                    "Dump weather", // 17
+                   "Nuke test",
                    "Cancel",                 // 17
                    NULL);
  int veh_num;
@@ -3120,13 +3121,45 @@ z.size(), active_npc.size(), events.size());
             weather_log[i].acid_since,
             weather_log[i].sun,
             weather_log[i].sun_since, x_in_y(50,100)
-            );
+    );
             if ( i % 2 ) wl.entries[ c ].text_color=c_cyan;
             //      else wl.entries[ c ].text_color=c_ltgray;
             }
               wl.query();
           }
   break;
+  
+  case 18: {
+      point target = cur_om->draw_overmap(this, 0);
+if(      query_yn("nuke: %d,%d %d,%d ?",cur_om->pos().x,cur_om->pos().y,target.x,target.y) == true) {
+icbm(target.x, target.y, 2);
+/*int r=2;
+    for(int x = target.x - r; x <= target.x + r; x++) {
+       for(int y = target.y -  r; y <= target.y + r; y++) nuke(x, y);
+ }
+*/
+}
+  }
+  break;
+
+/*      // let's break some tiles!
+      Timer tmt;tmt.start();
+
+      for (int r=0; r<9000; r++) {
+                item it(itypes["can_pineapple"], turn);
+                if( m.add_item_or_charges(u.posx, u.posy+5, it,1)==false ) {
+                     break;
+                }
+      }
+      tmt.stop();
+      Timer tmt2;
+      tmt2.start();
+                item it(itypes["can_pineapple"], turn);
+                bool dropped=m.add_item_or_charges(u.posx, u.posy+5, it,1);
+      tmt2.stop();
+      debugmsg("time total %d / single %d : %s",tmt.diff(),tmt2.diff(),dropped==true ? "success" : "fail (area full)" );
+*/
+   
  }
  erase();
  refresh_all();
@@ -11411,13 +11444,290 @@ void game::teleport(player *p)
  if (is_u)
   update_map(u.posx, u.posy);
 }
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-void game::nuke(int x, int y)
-{
+void game::icbm(int tx, int ty, int w) {
+  w=5;
+  int omw=w/2;
+
+  point rel_om_pos = point(tx - 2 , ty - 2 );
+pf.start(pf0);
+pf.start(pf1);
+  real_coords tgt;
+  tgt.fromomap( cur_om->pos().x, cur_om->pos().y, tx, ty);
+
+  real_coords cm;
+  cm.fromomap( cur_om->pos().x, cur_om->pos().y, tx - 2, ty - 2);
+pf.stop(pf1);
+
+  popup("om: %d,%d tgt: %d,%d\n\
+===tgt %d %d : %d %d %d %d ===\n\
+abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
+abs_om_sub: %d,%d\n\
+===cm %d %d : %d %d %d %d ===\n\
+abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
+abs_om_sub: %d,%d",
+    cur_om->pos().x, cur_om->pos().y, tx,ty,
+    tgt.abs_om_pos.x, tgt.abs_om_pos.y, tgt.abs_sub.x, tgt.abs_sub.y, tgt.abs_om.x, tgt.abs_om.y,
+    tgt.abs_om_sub.x, tgt.abs_om_sub.y,
+    cm.abs_pos.x, cm.abs_pos.y, cur_om->pos().x, cur_om->pos().y, tx -2, ty -2,
+    cm.abs_om_pos.x, cm.abs_om_pos.y, cm.abs_sub.x, cm.abs_sub.y, cm.abs_om.x, cm.abs_om.y,
+    cm.abs_om_sub.x, cm.abs_om_sub.y
+);
+pf.start(pf2);
+
+    const int mapsize=SEEX*12;
+    const int endcrater=6+(w*12);
+    const int mincrater=6;
+    const int maxcrater=endcrater+mincrater;
+    const point loc_center=point(66,66);
+
+    std::vector<std::string> omstr;
+
+    overmap *tgt_om;
+    tgt_om = &overmap_buffer.get(this, cm.abs_om.x, cm.abs_om.y );
+    overmap * oms[6][6];
+    uimenu hehe;
+    bool flood=false;
+    for(int loy=0;loy<6;loy++) {
+       std::string lstr=std::string("");
+       for (int lox=0;lox<6;lox++) {
+          int ompx=(cm.abs_om_pos.x+lox) % 180;
+          int ompy=(cm.abs_om_pos.y+loy) % 180;
+          int omx=cm.abs_om.x+((cm.abs_om_pos.x+lox)/180);
+          int omy=cm.abs_om.y+((cm.abs_om_pos.y+loy)/180);
+
+          oms[lox][loy]=&overmap_buffer.get(this, omx, omy );
+          long ter_sym = oterlist[oms[lox][loy]->ter(ompx, ompy, 0)].sym;
+          if(rl_dist(lox*2,loy*2,5,5) <= 5 ) {
+            oter_id ter = oms[lox][loy]->ter(ompx, ompy, 0);
+            int zz=0;
+            if (ter == ot_null || (ter >= ot_bridge_ns && ter <= ot_river_nw) || ter==ot_forest_water ) {
+              zz=1;
+              flood=true;
+            }
+
+            hehe.addentry("oms[%d][%d] = om[%d,%d](%d+%d,%d+%d) omp[%d,%d] (%d,%d) : %d",lox,loy,
+              omx,omy,cm.abs_om.x,((cm.abs_om_pos.x+lox)/180),cm.abs_om.y,((cm.abs_om_pos.y+loy)/180),
+              ompx,ompy,cm.abs_om_pos.x+lox, cm.abs_om_pos.y+loy, zz);
+            }
+            lstr = stringfmt("%s%c",lstr.c_str(),ter_sym);
+          }
+       omstr.push_back(lstr);
+    }
+    hehe.entries.push_back(uimenu_entry(stringfmt("%s",(flood==true?"flood":"noflood"))));
+
+    for ( int i=0; i< omstr.size(); i++ ) {
+      hehe.entries.push_back(uimenu_entry(omstr[i]));
+    }
+    //hehe.query();return;
+
+  item bonepile = item_controller->create("bones", int(turn));
+  ////bonepile.burnt = 5;//200;
+pf.stop(pf2);
+pf.start(pf3);
+  map tmpmap(&traps);
+  tmpmap.load(this, cm.abs_om_sub.x, cm.abs_om_sub.y, 0, false, tgt_om);
+  hehe.entries.push_back(uimenu_entry(stringfmt("%d,%d => [%d,%d]",cm.abs_sub.x,cm.abs_sub.y,tmpmap.get_abs_sub().x,tmpmap.get_abs_sub().y)));
+pf.stop(pf3);
+pf.start(pf4);
+  for (int i = 0; i < SEEX * 11; i++) {
+      for (int j = 0; j < SEEY * 11; j++) {
+          int dist=rl_dist(i,j,loc_center.x, loc_center.y);
+/////          point oms_pos=point(i/12/2,j/12/2);
+          point loc_sub=point(i/12, j/12);
+          point loc_ompos=point(loc_sub.x/2,loc_sub.y/2);
+//          hehe.entries.push_back(uimenu_entry(stringfmt("[%d,%d] %d,%d <=> %d,%d = %d\n",
+  //            loc_ompos.x,loc_ompos.y,i,j,loc_center.x, loc_center.y,dist)));
+          if ( dist <= endcrater ) {
+              if (! one_in( endcrater-dist ) ) {
+                   if (tmpmap.has_flag(supports_roof,i,j)) {
+                        tmpmap.add_field(NULL, i, j, fd_rubble, rng(1,2));
+//                       tmpmap.add_field(NULL, i, j, fd_fire, rng(3,3));
+                   }
+                   if ( flood==true && dist <= endcrater * 0.70 ) {
+                        tmpmap.ter_set(i, j, ( dist < endcrater * 0.5 ? t_water_dp : t_water_sh ) );
+                      
+                   } else if (!( flood==true && tmpmap.has_flag(swimmable, i, j) )) {
+                        if ( tmpmap.has_flag(flammable, i, j) ) {
+                             tmpmap.ter_set(i, j, t_ash);
+                             tmpmap.add_field(NULL, i, j, fd_fire, rng(3,3));
+                        } else {
+                             tmpmap.ter_set(i, j, t_rubble );
+                        }
+                   }
+              } else if (tmpmap.has_flag(flammable,i,j)) {
+                   tmpmap.add_field(NULL, i, j, fd_fire, rng(3,3));
+              }
+          }
+         if ( ( i == 66 || j == 66 ) || (i==0 || i==tmpmap.mapsize()*12-1) ) {
+              tmpmap.ter_set(i, j, t_ash);
+         }
+
+         if ( i % 12 == 0 && j % 12 == 0 ) {
+              int sx=i/12;int sy=j/12;
+              std::vector<spawn_point>& victims = tmpmap.getspawns(i, j);
+              hehe.addentry("victims: %d,%d: %d",i,j,victims.size());
+              for (int v = 0; v < victims.size();v++) {
+                spawn_point * sp=&victims[v];
+                if (mtypes[sp->type]->has_flag(MF_BONES) ) {
+                  tmpmap.spawn_item(sp->posx, sp->posy, bonepile, int(turn),  sp->count,0,0);
+                }
+                tmpmap.ter_set(i, j, t_tombstone);
+                //tmpmap.add_field(NULL, i, j, fd_fire, rng(3,3));
+  hehe.addentry("   %d [%d,%d] %d %s",sp->count,sp->posx,sp->posy,sp->type,
+mtypes[sp->type]->name.c_str()
+);
+
+}
+//has_flag(MF_BONES)has_flag(MF_ELECTRONIC)
+/*   for (int i = 0; i < grid[n]->spawns.size(); i++) {
+    for (int j = 0; j < grid[n]->spawns[i].count; j++) {
+     int tries = 0;
+     int mx = grid[n]->spawns[i].posx, my = grid[n]->spawns[i].posy;
+mtype mt*=g->mtypes[corp];
+*/
+         }
+/*
+          if ( i == 66 && j == 66 ) {
+              tmpmap.ter_set(i, j, t_lava);
+ 
+          } else if( i == j || rl_dist(i,j,66,66) == 65 ) {
+              tmpmap.ter_set(i, j, t_rubble);
+          }
+*/
+      }
+  }
+pf.stop(pf4);
+pf.start(pf5);
+  tmpmap.clear_spawns();
+  tmpmap.save(tgt_om, turn, cm.abs_om_sub.x, cm.abs_om_sub.y, 0);
+bool stopit=false;
+pf.stop(pf5);
+pf.start(pf6);
+ for (int loy=0;loy<6;loy++) {
+std::string lstr=std::string("");
+for(int lox=0;lox<6;lox++) {
+  //oms[i][j]=&overmap_buffer.get(this, abs_om.x, abs_om.y );
+  //add_msg("%d %d",(abs_om_pos.x-2+i)/180,(abs_om_pos.y-2+j)/180);
+/*  int ompx=(abs_om_pos.x+lox) % 180;
+  int ompy=(abs_om_pos.y+loy) % 180;
+  int omx=(abs_om_pos.x+lox)/180;
+  int omy=(abs_om_pos.y+loy)/180;
+*/
+/*
+  int ompx=(abs_om_pos.x+lox) % 180;
+  if ( ompx < 0 ) ompx=180-ompx;
+  int ompy=(abs_om_pos.y+loy) % 180;
+  if ( ompy < 0 ) ompy=180-ompy;
+  int omx=(abs_om_pos.x+lox)/180;
+  int omy=(abs_om_pos.y+loy)/180;
+*/
+  int ompx=(cm.abs_om_pos.x+lox) % 180;
+//  if ( ompx < 0 ) ompx=180-ompx;
+  int ompy=(cm.abs_om_pos.y+loy) % 180;
+//  if ( ompy < 0 ) ompy=180-ompy;
+  int omx=cm.abs_om.x+((cm.abs_om_pos.x+lox)/180);
+  int omy=cm.abs_om.y+((cm.abs_om_pos.y+loy)/180);
+//  int omx=(cm.abs_om_pos.x+lox)/180;
+//  int omy=(cm.abs_om_pos.y+loy)/180;
+/*
+if(stopit==false){
+popup(">>>>%d %d %d %d %d %d",lox,loy,rel_om_pos.x-2,rel_om_pos.y-2,rel_om_pos.x-2,rel_om_pos.y-2);
+stopit=true;
+}
+*/
+
+//  oms[lox][loy]
+hehe.addentry("oms[%d][%d] = om[%d,%d] omp[%d,%d] (%d,%d) : %d",lox,loy,omx,omy,ompx, ompy,cm.abs_om_pos.x+lox, cm.abs_om_pos.y+loy, 
+(rl_dist(lox*2,loy*2,5,5) <= 5 ? 1 : 0 )
+);
+//hehe.addentry("oms[%d][%d] = %d,%d %d,%d (%d,%d)",lox,loy,omx,omy,ompx,ompy,rel_om_pos.x+lox, rel_om_pos.y+loy);
+//tgt_om
+  if(rl_dist(lox*2,loy*2,5,5) <= 5 ) {
+    oms[lox][loy]->ter(ompx,ompy, 0) = (flood==true?ot_river_center:ot_crater);
+
+  }
+//delete oms[lox][loy];
+
+ }
+}
+//delete tgt_om;
+pf.stop(pf6);
+pf.stop(pf0);
+hehe.addentry("%d = %d %d %d %d %d %d",pf.get(pf0),
+pf.get(pf1),pf.get(pf2),pf.get(pf3),pf.get(pf4),pf.get(pf5),pf.get(pf6));
+hehe.query();
+
+return;
+/*  overmap *tgt_om = &overmap_buffer.get(this, abs_om.x, abs_om.y );
+  map tmpmap(&itypes, &mapitems, &traps);
+  map.offload(this, rel_sub.x, rel_sub.y, 0, false, tgt_om);
+*/
+  //overmap *tgt_om = &overmap_buffer.get(this, cur_om->pos().x + shx, cur_om->pos().y + shy);
+
+}
+
+void game::nuke(int x, int y, int w) {
+    bool oob=false;
 	// TODO: nukes hit above surface, not z = 0
-    if (x < 0 || y < 0 || x >= OMAPX || y >= OMAPY)
-        return;
+    if (x < 0 || y < 0 || x >= OMAPX || y >= OMAPY) {
+        popup("nuke: %d %d is oob",x,y);
+        oob=true;
+    }
+int shx=0,shy=0;
+if ( oob==true ) {
+  if ( x < 0 ) {
+    while ( x < 0 ) {
+      shx--; x += OMAPX;
+    }
+  } else if ( x >= OMAPX ) {
+    while ( x >= OMAPX ) {
+      shx++; x -= OMAPX;
+    }
+  }
+  if ( y < 0 ) {
+    while ( y < 0 ) {
+      shy--; y += OMAPX;
+    }
+  } else if ( y >= OMAPX ) {
+    while ( y >= OMAPX ) {
+      shy++; y -= OMAPX;
+    }
+  }
+}
+
+
     int mapx = x * 2, mapy = y * 2;
+
+    popup("%d,%d %d,%d %d",shx,shy,mapx,mapy, w);
+
+if(oob == true ) {
+    overmap *tgt_om = &overmap_buffer.get(this, cur_om->pos().x + shx, cur_om->pos().y + shy);
+
+    tinymap tmpmap(&traps);
+    tmpmap.load(this, mapx, mapy, 0, false, tgt_om);
+    for (int i = 0; i < SEEX * 2; i++)
+    {
+        for (int j = 0; j < SEEY * 2; j++)
+        {
+            if (!one_in(10))
+                tmpmap.ter_set(i, j, t_rubble);
+            if (one_in(3))
+                tmpmap.add_field(NULL, i, j, fd_nuke_gas, 3);
+            tmpmap.radiation(i, j) += rng(20, 80);
+        }
+    }
+    tmpmap.save(tgt_om, turn, mapx, mapy, 0);
+
+    tgt_om->ter(x, y, 0) = ot_crater;
+//tgt_om=NULL;
+//return;
+} else {
     map tmpmap(&traps);
     tmpmap.load(this, mapx, mapy, 0, false);
     for (int i = 0; i < SEEX * 2; i++)
@@ -11437,6 +11747,8 @@ void game::nuke(int x, int y)
     for(int i = 0; i < cur_om->npcs.size();i++)
         if(cur_om->npcs[i]->mapx/2== x && cur_om->npcs[i]->mapy/2 == y && cur_om->npcs[i]->omz == 0)
             cur_om->npcs[i]->marked_for_death = true;
+}
+
 }
 
 std::vector<faction *> game::factions_at(int x, int y)
