@@ -287,10 +287,6 @@ int trange = rl_dist(p.posx, p.posy, tarx, tary);
    if (monster_speed_penalty < 1.)
     monster_speed_penalty = 1.;
   }
-  if ( uistate.debug_ranged == true ) {
-     dstr=stringfmt("%s\nmonster_speed_penalty: %f\n\n>> %s <<",dstr.c_str(),monster_speed_penalty,missed_by >= .1 ? "MISS" : "HIT" );
-     popup("%s",dstr.c_str());
-  }
   if (curshot > 0) {
    if (recoil_add(p) % 2 == 1)
     p.recoil++;
@@ -299,6 +295,7 @@ int trange = rl_dist(p.posx, p.posy, tarx, tary);
    p.recoil += recoil_add(p);
 
   if (missed_by >= 1.) {
+   if ( uistate.debug_ranged == true )  dstr=stringfmt("%s\n>>> missed_by=%f >= 1.\n>>> MISS <<<",dstr.c_str(),missed_by);
 // We missed D:
 // Shoot a random nearby space?
    int mtarx = tarx + rng(0 - int(sqrt(double(missed_by))), int(sqrt(double(missed_by))));
@@ -315,6 +312,7 @@ int trange = rl_dist(p.posx, p.posy, tarx, tary);
      add_msg("%s misses!", p.name.c_str());
    }
   } else if (missed_by >= .7 / monster_speed_penalty) {
+   if ( uistate.debug_ranged == true )  dstr=stringfmt("%s\n>>> missed_by=%f >= %f ( .7 / monster_speed_penalty[%f] )\n>>> MISS <<<",dstr.c_str(),missed_by,(.7 / monster_speed_penalty),monster_speed_penalty);
 // Hit the space, but not necessarily the monster there
    missed = true;
    if (!burst) {
@@ -323,6 +321,10 @@ int trange = rl_dist(p.posx, p.posy, tarx, tary);
     else if (u_see_shooter)
      add_msg("%s barely misses!", p.name.c_str());
    }
+  }
+  if ( uistate.debug_ranged == true ) {
+     if ( missed != true ) dstr=stringfmt("%s\n>>> HIT <<<",dstr.c_str());
+     popup("%s",dstr.c_str());
   }
 
   int dam = weapon->gun_damage();
