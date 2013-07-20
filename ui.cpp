@@ -157,7 +157,7 @@ void uimenu::show() {
                     w_width = txtwidth + pad + 4;    // todo: or +5 if header
                 }
             }
-            if ( entries[ i ].text_color == c_unset ) {
+            if ( entries[ i ].text_color == C_UNSET_MASK ) {
                 entries[ i ].text_color = text_color;
             }
         }
@@ -363,6 +363,10 @@ uimenu::~uimenu() {
     init();
 }
 
+void uimenu::addentry(std::string str) {
+   entries.push_back(str);
+}
+
 void uimenu::addentry(const char *format, ...) {
    char buf[4096];
    va_list ap;
@@ -373,6 +377,10 @@ void uimenu::addentry(const char *format, ...) {
      return;
    }
    entries.push_back(std::string(buf));
+}
+
+void::uimenu::settext(std::string str) {
+   text = str;
 }
 
 void uimenu::settext(const char *format, ...) {
