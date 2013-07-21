@@ -183,9 +183,13 @@ void wputch(WINDOW* w, nc_color FG, long ch)
 
 void mvwputch(WINDOW *w, int y, int x, nc_color FG, long ch)
 {
- wattron(w, FG);
- mvwaddch(w, y, x, ch);
- wattroff(w, FG);
+  if (ch < 0x800U || ch > 0x400069) {
+    wattron(w, FG);
+    mvwaddch(w, y, x, ch);
+    wattroff(w, FG);
+  } else {
+    mvwprintz(w,y,x,FG,"%lc",ch);
+  }
 }
 
 void mvputch_inv(int y, int x, nc_color FG, long ch)
