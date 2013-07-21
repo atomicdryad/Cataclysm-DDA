@@ -2,14 +2,15 @@
 #include <sys/time.h>
 
 enum pfs {
-  pf0,pf1,pf2,pf3,pf4,pf5,pf6,n_pf
+  pf0,pf1,pf2,pf3,pf4,pf5,pf6,pfm0,pfm1,pfm2,pfm3,pfdout,n_pf
 };
 
 class Timer {
     timeval timer[2];
 
   public:
-
+    Timer() {}
+    void reset() {}
     timeval start()
     {
         gettimeofday(&this->timer[0], NULL);
@@ -22,7 +23,8 @@ class Timer {
         return this->timer[1];
     }
 
-    int diff() const
+    int diff()
+// const
     {
         int secs(this->timer[1].tv_sec - this->timer[0].tv_sec);
         int usecs(this->timer[1].tv_usec - this->timer[0].tv_usec);
@@ -36,7 +38,7 @@ class Timer {
         return static_cast<int>(secs * 1000 + usecs / 1000.0 + 0.5);
     }
     int done() {
-        this->stop(); return this->diff();
+        stop(); return diff();
     }
 };
 
@@ -47,6 +49,7 @@ struct pfents {
   Timer timers[n_pf];
   pfents () {
     for( int i=0;i<n_pf;i++ ) {
+      timers[i].reset();
       times[i]=0;
       count[i]=0;
     }
@@ -64,6 +67,9 @@ struct pfents {
   }
   int get(int i) {
     return times[i];
+  }
+  int getcount(int i) {
+    return count[i];
   }
   void reset(int i) {
       times[i]=0;

@@ -3167,7 +3167,25 @@ void map::draw(game *g, WINDOW* w, const point center)
  }
  int atx = getmaxx(w)/2 + g->u.posx - center.x, aty = getmaxy(w)/2 + g->u.posy - center.y;
  if (atx >= 0 && atx < TERRAIN_WINDOW_WIDTH && aty >= 0 && aty < TERRAIN_WINDOW_HEIGHT) {
-  mvwputch(w, aty, atx, g->u.color(), '@');
+//  mvwputch(w, aty, atx, g->u.color(), '@');
+//  mvwprintz(w, aty, atx, g->u.color(), "\xe2\x98\xa2");
+// 0x80U
+/*else if (c < 0x800U) {
+                ADD(str, c, 0xC0, 6);
+                ADD(str, c, 0x80, 0);
+        }
+        else if (c < 0x10000U) {
+                ADD(str, c, 0xE0, 12);
+                ADD(str, c, 0x80, 6);
+                ADD(str, c, 0x80, 0);
+        }
+*/
+  mvwputch(w, aty, atx, g->u.color(), 0x2622);
+/*
+U+2622 RADIOACTIVE SIGN
+UTF-8: e2 98 a2  UTF-16BE: 2622  Decimal: &#9762;
+
+*/
   g->mapRain[aty][atx] = false;
  }
 }
@@ -3557,6 +3575,7 @@ void map::save(overmap *om, unsigned const int turn, const int x, const int y, c
    saven(om, turn, x, y, z, gridx, gridy);
  }
 }
+#include "bench.h"
 
 void map::load(game *g, const int wx, const int wy, const int wz, const bool update_vehicle, overmap *om)
 {
@@ -3575,6 +3594,14 @@ if(om==NULL) {
   }
  }
 }
+g->add_msg("loadn(%d): %dms lookup(%d): %dms generate(%d): %dms dout(%d): %d",
+  pf.getcount(pfm0),pf.get(pfm0),
+  pf.getcount(pfm2),pf.get(pfm2),
+  pf.getcount(pfm1),pf.get(pfm1),
+  pf.getcount(pfdout),pf.get(pfdout)
+);
+pf.reset(pfm0);pf.reset(pfm1);pf.reset(pfm2);
+pf.reset(pfdout);
 //
 }
 
@@ -3713,6 +3740,7 @@ void map::saven(overmap *om, unsigned const int turn, const int worldx, const in
 bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, const int gridx, const int gridy,
                 const bool update_vehicles)
 {
+pf.start(pfm0);
  dbg(D_INFO) << "map::loadn(game[" << g << "], worldx["<<worldx<<"], worldy["<<worldy<<"], gridx["<<gridx<<"], gridy["<<gridy<<"])";
 
  const int absx = g->cur_om->pos().x * OMAPX * 2 + worldx + gridx,
@@ -3722,7 +3750,9 @@ bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, c
  dbg(D_INFO) << "map::loadn absx: " << absx << "  absy: " << absy
             << "  gridn: " << gridn;
 
+pf.start(pfm2);
  submap *tmpsub = MAPBUFFER.lookup_submap(absx, absy, worldz);
+pf.stop(pfm2);
  if ( gridx == 0 && gridy == 0 ) {
      set_abs_sub(absx,absy);
  }
@@ -3788,9 +3818,14 @@ bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, c
    newmapx = worldx + gridx;
   if (worldy + gridy < 0)
    newmapy = worldy + gridy;
+pf.start(pfm1);
   tmp_map.generate(g, this_om, newmapx, newmapy, worldz, int(g->turn));
+pf.stop(pfm1);
+pf.stop(pfm0);
   return false;
  }
+pf.stop(pfm0);
+
  return true;
 }
 
@@ -3798,6 +3833,7 @@ bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, c
 bool map::offloadn(game *g, const int worldx, const int worldy, const int worldz, const int gridx, const int gridy,
                 const bool update_vehicles, overmap *om )
 {
+pf.start(pfm0);
 
  bool implicit_om = false;
  if (om == NULL) {
@@ -3815,7 +3851,9 @@ bool map::offloadn(game *g, const int worldx, const int worldy, const int worldz
  dbg(D_INFO) << "map::loadn absx: " << absx << "  absy: " << absy
             << "  gridn: " << gridn;
 
+pf.start(pfm2);
  submap *tmpsub = MAPBUFFER.lookup_submap(absx, absy, worldz);
+pf.stop(pfm2);
 
  if ( gridx == 0 && gridy == 0 ) {
      set_abs_sub(absx,absy);
@@ -3903,10 +3941,13 @@ if( update_vehicles ) {
      }
   }
 
+pf.start(pfm1);
   tmp_map.generate(g, this_om, newmapx, newmapy, worldz, int(g->turn));
-
+pf.stop(pfm1);
+pf.stop(pfm0);
   return false;
  }
+pf.stop(pfm0);
  return true;
 }
 
@@ -4001,9 +4042,9 @@ bool map::inbounds(const int x, const int y)
 }
 
 bool map::inboundsabs(const int x, const int y) {
-  point minpos=getabs(0, 0);
-  point maxpos=point(minpos.x + (SEEX * my_MAPSIZE), minpos.y + (SEEY * my_MAPSIZE) );
-  return ( x >= minpos.x && x < maxpos.x && y >= minpos.y && y < maxpos.y );
+//  point minpos=getabs(0, 0);
+//  point maxpos=point(minpos.x + (SEEX * my_MAPSIZE), minpos.y + (SEEY * my_MAPSIZE) );
+  return ( x >= abs_min.x && x < abs_max.x && y >= abs_min.y && y < abs_max.y );
 }
 
 bool map::add_graffiti(game *g, int x, int y, std::string contents)
@@ -4152,10 +4193,10 @@ void map::build_transparency_cache()
    }
 
    //Quoted to see if this works!
-   field curfield = field_at(x,y);
-   if(curfield.fieldCount() > 0){
+   field * curfield = &field_at(x,y);
+   if(curfield->fieldCount() > 0){
 	   field_entry *cur = NULL;
-	   for(std::vector<field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it){
+	   for(std::vector<field_entry*>::iterator field_list_it = curfield->getFieldStart(); field_list_it != curfield->getFieldEnd(); ++field_list_it){
 		   cur = (*field_list_it);
 		   if(cur == NULL) continue;
 
