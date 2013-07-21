@@ -51,7 +51,7 @@ void map::generate_lightmap(game* g)
    for(int sy = 0; sy < LIGHTMAP_CACHE_Y; ++sy) {
     const ter_id terrain = g->m.ter(sx, sy);
     const std::vector<item> &items = g->m.i_at(sx, sy);
-    field current_field = g->m.field_at(sx, sy);
+    field * current_field = &g->m.field_at(sx, sy);
     // When underground natural_light is 0, if this changes we need to revisit
     if (natural_light > LIGHT_AMBIENT_LOW) {
      if (!g->m.is_outside(sx, sy)) {
@@ -71,25 +71,22 @@ void map::generate_lightmap(game* g)
 
     for( std::vector<item>::const_iterator itm = items.begin(); itm != items.end(); ++itm )
     {
-        if ( itm->has_flag("LIGHT_20")) { apply_light_source(sx, sy, 20, trigdist); }
-        if ( itm->has_flag("LIGHT_1")) { apply_light_source(sx, sy, 1, trigdist); }
-        if ( itm->has_flag("LIGHT_4")) { apply_light_source(sx, sy, 4, trigdist); }
+        if ( itm->has_flag("LIGHT_20")) { apply_light_source(sx, sy, 20, trigdist); } else
+        if ( itm->has_flag("LIGHT_1")) { apply_light_source(sx, sy, 1, trigdist); } else
+        if ( itm->has_flag("LIGHT_4")) { apply_light_source(sx, sy, 4, trigdist); } else
         if ( itm->has_flag("LIGHT_8")) { apply_light_source(sx, sy, 8, trigdist); }
     }
 
    if(terrain == t_lava) {
      flood_basalt_check++;
      apply_light_source(sx, sy, 50, trigdist && flood_basalt_check < 512 ); // todo: optimize better
+   } else if(terrain == t_console) {
+     apply_light_source(sx, sy, 3, false); // 3^2 circle is just silly
+   } else if(terrain == t_emergency_light) {
+     apply_light_source(sx, sy, 3, false);
    }
-
-   if(terrain == t_console)
-    apply_light_source(sx, sy, 3, false); // 3^2 circle is just silly
-
-   if(terrain == t_emergency_light)
-    apply_light_source(sx, sy, 3, false);
-
    field_entry *cur = NULL;
-	for(std::vector<field_entry*>::iterator field_list_it = current_field.getFieldStart(); field_list_it != current_field.getFieldEnd(); ++field_list_it){
+	for(std::vector<field_entry*>::iterator field_list_it = current_field->getFieldStart(); field_list_it != current_field->getFieldEnd(); ++field_list_it){
 		cur = (*field_list_it);
 		if(cur == NULL) continue;
    // TODO: [lightmap] Attach light brightness to fields
