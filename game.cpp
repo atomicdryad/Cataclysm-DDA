@@ -11446,6 +11446,7 @@ void game::teleport(player *p)
 }
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -11472,12 +11473,23 @@ abs_om_sub: %d,%d\n\
 abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
 abs_om_sub: %d,%d",
     cur_om->pos().x, cur_om->pos().y, tx,ty,
+    tgt.abs_pos.x, tgt.abs_pos.y, cur_om->pos().x, cur_om->pos().y, tx, ty,
     tgt.abs_om_pos.x, tgt.abs_om_pos.y, tgt.abs_sub.x, tgt.abs_sub.y, tgt.abs_om.x, tgt.abs_om.y,
     tgt.abs_om_sub.x, tgt.abs_om_sub.y,
     cm.abs_pos.x, cm.abs_pos.y, cur_om->pos().x, cur_om->pos().y, tx -2, ty -2,
     cm.abs_om_pos.x, cm.abs_om_pos.y, cm.abs_sub.x, cm.abs_sub.y, cm.abs_om.x, cm.abs_om.y,
     cm.abs_om_sub.x, cm.abs_om_sub.y
 );
+
+//////////////////////////////m.getabs
+for (int i = 0; i < z.size(); i++) {
+  
+}
+  //z[i].debug(u);
+  //if (z[i].has_flag(MF_SEES) &&
+  //    m.sees(z[i].posx, z[i].posy, u.posx, u.posy, -1, tc))
+
+//////////////////////////////
 pf.start(pf2);
 
     const int mapsize=SEEX*12;
@@ -11485,6 +11497,7 @@ pf.start(pf2);
     const int mincrater=6;
     const int maxcrater=endcrater+mincrater;
     const point loc_center=point(66,66);
+//real_coords tmpcm
 
     std::vector<std::string> omstr;
 
@@ -11526,7 +11539,7 @@ pf.start(pf2);
     }
     //hehe.query();return;
 
-  item bonepile = item_controller->create("bones", int(turn));
+  item bonepile = item_controller->create("bone", int(turn));
   ////bonepile.burnt = 5;//200;
 pf.stop(pf2);
 pf.start(pf3);
@@ -11534,7 +11547,22 @@ pf.start(pf3);
   tmpmap.load(this, cm.abs_om_sub.x, cm.abs_om_sub.y, 0, false, tgt_om);
   hehe.entries.push_back(uimenu_entry(stringfmt("%d,%d => [%d,%d]",cm.abs_sub.x,cm.abs_sub.y,tmpmap.get_abs_sub().x,tmpmap.get_abs_sub().y)));
 pf.stop(pf3);
-pf.start(pf4);
+
+  if(levz==0) {
+    for (int i = 0; i < z.size(); i++) {
+       point mabs=m.getabs(z[i].posx,z[i].posy);
+       hehe.addentry("z[%d]: %s %d,%d [%d,%d]: %s",i,z[i].name().c_str(),z[i].posx,z[i].posy,
+       mabs.x,mabs.y,
+  m.inboundsabs(mabs.x,mabs.y) ? "nuked" : ":-)"
+  );
+    }
+  }
+
+  std::vector<int> kaput_mongroups;
+  real_coords ocmcur;
+
+
+  pf.start(pf4);
   for (int i = 0; i < SEEX * 11; i++) {
       for (int j = 0; j < SEEY * 11; j++) {
           int dist=rl_dist(i,j,loc_center.x, loc_center.y);
@@ -11570,20 +11598,50 @@ pf.start(pf4);
 
          if ( i % 12 == 0 && j % 12 == 0 ) {
               int sx=i/12;int sy=j/12;
+              ocmcur.fromabs(tmpmap.getabs(i,j));
               std::vector<spawn_point>& victims = tmpmap.getspawns(i, j);
-              hehe.addentry("victims: %d,%d: %d",i,j,victims.size());
-              for (int v = 0; v < victims.size();v++) {
-                spawn_point * sp=&victims[v];
-                if (mtypes[sp->type]->has_flag(MF_BONES) ) {
-                  tmpmap.spawn_item(sp->posx, sp->posy, bonepile, int(turn),  sp->count,0,0);
-                }
-                tmpmap.ter_set(i, j, t_tombstone);
-                //tmpmap.add_field(NULL, i, j, fd_fire, rng(3,3));
-  hehe.addentry("   %d [%d,%d] %d %s",sp->count,sp->posx,sp->posy,sp->type,
-mtypes[sp->type]->name.c_str()
-);
+              if (victims.size() > 0 ) {
+// 84,36: 1 - 0,0 80,58
+                  hehe.addentry("victims: lsub[%d,%d]: %d - ao[%d,%d] aopos[%d,%d]",i,j,victims.size(),
+                      ocmcur.abs_om.x, ocmcur.abs_om.y,
+                      ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y
+                  );
+                  for (int v = 0; v < victims.size();v++) {
+                    spawn_point * sp=&victims[v];
 
-}
+                    ter_id unvictimter=t_tombstone;
+                    //if (mtypes[sp->type]->has_flag(MF_BONES) ) {
+                      tmpmap.spawn_item(sp->posx, sp->posy, bonepile, int(turn),  sp->count,0,0);
+                      tmpmap.add_item(sp->posx, sp->posy, bonepile);
+                    //}
+                    tmpmap.ter_set(i, j, unvictimter);
+                    if(mtypes[sp->type]->has_flag(MF_QUEEN) ) {
+                        std::vector<mongroup*> groups
+                             = oms[sx/180][sy/180]->monsters_at(
+                             ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y, 0
+                        );
+                        hehe.addentry("      kaput lo[%d,%d] aopos[%d,%d]? %d",sx/180,sy/180, ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y,groups.size());
+                        for (int gi = 0; gi < groups.size(); gi++) {
+                           hehe.addentry("       %d: %s (%d,%d rad %d) <=> %d",gi, 
+                             groups[gi]->type.c_str(), groups[gi]->posx,groups[gi]->posy,
+                             groups[gi]->radius,
+                             mon_id(sp->type) );
+                           if (MonsterGroupManager::IsMonsterInGroup
+                             (groups[gi]->type, mon_id(sp->type))) {
+                                  groups[gi]->dying = true;
+                                  hehe.addentry("      kaput [%d,%d/%d,%d]: %s",groups[gi]->type.c_str(),
+                                      sx/180,sy/180, ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y);
+                             }
+                        }
+                        
+                    }
+                    //tmpmap.add_field(NULL, i, j, fd_fire, rng(3,3));
+                    hehe.addentry("   [%d,%d] %s (%d) -> %s",sp->posx,sp->posy,
+                      mtypes[sp->type]->name.c_str(),sp->count,terlist[unvictimter].name.c_str()
+                    );
+
+                  }
+              }
 //has_flag(MF_BONES)has_flag(MF_ELECTRONIC)
 /*   for (int i = 0; i < grid[n]->spawns.size(); i++) {
     for (int j = 0; j < grid[n]->spawns[i].count; j++) {
@@ -11608,25 +11666,10 @@ pf.start(pf5);
   tmpmap.save(tgt_om, turn, cm.abs_om_sub.x, cm.abs_om_sub.y, 0);
 bool stopit=false;
 pf.stop(pf5);
-pf.start(pf6);
+//pf.start(pf6);
  for (int loy=0;loy<6;loy++) {
 std::string lstr=std::string("");
 for(int lox=0;lox<6;lox++) {
-  //oms[i][j]=&overmap_buffer.get(this, abs_om.x, abs_om.y );
-  //add_msg("%d %d",(abs_om_pos.x-2+i)/180,(abs_om_pos.y-2+j)/180);
-/*  int ompx=(abs_om_pos.x+lox) % 180;
-  int ompy=(abs_om_pos.y+loy) % 180;
-  int omx=(abs_om_pos.x+lox)/180;
-  int omy=(abs_om_pos.y+loy)/180;
-*/
-/*
-  int ompx=(abs_om_pos.x+lox) % 180;
-  if ( ompx < 0 ) ompx=180-ompx;
-  int ompy=(abs_om_pos.y+loy) % 180;
-  if ( ompy < 0 ) ompy=180-ompy;
-  int omx=(abs_om_pos.x+lox)/180;
-  int omy=(abs_om_pos.y+loy)/180;
-*/
   int ompx=(cm.abs_om_pos.x+lox) % 180;
 //  if ( ompx < 0 ) ompx=180-ompx;
   int ompy=(cm.abs_om_pos.y+loy) % 180;
@@ -11657,8 +11700,45 @@ hehe.addentry("oms[%d][%d] = om[%d,%d] omp[%d,%d] (%d,%d) : %d",lox,loy,omx,omy,
  }
 }
 //delete tgt_om;
+pf.start(pf6);
+real_coords ocm;
+ocm.fromabs ( cm.abs_pos.x-(11*12), cm.abs_pos.y-(11*12) );
+real_coords ocmlim;
+ocmlim.fromabs ( cm.abs_pos.x+(2*11*12), cm.abs_pos.y+(2+11*12) );
+//real_coords ocmcur;
+for ( int sx=ocm.abs_sub.x; sx < ocmlim.abs_sub.x; sx++ ) {
+  for ( int sy=ocm.abs_sub.y; sy < ocmlim.abs_sub.y; sy++ ) {
+    ocmcur.fromabs(sx*12,sy*12);
+    hehe.addentry("[%d,%d] %d,%d %d,%d %d,%d",sx,sy, ocmcur.abs_pos.x, ocmcur.abs_pos.y,
+      ocmcur.abs_om.x,ocmcur.abs_om.y, ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y
+    );
+  }
+}
 pf.stop(pf6);
 pf.stop(pf0);
+  popup("om: %d,%d tgt: %d,%d\n\
+===tgt %d %d : %d %d %d %d ===\n\
+abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
+abs_om_sub: %d,%d\n\
+===cm %d %d : %d %d %d %d ===\n\
+abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
+abs_om_sub: %d,%d\n\
+===ocm %d %d : %d %d %d %d ===\n\
+abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
+abs_om_sub: %d,%d",
+    cur_om->pos().x, cur_om->pos().y, tx,ty,
+    tgt.abs_pos.x, tgt.abs_pos.y, cur_om->pos().x, cur_om->pos().y, tx, ty,
+    tgt.abs_om_pos.x, tgt.abs_om_pos.y, tgt.abs_sub.x, tgt.abs_sub.y, tgt.abs_om.x, tgt.abs_om.y,
+    tgt.abs_om_sub.x, tgt.abs_om_sub.y,
+    cm.abs_pos.x, cm.abs_pos.y, cur_om->pos().x, cur_om->pos().y, tx -2, ty -2,
+    cm.abs_om_pos.x, cm.abs_om_pos.y, cm.abs_sub.x, cm.abs_sub.y, cm.abs_om.x, cm.abs_om.y,
+    cm.abs_om_sub.x, cm.abs_om_sub.y,
+    ocm.abs_pos.x, ocm.abs_pos.y, cur_om->pos().x, cur_om->pos().y, tx -2, ty -2,
+    ocm.abs_om_pos.x, ocm.abs_om_pos.y, ocm.abs_sub.x, ocm.abs_sub.y, ocm.abs_om.x, ocm.abs_om.y,
+    ocm.abs_om_sub.x, ocm.abs_om_sub.y
+);
+
+
 hehe.addentry("%d = %d %d %d %d %d %d",pf.get(pf0),
 pf.get(pf1),pf.get(pf2),pf.get(pf3),pf.get(pf4),pf.get(pf5),pf.get(pf6));
 hehe.query();
@@ -11671,7 +11751,9 @@ return;
   //overmap *tgt_om = &overmap_buffer.get(this, cur_om->pos().x + shx, cur_om->pos().y + shy);
 
 }
-
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////////////
 void game::nuke(int x, int y, int w) {
     bool oob=false;
 	// TODO: nukes hit above surface, not z = 0

@@ -87,7 +87,7 @@ void* tracePtrs[TRACE_SIZE];
 
 #include <fstream>
 #include <streambuf>
-
+#include "bench.h"
 // Null OStream                                                     {{{2
 // ---------------------------------------------------------------------
 
@@ -175,6 +175,7 @@ std::ofstream & DebugFile::currentTime()
 
 std::ostream & dout(DebugLevel lev,DebugClass cl)
 {
+pf.start(pfdout);
  if( (lev & debugLevel) && (cl & debugClass) )
  {
   debugFile.file << std::endl;
@@ -197,9 +198,10 @@ std::ostream & dout(DebugLevel lev,DebugClass cl)
    free(funcNames);
   }
 #endif
-
+pf.stop(pfdout);
   return debugFile.file;
  }
+pf.stop(pfdout);
  return nullStream;
 }
 
