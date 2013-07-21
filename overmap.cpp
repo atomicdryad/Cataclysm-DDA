@@ -20,6 +20,7 @@
 #include "overmapbuffer.h"
 #include <queue>
 
+#include "umapdata.h"
 #ifdef _MSC_VER
 // MSVC doesn't have c99-compatible "snprintf", so do what picojson does and use _snprintf_s instead
 #define snprintf _snprintf_s
@@ -1133,9 +1134,10 @@ int overmap::dist_from_city(point p)
 
 void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
                    int &origx, int &origy, signed char &ch, bool blink,
-                   overmap &hori, overmap &vert, overmap &diag, int mode)
+                   overmap &hori, overmap &vert, overmap &diag, int mode, om_cache * om_unsafe)
 {
  bool note_here = false, npc_here = false;
+ int drawmode=0;
  std::string note_text;
  int om_map_width = TERMX-28;
  int om_map_height = TERMY;
@@ -1169,21 +1171,85 @@ void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
   {
       offy = 1;
   }
-
   // If the offsets don't match the previously loaded ones, load the new adjacent overmaps.
   if( offx && loc.x + offx != hori.loc.x )
   {
       hori = overmap_buffer.get( g, loc.x + offx, loc.y );
+      om_unsafe[0].recache=true;
+      om_unsafe[1].recache=true;
   }
   if( offy && loc.y + offy != vert.loc.y )
   {
       vert = overmap_buffer.get( g, loc.x, loc.y + offy );
+      om_unsafe[0].recache=true;
+      om_unsafe[2].recache=true;
   }
   if( offx && offy && (loc.x + offx != diag.loc.x || loc.y + offy != diag.loc.y ) )
   {
       diag = overmap_buffer.get( g, loc.x + offx, loc.y + offy );
+      om_unsafe[0].recache=true;
+      om_unsafe[3].recache=true;
+  }
+overmap * om_ptr[4]={ this, &hori, &vert, &diag };
+const int omsafelim=OMAPX*2;
+//(om_map_width / 2)
+///bool om_unsafe[4][OMAPX][OMAPY];
+//om_cache om_unsafe[4];
+if ( om_unsafe[0].recache == true ) {
+    for(int i=0;i<4;i++) {
+        for ( int ii=0;ii<OMAPX;ii++ ) {
+           for ( int jj=0;jj<OMAPX;jj++ ) {
+               om_unsafe[i].safe[ii][jj]= false;
+               if ( mode == 1 && om_unsafe[i].recache==true ) {
+                   om_unsafe[i].safe[ii][jj]=(  ! om_ptr[i]->is_safe(ii,jj,z) ? true : false );
+               }
+           }
+        }
+        if( mode == 2 ) {
+            for (int m=0; m < om_ptr[i]->zg.size(); m++) {
+               if(om_ptr[i]->zg[m].posz == z && 
+                   om_ptr[i]->zg[m].posx < omsafelim && om_ptr[i]->zg[m].posx >= 0 &&
+                   om_ptr[i]->zg[m].posy < omsafelim && om_ptr[i]->zg[m].posy >= 0 ) {
+                   int zmx = om_ptr[i]->zg[m].posx/2;
+                   int zmy = om_ptr[i]->zg[m].posy/2;
+                   //popup_nowait("%d: %d %d",i,zmx,zmy);
+                   om_unsafe[i].safe[zmx][zmy]=true;
+               }
+            }
+        }
+        om_unsafe[i].recache=false;
+        
+    }
+    om_unsafe[0].recache=false;
+
+}
+
+//popup_nowait("%d",sizeof(om_unsafe[i].safe));
+
+/*
+ 
+ std::vector<mongroup*> mons = monsters_at(x, y, z);
+ if (!mons.empty()) {
+  return true;
+
+ bool safe = true;
+ for (int n = 0; n < mons.size() && safe; n++)
+  safe = mons[n]->is_safe();
+
+ return safe;
   }
 
+
+ if (x < 0 || x >= OMAPX || y < 0 || y >= OMAPY || z < -OVERMAP_DEPTH || z > OVERMAP_HEIGHT)
+  return ret;
+ for (int i = 0; i < zg.size(); i++) {
+  if (zg[i].posz != z) { continue; }
+  if (trig_dist(x, y, zg[i].posx, zg[i].posy) <= zg[i].radius)
+   ret.push_back(&(zg[i]));
+ }
+
+
+*/
 // Now actually draw the map
   bool csee = false;
   oter_id ccur_ter;
@@ -1194,71 +1260,44 @@ void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
     omy = cursy + j;
     see = false;
     npc_here = false;
-    if (omx >= 0 && omx < OMAPX && omy >= 0 && omy < OMAPY) { // It's in-bounds
-     cur_ter = ter(omx, omy, z);
-     see = seen(omx, omy, z);
-     note_here = has_note(omx, omy, z);
-     if (note_here)
-      note_text = note(omx, omy, z);
-        //Check if there is an npc.
-        npc_here = has_npc(g,omx,omy,z);
-// <Out of bounds placement>
-    } else if (omx < 0) {
-     omx += OMAPX;
+    overmap * this_om = this;
+    //if (!(omx >= 0 && omx < OMAPX && omy >= 0 && omy < OMAPY)) {
+    int omidx=0;
+    if (omx < 0 || omx >= OMAPX) {
+       omx += (omx < 0 ? OMAPX : 0 - OMAPX);
      if (omy < 0 || omy >= OMAPY) {
       omy += (omy < 0 ? OMAPY : 0 - OMAPY);
-      cur_ter = diag.ter(omx, omy, z);
-      see = diag.seen(omx, omy, z);
-      note_here = diag.has_note(omx, omy, z);
-      if (note_here)
-       note_text = diag.note(omx, omy, z);
+           this_om=&diag;
+           omidx=3;
      } else {
-      cur_ter = hori.ter(omx, omy, z);
-      see = hori.seen(omx, omy, z);
-      note_here = hori.has_note(omx, omy, z);
-      if (note_here)
-       note_text = hori.note(omx, omy, z);
-     }
-    } else if (omx >= OMAPX) {
-     omx -= OMAPX;
-     if (omy < 0 || omy >= OMAPY) {
+           this_om=&hori;
+           omidx=1;
+       }
+    } else if (omy < 0 || omy >= OMAPY) {
       omy += (omy < 0 ? OMAPY : 0 - OMAPY);
-      cur_ter = diag.ter(omx, omy, z);
-      see = diag.seen(omx, omy, z);
-      note_here = diag.has_note(omx, omy, z);
-      if (note_here)
-       note_text = diag.note(omx, omy, z);
+       this_om=&vert;
+       omidx=2;
      } else {
-      cur_ter = hori.ter(omx, omy, z);
-      see = hori.seen(omx, omy, z);
-      note_here = hori.has_note(omx, omy, z);
-      if (note_here)
-       note_text = hori.note(omx, omy, z);
-     }
-    } else if (omy < 0) {
-     omy += OMAPY;
-     cur_ter = vert.ter(omx, omy, z);
-     see = vert.seen(omx, omy, z);
-     note_here = vert.has_note(omx, omy, z);
-     if (note_here)
-      note_text = vert.note(omx, omy, z);
-    } else if (omy >= OMAPY) {
-     omy -= OMAPY;
-     cur_ter = vert.ter(omx, omy, z);
-     see = vert.seen(omx, omy, z);
-     note_here = vert.has_note(omx, omy, z);
-     if (note_here)
-      note_text = vert.note(omx, omy, z);
-    } else
-     debugmsg("No data loaded! omx: %d omy: %d", omx, omy);
-// </Out of bounds replacement>
-    if (see || mode > 0) {
+       npc_here = has_npc(g,omx,omy,z);
+    }
+
+    cur_ter = this_om->ter(omx, omy, z);
+    see = this_om->seen(omx, omy, z);
+    note_here = this_om->has_note(omx, omy, z);
+    if (note_here) {
+        note_text = this_om->note(omx, omy, z);
+    }
+
+    
+
+    if (see || mode != 0) {
      if (note_here && blink) {
       ter_color = c_yellow;
-      if (note_text[1] == ':')
+      if (note_text[1] == ':') {
        ter_sym = note_text[0];
-      else
+      } else {
        ter_sym = 'N';
+      }
      } else if (omx == origx && omy == origy && blink) {
       ter_color = g->u.color();
       ter_sym = '@';
@@ -1272,22 +1311,58 @@ void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
       if (cur_ter >= num_ter_types || cur_ter < 0)
        debugmsg("Bad ter %d (%d, %d)", cur_ter, omx, omy);
       ter_color = oterlist[cur_ter].color;
-      ter_sym = oterlist[cur_ter].sym;
+       if(uoterlist[cur_ter].usym != 0x0) {
+             ter_sym = uoterlist[cur_ter].usym;
+       } else if ( cur_ter == ot_crater ) {
+          ter_sym = 0x2622;
+       } else {
+             ter_sym = oterlist[cur_ter].sym;
+       }
      }
     } else { // We haven't explored this tile yet
      ter_color = c_dkgray;
      ter_sym = '#';
     }
+
+if(mode == 1 ) {
+  /*
+  std::vector<mongroup*> monsters_at(int x, int y, int z);
+  bool is_safe(int x, int y, int z); // true if monsters_at is empty, or only woodland
+  bool is_road_or_highway(int x, int y, int z);
+*/
+//  ter_color = c_ltgreen;
+/*
+  if ( om_unsafe[0].recache == true ) {
+    om_unsafe[omidx].safe[omx][omy]=(  ! this_om->is_safe(omx,omy,z) ? true : false );
+  }
+*/
+  if ( om_unsafe[omidx].safe[omx][omy] == true ) {
+    ter_color = red_background(ter_color);
+  }
+} else if ( mode==2 ) {
+
+/// segv
+mvwprintw(w, 0, 0, "[%d] [%d][%d]",omidx,omx,omy);
+//if (omidx
+  if (  om_unsafe[omidx].safe[omx][omy] == true ) {
+    ter_color = c_ltred;
+  }
+}
+
     if (j == 0 && i == 0) {
      mvwputch_hi (w, om_map_height / 2, om_map_width / 2,
                   ter_color, ter_sym);
      csee = see;
      ccur_ter = cur_ter;
-    } else
+    } else {
       mvwputch    (w, (om_map_height / 2) + j, (om_map_width / 2) + i,
                    ter_color, ter_sym);
    }
+
+
   }
+  }
+om_unsafe[0].recache=false;
   if (target.x != -1 && target.y != -1 && blink &&
       (target.x < cursx - om_map_height / 2 ||
         target.x > cursx + om_map_height / 2  ||
@@ -1333,7 +1408,7 @@ void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
    mvwputch(w, j, i, c_black, ' ');
   }
 
-  if (csee) {
+  if (csee || mode > 0) {
    mvwputch(w, 1, om_map_width + 1, oterlist[ccur_ter].color, oterlist[ccur_ter].sym);
    mvwprintz(w, 1, om_map_width + 3, oterlist[ccur_ter].color, "%s",
              oterlist[ccur_ter].name.c_str());
@@ -1349,16 +1424,13 @@ void overmap::draw(WINDOW *w, game *g, int z, int &cursx, int &cursy,
   mvwprintz(w, 17, om_map_width + 1, c_magenta, "/ - Search                 ");
   mvwprintz(w, 18, om_map_width + 1, c_magenta, "N - Add/Edit a note        ");
   mvwprintz(w, 19, om_map_width + 1, c_magenta, "D - Delete a note          ");
-  mvwprintz(w, 20, om_map_width + 1, c_magenta, "L - List notes             ");
+  mvwprintz(w, 20, om_map_width + 1, c_magenta, "L - List notes, mode %d",mode);
   mvwprintz(w, 21, om_map_width + 1, c_magenta, "Esc or q - Return to game  ");
-  char level_string[10];
-  sprintf(level_string, "LEVEL %i",z);
-  mvwprintz(w, 22, om_map_width + 1, c_red, "LEVEL %i / %d,%d",z,cursx,cursy);
   real_coords rc;
   rc.fromomap( g->cur_om->pos().x, g->cur_om->pos().y, cursx, cursy );
-  mvwprintz(w, 22, om_map_width + 1, c_red, "abs: %d,%d @ %d,%d",
+  mvwprintz(w, 22, om_map_width + 1, c_red, "LEVEL %i / %d,%d",z,cursx,cursy);
+  mvwprintz(w, 23, om_map_width + 1, c_red, "abs: %d,%d @ %d,%d",
     rc.abs_om_pos.x, rc.abs_om_pos.y, rc.abs_om.x, rc.abs_om.y );
-
 // Done with all drawing!
   wrefresh(w);
 }
@@ -1376,16 +1448,19 @@ point overmap::draw_overmap(game *g, int zlevel, int mode)
  signed char ch = 0;
  point ret(-1, -1);
  overmap hori, vert, diag; // Adjacent maps
-
+ om_cache cache[4];
  do {
-     draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag, mode);
+     draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag, mode, cache  );
+//  ch=getch();
   ch = input();
+//popup_nowait("%d %c   %d %c",ich,ich,ch,ch);
   timeout(BLINK_SPEED);	// Enable blinking!
 
   int dirx, diry;
   if (ch != ERR)
    blink = true;	// If any input is detected, make the blinkies on
   get_direction(g, dirx, diry, ch);
+//mvwprintz(w_map,14,TERMX-28+5,c_ltblue,"%d / %d",ch,mode);
   if (dirx != -2 && diry != -2) {
    cursx += dirx;
    cursy += diry;
@@ -1393,10 +1468,33 @@ point overmap::draw_overmap(game *g, int zlevel, int mode)
    cursx = origx;
    cursy = origy;
    zlevel = origz;
+} else if (ch == 't') {
+
+   timeout(-1);
+   uimenu mmenu;
+   mmenu.entries.push_back(uimenu_entry("Default"));
+   mmenu.entries.push_back(uimenu_entry("safe"));
+   mmenu.entries.push_back(uimenu_entry("mongroups"));
+   mmenu.entries.push_back(uimenu_entry("misc"));
+   mmenu.selected=mode;
+   mmenu.query();
+   if ( mmenu.ret >= 0 ) {
+     mode=mmenu.ret;
+     for (int i=0;i<4;i++) cache[i].recache=true;
+   }
+   timeout(BLINK_SPEED);
+/*
+    mode++;
+    if (mode > 5) mode = 0;
+    cache[0].recache=true;
+    popup_nowait("%d",mode);
+*/
   } else if (ch == '>' && zlevel > -OVERMAP_DEPTH) {
       zlevel -= 1;
+      for (int i=0;i<4;i++) cache[i].recache=true;
   } else if (ch == '<' && zlevel < OVERMAP_HEIGHT) {
       zlevel += 1;
+      for (int i=0;i<4;i++) cache[i].recache=true;
   }
   else if (ch == '\n')
    ret = point(cursx, cursy);
@@ -1406,18 +1504,6 @@ point overmap::draw_overmap(game *g, int zlevel, int mode)
    timeout(-1);
    add_note(cursx, cursy, zlevel, string_input_popup("Note (X:TEXT for custom symbol):", 45, note(cursx, cursy, zlevel))); // 45 char max
    timeout(BLINK_SPEED);
-  } else if (ch == 't') {
-    timeout(-1);
-    uimenu mmenu;
-    mmenu.entries.push_back(uimenu_entry("Default"));
-    mmenu.entries.push_back(uimenu_entry("mongroups"));
-    mmenu.entries.push_back(uimenu_entry("misc"));
-    mmenu.selected=mode;
-    mmenu.query();
-    if ( mmenu.ret >= 0 ) {
-      mode=mmenu.ret;
-    }
-    timeout(BLINK_SPEED);
   } else if(ch == 'D'){
    timeout(-1);
    if (has_note(cursx, cursy, zlevel)){
@@ -1440,7 +1526,7 @@ point overmap::draw_overmap(game *g, int zlevel, int mode)
    timeout(-1);
    std::string term = string_input_popup("Search term:");
    timeout(BLINK_SPEED);
-   draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag, mode);
+   draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag,mode, cache);
    point found = find_note(cursx, cursy, zlevel, term);
    if (found.x == -1) {	// Didn't find a note
     std::vector<point> terlist;
@@ -1473,7 +1559,7 @@ point overmap::draw_overmap(game *g, int zlevel, int mode)
       }
       cursx = terlist[i].x;
       cursy = terlist[i].y;
-      draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag, mode);
+      draw(w_map, g, zlevel, cursx, cursy, origx, origy, ch, blink, hori, vert, diag,mode,cache);
       wrefresh(w_search);
       timeout(BLINK_SPEED);
      } while(ch != '\n' && ch != ' ' && ch != 'q');
@@ -1490,8 +1576,10 @@ point overmap::draw_overmap(game *g, int zlevel, int mode)
     cursy = found.y;
    }
   }
-  else if (ch == ERR)	// Hit timeout on input, so make characters blink
+  else if (ch == ERR) {	// Hit timeout on input, so make characters blink
    blink = !blink;
+//   popup("%d",ch);
+  }
  } while (ch != KEY_ESCAPE && ch != 'q' && ch != 'Q' && ch != ' ' &&
           ch != '\n');
  timeout(-1);
