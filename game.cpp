@@ -11618,19 +11618,19 @@ pf.stop(pf3);
                     if(mtypes[sp->type]->has_flag(MF_QUEEN) ) {
                         std::vector<mongroup*> groups
                              = oms[sx/180][sy/180]->monsters_at(
-                             ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y, 0
+                             ocmcur.abs_om_sub.x, ocmcur.abs_om_sub.y, 0
                         );
-                        hehe.addentry("      kaput lo[%d,%d] aopos[%d,%d]? %d",sx/180,sy/180, ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y,groups.size());
+//                        hehe.addentry("      kaput lo[%d,%d] aopos[%d,%d]? %d",sx/180,sy/180, ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y,groups.size());
                         for (int gi = 0; gi < groups.size(); gi++) {
-                           hehe.addentry("       %d: %s (%d,%d rad %d) <=> %d",gi, 
+/*                           hehe.addentry("       %d: %s (%d,%d rad %d) <=> %d",gi, 
                              groups[gi]->type.c_str(), groups[gi]->posx,groups[gi]->posy,
                              groups[gi]->radius,
-                             mon_id(sp->type) );
+                             mon_id(sp->type) );*/
                            if (MonsterGroupManager::IsMonsterInGroup
                              (groups[gi]->type, mon_id(sp->type))) {
                                   groups[gi]->dying = true;
-                                  hehe.addentry("      kaput [%d,%d/%d,%d]: %s",groups[gi]->type.c_str(),
-                                      sx/180,sy/180, ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y);
+                                  hehe.addentry("      kaput [%d,%d/%d,%d]: %s %dm",
+                                      sx/180,sy/180, ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y,groups[gi]->type.c_str(),groups[gi]->radius*12 );
                              }
                         }
                         
