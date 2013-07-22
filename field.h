@@ -185,6 +185,8 @@ public:
     //Returns the vector iterator to end searching through the list.
     std::vector<field_entry*>::iterator getFieldEnd();
 
+    std::vector<field_entry*>& getEntries();
+
     //Returns the total move cost from all fields
     int move_cost() const;
 

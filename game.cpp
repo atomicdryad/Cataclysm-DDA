@@ -2076,7 +2076,7 @@ void game::update_scent()
  for (int x = u.posx - SCENT_RADIUS; x <= u.posx + SCENT_RADIUS; x++) {
   for (int y = u.posy - SCENT_RADIUS; y <= u.posy + SCENT_RADIUS; y++) {
    const int move_cost = m.move_cost_ter_furn(x, y);
-   field field_at = m.field_at(x, y);
+   field &field_at = m.field_at(x, y);
    const bool is_bashable = m.has_flag(bashable, x, y);
    newscent[x][y] = 0;
    scale[x][y] = 1;
@@ -7343,10 +7343,8 @@ point game::look_debug(point coords) {
   bool skip=false;
 
   int pter=-1;
-/* variables used by currently inactive debug code.
   int fsel=-1;
   int fset=-1;
-*/
   int trsel=-1;
   int trset=-1;
   do {
@@ -7414,7 +7412,7 @@ point game::look_debug(point coords) {
     mvwprintw(w_look, off, 1, "%s %s", m.features(lx, ly).c_str(),extras.c_str());
     off++;
 
-    field curfield = m.field_at(lx, ly);
+    field &curfield = m.field_at(lx, ly);
     if (curfield.fieldCount() > 0) {
 		field_entry *cur = NULL;
 		for(std::vector<field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it){
@@ -7581,14 +7579,37 @@ point game::look_debug(point coords) {
       ///////////////////////////////////////////
       ///// field edit
 		///This needs some serious rework for the new system. Disabled for now.
-      /*int pwh=lookHeight-1;int pww=48;int pwy=0;int pwx=VIEWX * 2 + 8+VIEW_OFFSET_X;
+                // 'new system needs serious work >.> re-enabled
+      int pwh=lookHeight-1;int pww=48;int pwy=0;int pwx=VIEWX * 2 + 8+VIEW_OFFSET_X;
       WINDOW* w_pickfield = newwin(pwh, pww, pwy, pwx);
       wborder(w_pickfield, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
                  LINE_OXXO, LINE_OOXX, LINE_XXOO, LINE_XOOX );
       int fmax=pwh-4;
       int fshift=0;
       int subch=0;
-      if ( fsel == -1 ) fsel=curfield.type;
+/*
+std::vector<field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it){
+                        cur = (*field_list_it);
+                        if(cur == NULL) continue;
+                        mvwprintz(w_look, off, 1, fieldlist[cur->getFieldType()].color[cur->getFieldDensity()-1]
+*/
+      int curflds[num_fields];
+      field_entry * cur;
+      for ( std::vector<field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it) {
+          cur = (*field_list_it);
+          if(cur == NULL) continue;
+          curflds[cur->getFieldType()]=cur->getFieldDensity();
+      }
+//      field_entry * firstfield=NULL;
+  //    if ( fsel == -1 ) fsel=curfield.type;
+/*      if ( fsel == -1 ) {
+         if (curfield.fieldCount() > 0) {
+        //     firstfield=&curfield.getEntries[0];
+             fsel=curfield.getEntries()[0]->getFieldType();
+         }
+      }
+*/
+//curfield.getFieldStart()->
       std::string fids[num_fields];
       fids[0]="-clear-";
       fids[fd_fire_vent]="fire_vent";
@@ -7596,7 +7617,9 @@ point game::look_debug(point coords) {
       fids[fd_shock_vent]="shock_vent";
       fids[fd_acid_vent]="acid_vent";
       do {
-        if( fsel < fshift ) {
+        if( fsel == -1 ) {
+            fshift = 0;
+        } else if( fsel < fshift ) {
             fshift=fsel;
         } else if ( fsel > fshift+fmax ) {
             fshift=fsel-fmax;
@@ -7605,16 +7628,43 @@ point game::look_debug(point coords) {
             std::string fnam;
             for ( int f=fshift; f<=fshift+fmax; f++ ) {
                   mvwprintz(w_pickfield, f+1-fshift, 1, c_white, "%s", padding.c_str());
-                  if ( f < num_fields ) {
-                      ftype = fieldlist[f];
-                      fnam = ( ftype.name[0].size() == 0 ? fids[f] : ftype.name[0] );
-                      mvwprintz(w_pickfield, f+1-fshift, 2, (fsel==f ? h_white : ( curfield.type == f ? c_green : c_ltgray ) ), "%d %s",f,fnam.c_str());
+                  if ( f < num_fields && f > 0 ) {
+///// fieldlist[cur->getFieldType()].name[cur->getFieldDensity()-1].c_str(
+                    int fdens=0;
+                    if ( curflds[f] > 0 && curflds[f] < 4 ) {
+                        fdens=curflds[f];
+                    }
+                    ftype = fieldlist[f];
+                    fnam = ( ftype.name[fdens].size() == 0 ? fids[f] : ftype.name[fdens] );                    
+                    mvwprintz(w_pickfield, f+1-fshift, 2, (fsel==f ? h_white : (fdens > 0 ? c_ltgray : c_ltgray ) ) , "%d %s",f,fnam.c_str());
                   }
             }
             wrefresh(w_pickfield);
 
             subch=(int)getch();
-            if(subch==KEY_UP) {
+            if(subch==KEY_LEFT && fsel >= 0 ) {
+                if ( curflds[fsel] > 0 && curflds[fsel] < 4 ) {
+                    
+                }
+            } else if(subch==KEY_RIGHT && fsel >= 0 ) {
+                if ( curflds[fsel] >= 0 && curflds[fsel] < 4 ) {
+                    field_entry * fent=curfield.findField((field_id)fsel);
+                    if(fent != NULL) {
+//curflds[fsel]
+                        curflds[fsel]=fent->setFieldDensity(curflds[fsel]+1);
+                        
+                        popup("%d %s",
+fent->getFieldDensity(),
+fieldlist[fsel].name[fent->getFieldDensity()-1].c_str()
+);
+                    }
+                } else {
+                    if ( curfield.addField((field_id)fsel,1) ) {
+                        //popup("Added");
+                        curflds[fsel]=1;
+                    }
+                }
+            } else if (subch==KEY_UP) {
                 fsel--;
             } else if (subch==KEY_DOWN) {
                 fsel++;
@@ -7626,18 +7676,20 @@ point game::look_debug(point coords) {
             }
 
       } while (subch == KEY_UP || subch == KEY_DOWN || subch == KEY_LEFT || subch == KEY_RIGHT );
-      if( ( subch == KEY_ENTER || subch == '\n' || subch == 'f' ) && curfield.type != fsel ) {
+      if( ( subch == KEY_ENTER || subch == '\n' || subch == 'f' ) 
+//&& firstfield->getFieldType() != fsel
+ ) {
             if ( fsel == 0 ) {
                   fset=fsel;
-                  m.remove_field(lx, ly);
+//                  m.remove_field(lx, ly);
             } else if ( fset < num_fields-1 ) {
                   int num=uimenu(false,"density?","1","2","3","-cancel-",NULL);
                   if(num<1 || num>3) {
                       nextch='t';
-                  } else if ( curfield.type != fsel && num != curfield.density ) {
+/*                  } else if ( curfield.type != fsel && num != curfield.density ) {
                       fset=fsel;
                       m.remove_field(lx, ly);
-                      m.add_field(this, lx, ly, field_id(fset), num);
+                      m.add_field(this, lx, ly, field_id(fset), num);*/
                   }
             }
       }
@@ -7646,7 +7698,7 @@ point game::look_debug(point coords) {
       delwin(w_pickfield);
       wrefresh(w_look);
       skip = true;
-	  */
+
     } else if ( ch == 't' ) {
       ///////////////////////////////////////////
       ///// trap edit
@@ -7755,7 +7807,7 @@ point game::look_around()
                                                     m.move_cost(lx, ly) * 50);
    mvwprintw(w_look, 2, 1, "%s", m.features(lx, ly).c_str());
 
-   field tmpfield = m.field_at(lx, ly);
+   field &tmpfield = m.field_at(lx, ly);
 
    if (tmpfield.fieldCount() > 0) {
 		field_entry *cur = NULL;
@@ -10275,15 +10327,15 @@ void game::plmove(int x, int y)
 
   //Ask for EACH bad field, maybe not? Maybe say "theres X bad shit in there don't do it."
   field_entry *cur = NULL;
-  field tmpfld = m.field_at(x, y);
-	for(std::vector<field_entry*>::iterator field_list_it = tmpfld.getFieldStart(); field_list_it != tmpfld.getFieldEnd(); ++field_list_it){
+  field &tmpfld = m.field_at(x, y);
+  for(std::vector<field_entry*>::iterator field_list_it = tmpfld.getFieldStart();
+      field_list_it != tmpfld.getFieldEnd(); ++field_list_it) {
 		cur = (*field_list_it);
 		if(cur == NULL) continue;
 		if (cur->is_dangerous() &&
 			!query_yn(_("Really step into that %s?"), cur->name().c_str()))
 			return;
 	}
-
 
 
 // no need to query if stepping into 'benign' traps
