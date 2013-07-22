@@ -11186,7 +11186,7 @@ void game::spawn_mon(int shiftx, int shifty)
  	if (cur_om->zg[i].posz != levz) { continue; } // skip other levels - hack
   group = 0;
   if(cur_om->zg[i].diffuse)
-   dist = rl_dist(nlevx, nlevy, cur_om->zg[i].posx, cur_om->zg[i].posy);
+   dist = square_dist(nlevx, nlevy, cur_om->zg[i].posx, cur_om->zg[i].posy);
   else
    dist = trig_dist(nlevx, nlevy, cur_om->zg[i].posx, cur_om->zg[i].posy);
   pop = cur_om->zg[i].population;
