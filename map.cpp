@@ -3905,6 +3905,8 @@ if( update_vehicles ) {
   int newmapx = worldx + gridx - ((worldx + gridx) % 2);
   int newmapy = worldy + gridy - ((worldy + gridy) % 2);
   overmap* this_om = om;
+real_coords nmap;
+nmap.fromabs(absx*12,absy*12);
 
   int shx=0;
   int shy=0;
@@ -3947,9 +3949,9 @@ pf.start(pfm1);
   tmp_map.generate(g, this_om, newmapx, newmapy, worldz, int(g->turn));
 
 
-g->add_msg("map.generate: [%d,%d] pg0(%d): %dms pg1(%d): %dms pg2(%d): %dms pg3(%d): %dms\
+g->add_msg("map.generate: [%d,%d] [%d,%d] pg0(%d): %dms pg1(%d): %dms pg2(%d): %dms pg3(%d): %dms\
  pg4(%d): %dms pg5(%d): %dms pg6(%d): %dms pg7(%d): %dms pg8(%d): %dms",
-newmapx, newmapy,
+newmapx, newmapy,nmap.abs_om_pos.x*2, nmap.abs_om_pos.y*2,
   pf.getcount(pg0),pf.get(pg0),
   pf.getcount(pg1),pf.get(pg1),
   pf.getcount(pg2),pf.get(pg2),
