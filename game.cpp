@@ -344,12 +344,22 @@ void game::load_npcs()
 {
     for (int i = 0; i < cur_om->npcs.size(); i++)
     {
-        if (rl_dist(levx + int(MAPSIZE / 2), levy + int(MAPSIZE / 2),
+
+        dbg(D_INFO) << stringfmt("game::load_npcs[%d]:\
+ lev %d:%d map (%d:%d) pos %d,%d : dist(%d,%d ,map) <= %d, act: %s",i,
+ levx, levy, cur_om->npcs[i]->mapx, cur_om->npcs[i]->mapy,
+cur_om->npcs[i]->posx, cur_om->npcs[i]->posy,
+levx + int(MAPSIZE / 2), levy + int(MAPSIZE / 2),
+int(MAPSIZE / 2) + 1 , (cur_om->npcs[i]->is_active(this) ?"y":"n")
+);
+
+        if (square_dist(levx + int(MAPSIZE / 2), levy + int(MAPSIZE / 2),
               cur_om->npcs[i]->mapx, cur_om->npcs[i]->mapy) <=
               int(MAPSIZE / 2) + 1 && !cur_om->npcs[i]->is_active(this))
         {
             int dx = cur_om->npcs[i]->mapx - levx, dy = cur_om->npcs[i]->mapy - levy;
             if (debugmon)debugmsg("game::load_npcs: Spawning static NPC, %d:%d (%d:%d)", levx, levy, cur_om->npcs[i]->mapx, cur_om->npcs[i]->mapy);
+            dbg(D_INFO) << stringfmt("game::load_npcs: Spawning static NPC, lev %d:%d map (%d:%d) pos %d,%d", levx, levy, cur_om->npcs[i]->mapx, cur_om->npcs[i]->mapy,cur_om->npcs[i]->posx, cur_om->npcs[i]->posy);
 
             npc * temp = cur_om->npcs[i];
 
@@ -364,6 +374,7 @@ void game::load_npcs()
                 temp->posy = SEEY * 2 * (temp->mapy - levy) + rng(0 - SEEY, SEEY);
             } else {
                 if (debugmon) debugmsg("game::load_npcs Static NPC fine location %d:%d (%d:%d)", temp->posx, temp->posy, temp->posx + dx * SEEX, temp->posy + dy * SEEY);
+                 dbg(D_INFO) << stringfmt("game::load_npcs Static NPC fine location %d:%d (%d:%d)", temp->posx, temp->posy, temp->posx + dx * SEEX, temp->posy + dy * SEEY);
                 temp->posx += dx * SEEX;
                 temp->posy += dy * SEEY;
             }
