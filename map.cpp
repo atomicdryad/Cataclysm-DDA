@@ -18,7 +18,7 @@
 #define INBOUNDS(x, y) \
  (x >= 0 && x < SEEX * my_MAPSIZE && y >= 0 && y < SEEY * my_MAPSIZE)
 #define dbg(x) dout((DebugLevel)(x),D_MAP) << __FILE__ << ":" << __LINE__ << ": "
-#define _dbg false
+#define _dbg true
 
 enum astar_list {
  ASL_NONE,
@@ -105,7 +105,7 @@ vehicle* map::veh_at(const int x, const int y, int &part_num)
   part_num = it->second.second;
   return it->second.first;
  }
- debugmsg ("vehicle part cache cache indicated vehicle not found :/");
+ debugmsg ("vehicle part cache cache indicated vehicle not found: %d %d ",x,y);
  return NULL;
 }
 
@@ -3820,6 +3820,8 @@ pf.stop(pfm2);
    newmapx = worldx + gridx;
   if (worldy + gridy < 0)
    newmapy = worldy + gridy;
+  if(_dbg==true) dbg(D_INFO|D_WARNING) << stringfmt("map.generate: [%d,%d] ");
+//[%d,%d]",newmapx, newmapy,nmap.abs_om_pos.x*2, nmap.abs_om_pos.y*2);
 pf.start(pfm1);
   tmp_map.generate(g, this_om, newmapx, newmapy, worldz, int(g->turn));
 pf.stop(pfm1);
@@ -3895,7 +3897,7 @@ if( update_vehicles ) {
   }
 }
  } else { // It doesn't exist; we must generate it!
-  if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating for " << absx << "," << absy;
+  if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
 
   tinymap tmp_map(traps);
 
@@ -3945,9 +3947,9 @@ nmap.fromabs(absx*12,absy*12);
      }
   }
 
+  if(_dbg==true) dbg(D_INFO|D_WARNING) << stringfmt("map.generate: [%d,%d] [%d,%d]",newmapx, newmapy,nmap.abs_om_pos.x*2, nmap.abs_om_pos.y*2);
 pf.start(pfm1);
   tmp_map.generate(g, this_om, newmapx, newmapy, worldz, int(g->turn));
-
 
 g->add_msg("map.generate: [%d,%d] [%d,%d] pg0(%d): %dms pg1(%d): %dms pg2(%d): %dms pg3(%d): %dms\
  pg4(%d): %dms pg5(%d): %dms pg6(%d): %dms pg7(%d): %dms pg8(%d): %dms",
