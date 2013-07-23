@@ -3793,7 +3793,7 @@ pf.stop(pfm2);
 
  } else { // It doesn't exist; we must generate it!
   if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
-  map tmp_map(traps);
+  tinymap tmp_map(traps);
 // overx, overy is where in the overmap we need to pull data from
 // Each overmap square is two nonants; to prevent overlap, generate only at
 //  squares divisible by 2.
@@ -3897,7 +3897,7 @@ if( update_vehicles ) {
  } else { // It doesn't exist; we must generate it!
   if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating for " << absx << "," << absy;
 
-  map tmp_map(traps);
+  tinymap tmp_map(traps);
 
 // overx, overy is where in the overmap we need to pull data from
 // Each overmap square is two nonants; to prevent overlap, generate only at
