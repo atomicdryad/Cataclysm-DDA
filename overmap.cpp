@@ -1259,6 +1259,17 @@ if ( om_unsafe[0].recache == true ) {
 // Now actually draw the map
   bool csee = false;
   oter_id ccur_ter;
+
+bool tgtreticle[7][7]={
+1,1,0,1,0,1,1,
+1,0,0,1,0,0,1,
+0,0,0,0,0,0,0,
+1,1,0,0,0,1,1,
+0,0,0,0,0,0,0,
+1,0,0,1,0,0,1,
+1,1,0,1,0,1,1
+};
+
   for (int i = -(om_map_width / 2); i < (om_map_width / 2); i++) {
     for (int j = -(om_map_height / 2);
          j <= (om_map_height / 2) + (ch == 'j' ? 1 : 0); j++) {
@@ -1355,11 +1366,35 @@ mvwprintw(w, 0, 0, "[%d] [%d][%d]",omidx,omx,omy);
   }
 }
 
+//if (omx == cursx || omy == cursy ) {
+if ((omx == origx-2 || omx == origx+2) && (omy == origy-2 || omy == origy+2) && blink) {
+  ter_color =  cyan_background(ter_color);
+}
+ 
+//}
+
+/*if ( j >= -3 && j <= 3 && i >= -3 && i <= 3 ) {
+      int tj=j+3; int ti=i+3;
+      if ( tgtreticle[tj][ti] == true ) {
+         ter_color = magenta_background(ter_color);
+      }
+}*/
+
+if( blink && abs(j) <= 9 && abs(i) <= 9 ) {
+    int tdist = trig_dist ( j*2,i*2, 1,1 );
+    if ( tdist == 5 ) {
+      ter_color=red_background(ter_color);
+    } else if ( tdist <= 16 && tdist >= 15 ) {
+      ter_color=yellow_background(ter_color);
+    }
+}
+
     if (j == 0 && i == 0) {
      mvwputch_hi (w, om_map_height / 2, om_map_width / 2,
                   ter_color, ter_sym);
      csee = see;
      ccur_ter = cur_ter;
+//    } else if ( j <
     } else {
       mvwputch    (w, (om_map_height / 2) + j, (om_map_width / 2) + i,
                    ter_color, ter_sym);

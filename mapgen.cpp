@@ -13,7 +13,7 @@
 #include "overmapbuffer.h"
 #include "enums.h"
 #include "rules.h"
-
+#include "bench.h"
 #include <algorithm>
 #include <cassert>
 #include <list>
@@ -23,6 +23,7 @@
 #endif
 
 #define dbg(x) dout((DebugLevel)(x),D_MAP_GEN) << __FILE__ << ":" << __LINE__ << ": "
+#define _dbg false
 
 #define MON_RADIUS 3
 
@@ -89,20 +90,29 @@ void add_corpse(game *g, map *m, int x, int y);
 
 void map::generate(game *g, overmap *om, const int x, const int y, const int z, const int turn)
 {
- dbg(D_INFO) << "map::generate( g["<<g<<"], om["<<(void*)om<<"], x["<<x<<"], "
+pf.start(pg0);
+pf.start(pg7);
+ if(_dbg==true) dbg(D_INFO) << "map::generate( g["<<g<<"], om["<<(void*)om<<"], x["<<x<<"], "
             << "y["<<y<<"], turn["<<turn<<"] )";
-
+pf.stop(pg7);
 // First we have to create new submaps and initialize them to 0 all over
 // We create all the submaps, even if we're not a tinymap, so that map
 //  generation which overflows won't cause a crash.  At the bottom of this
 //  function, we save the upper-left 4 submaps, and delete the rest.
+pf.start(pg1);
  for (int i = 0; i < my_MAPSIZE * my_MAPSIZE; i++) {
+pf.start(pg2);
+pf.start(pg9);
   grid[i] = new submap;
+pf.stop(pg9);
+pf.stop(pg2);
+//pf.start(pg7);
   grid[i]->active_item_count = 0;
   grid[i]->field_count = 0;
   grid[i]->turn_last_touched = turn;
   grid[i]->comp = computer();
   grid[i]->camp = basecamp();
+//pf.stop(pg7);
   for (int x = 0; x < SEEX; x++) {
    for (int y = 0; y < SEEY; y++) {
     grid[i]->ter[x][y] = t_null;
@@ -113,13 +123,14 @@ void map::generate(game *g, overmap *om, const int x, const int y, const int z, 
    }
   }
  }
-
+pf.stop(pg1);
+pf.start(pg3);
  oter_id terrain_type, t_north, t_east, t_south, t_west, t_above;
  unsigned zones = 0;
  int overx = x / 2;
  int overy = y / 2;
  if ( x >= OMAPX * 2 || x < 0 || y >= OMAPY * 2 || y < 0) {
-  dbg(D_INFO) << "map::generate: In section 1";
+  if(_dbg==true) dbg(D_INFO) << "map::generate: In section 1";
 
 // This happens when we're at the very edge of the overmap, and are generating
 // terrain for the adjacent overmap.
@@ -160,7 +171,7 @@ void map::generate(game *g, overmap *om, const int x, const int y, const int z, 
   else
    t_west = om->ter(OMAPX - 1, overy, z);
  } else {
-  dbg(D_INFO) << "map::generate: In section 2";
+  if(_dbg==true) dbg(D_INFO) << "map::generate: In section 2";
 
   t_above = om->ter(overx, overy, z + 1);
   terrain_type = om->ter(overx, overy, z);
@@ -189,7 +200,8 @@ void map::generate(game *g, overmap *om, const int x, const int y, const int z, 
    t_west = tmp.ter(OMAPX - 1, overy, z);
   }
  }
-
+pf.stop(pg3);
+pf.start(pg4);
  // This attempts to scale density of zombies inversely with distance from the nearest city.
  // In other words, make city centers dense and perimiters sparse.
  float density = 0.0;
@@ -210,28 +222,31 @@ void map::generate(game *g, overmap *om, const int x, const int y, const int z, 
      }
      density = density/100;
  }
-
+pf.stop(pg4);
+pf.start(pg5);
  draw_map(terrain_type, t_north, t_east, t_south, t_west, t_above, turn, g, density);
 
  if ( one_in( oterlist[terrain_type].embellishments.chance ))
   add_extra( random_map_extra( oterlist[terrain_type].embellishments ), g);
 
  post_process(g, zones);
-
+pf.stop(pg5);
 // Okay, we know who are neighbors are.  Let's draw!
 // And finally save used submaps and delete the rest.
  for (int i = 0; i < my_MAPSIZE; i++) {
   for (int j = 0; j < my_MAPSIZE; j++) {
 
-   dbg(D_INFO) << "map::generate: submap ("<<i<<","<<j<<")";
-   dbg(D_INFO) << grid[i+j];
-
+   if(_dbg==true) dbg(D_INFO) << "map::generate: submap ("<<i<<","<<j<<")";
+   if(_dbg==true) dbg(D_INFO) << grid[i+j];
+pf.start(pg6);
    if (i <= 1 && j <= 1)
     saven(om, turn, x, y, z, i, j);
    else
     delete grid[i + j * my_MAPSIZE];
+pf.stop(pg6);
   }
  }
+pf.stop(pg0);
 }
 
 // TODO: clean up variable shadowing in this function
@@ -257,7 +272,6 @@ void map::draw_map(const oter_id terrain_type, const oter_id t_north, const oter
 //  that indicates whether items may spawn on grass & dirt, and finally an
 //  integer that indicates on which turn the items were created.  This final
 //  integer should be 0, unless the items are "fresh-grown" like wild fruit.
-
  int rn = 0;
  int lw = 0;
  int rw = 0;
@@ -12253,6 +12267,7 @@ FFFFFFFFFFFFFFFFFFFFFFFF\n\
 
 void map::post_process(game *g, unsigned zones)
 {
+pf.start(pg8);
  std::string junk;
  if (zones & mfb(OMZONE_CITY)) {
   if (!one_in(10)) { // 90% chance of smashing stuff up
@@ -12283,7 +12298,7 @@ void map::post_process(game *g, unsigned zones)
    }
   }
  }
-
+pf.stop(pg8);
 }
 
 void map::place_spawns(game *g, std::string group, const int chance,

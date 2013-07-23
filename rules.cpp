@@ -25,8 +25,7 @@ RULES.add(EYEBOT_EVENTS, "EYEBOT_EVENTS", -1, "Spawn eye-bots", "desc");
 RULES.add(MONSTERS_SUPERZOMBIES, "MONSTERS_SUPERZOMBIES", 1, "Spawn super zombies", "desc");
 RULES.add(VEHICLE_SPEED_MULT, "VEHICLE_SPEED_MULT", 1, "Vehicle speed multiplier", "desc");
 RULES.add(REVIVE_BURNMAX, "REVIVE_BURNMAX", 500, "Option name", "desc");
-RULES.add(USE_OLD_SPAWNMETHOD, "USE_OLD_SPAWNMETHOD", 0, "Option name", "desc");
-RULES.add(CIRCLEDIST, "CIRCLEDIST", 0, "Option name", "desc");
+RULES.add(ZOMBIE_DENSITY_GEO, "ZOMBIE_DENSITY_GEO", 0, "Option name", "desc");
 
 
 #ifdef CUSTOMRULES

@@ -18,6 +18,7 @@
 #define INBOUNDS(x, y) \
  (x >= 0 && x < SEEX * my_MAPSIZE && y >= 0 && y < SEEY * my_MAPSIZE)
 #define dbg(x) dout((DebugLevel)(x),D_MAP) << __FILE__ << ":" << __LINE__ << ": "
+#define _dbg false
 
 enum astar_list {
  ASL_NONE,
@@ -33,7 +34,7 @@ map::map()
   my_MAPSIZE = 2;
  else
   my_MAPSIZE = MAPSIZE;
- dbg(D_INFO) << "map::map(): my_MAPSIZE: " << my_MAPSIZE;
+ if(_dbg==true) dbg(D_INFO) << "map::map(): my_MAPSIZE: " << my_MAPSIZE;
  veh_in_active_range = true;
 }
 
@@ -48,7 +49,7 @@ map::map(std::vector<trap*> *trptr)
   my_MAPSIZE = MAPSIZE;
  for (int n = 0; n < my_MAPSIZE * my_MAPSIZE; n++)
   grid[n] = NULL;
- dbg(D_INFO) << "map::map( trptr["<<trptr<<"] ): my_MAPSIZE: " << my_MAPSIZE;
+ if(_dbg==true) dbg(D_INFO) << "map::map( trptr["<<trptr<<"] ): my_MAPSIZE: " << my_MAPSIZE;
  veh_in_active_range = true;
  memset(veh_exists_at, 0, sizeof(veh_exists_at));
 }
@@ -322,7 +323,7 @@ bool map::displace_vehicle (game *g, int &x, int &y, const int dx, const int dy,
  if (!inbounds(x2, y2)){
   veh->stop();
    // Silent debug
-  dbg(D_ERROR) << "map:displace_vehicle: Stopping vehicle, displaced dx=" << dx << ", dy=" << dy;
+  if(_dbg==true) dbg(D_ERROR) << "map:displace_vehicle: Stopping vehicle, displaced dx=" << dx << ", dy=" << dy;
    // debugmon'd on screen
   if (g->debugmon) debugmsg ("stopping vehicle, displaced dx=%d, dy=%d", dx,dy);
   return false;
@@ -3047,7 +3048,7 @@ basecamp* map::camp_at(const int x, const int y, const int radius)
 void map::add_camp(const std::string& name, const int x, const int y)
 {
 	if (!allow_camp(x, y)) {
-		dbg(D_ERROR) << "map::add_camp: Attempting to add camp when one in local area.";
+		if(_dbg==true) dbg(D_ERROR) << "map::add_camp: Attempting to add camp when one in local area.";
 		return;
 	}
 
@@ -3594,13 +3595,14 @@ if(om==NULL) {
   }
  }
 }
-g->add_msg("loadn(%d): %dms lookup(%d): %dms generate(%d): %dms dout(%d): %d",
+g->add_msg("loadn(%d): %dms lookup(%d): %dms generate(%d): %dms dout(%d): %d submap gen(%d): %d",
   pf.getcount(pfm0),pf.get(pfm0),
   pf.getcount(pfm2),pf.get(pfm2),
   pf.getcount(pfm1),pf.get(pfm1),
-  pf.getcount(pfdout),pf.get(pfdout)
+  pf.getcount(pfdout),pf.get(pfdout),
+pf.getcount(pg9),pf.get(pg9)
 );
-pf.reset(pfm0);pf.reset(pfm1);pf.reset(pfm2);
+pf.reset(pfm0);pf.reset(pfm1);pf.reset(pfm2);pf.reset(pg9);
 pf.reset(pfdout);
 //
 }
@@ -3711,21 +3713,21 @@ set_abs_sub( g->cur_om->pos().x * OMAPX * 2 + wx + sx,
 void map::saven(overmap *om, unsigned const int turn, const int worldx, const int worldy, const int worldz,
                 const int gridx, const int gridy)
 {
- dbg(D_INFO) << "map::saven(om[" << (void*)om << "], turn[" << turn <<"], worldx["<<worldx<<"], worldy["<<worldy<<"], gridx["<<gridx<<"], gridy["<<gridy<<"])";
+ if(_dbg==true) dbg(D_INFO) << "map::saven(om[" << (void*)om << "], turn[" << turn <<"], worldx["<<worldx<<"], worldy["<<worldy<<"], gridx["<<gridx<<"], gridy["<<gridy<<"])";
 
  const int n = gridx + gridy * my_MAPSIZE;
 
- dbg(D_INFO) << "map::saven n: " << n;
+ if(_dbg==true) dbg(D_INFO) << "map::saven n: " << n;
 
  if ( !grid[n] || grid[n]->ter[0][0] == t_null)
  {
-  dbg(D_ERROR) << "map::saven grid NULL!";
+  if(_dbg==true) dbg(D_ERROR) << "map::saven grid NULL!";
   return;
  }
  const int abs_x = om->pos().x * OMAPX * 2 + worldx + gridx,
            abs_y = om->pos().y * OMAPY * 2 + worldy + gridy;
 
- dbg(D_INFO) << "map::saven abs_x: " << abs_x << "  abs_y: " << abs_y;
+ if(_dbg==true) dbg(D_INFO) << "map::saven abs_x: " << abs_x << "  abs_y: " << abs_y;
  grid[n]->x = abs_x;
  grid[n]->y = abs_y;
  MAPBUFFER.add_submap(abs_x, abs_y, worldz, grid[n]);
@@ -3741,13 +3743,13 @@ bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, c
                 const bool update_vehicles)
 {
 pf.start(pfm0);
- dbg(D_INFO) << "map::loadn(game[" << g << "], worldx["<<worldx<<"], worldy["<<worldy<<"], gridx["<<gridx<<"], gridy["<<gridy<<"])";
+ if(_dbg==true) dbg(D_INFO) << "map::loadn(game[" << g << "], worldx["<<worldx<<"], worldy["<<worldy<<"], gridx["<<gridx<<"], gridy["<<gridy<<"])";
 
  const int absx = g->cur_om->pos().x * OMAPX * 2 + worldx + gridx,
            absy = g->cur_om->pos().y * OMAPY * 2 + worldy + gridy,
            gridn = gridx + gridy * my_MAPSIZE;
 
- dbg(D_INFO) << "map::loadn absx: " << absx << "  absy: " << absy
+ if(_dbg==true) dbg(D_INFO) << "map::loadn absx: " << absx << "  absy: " << absy
             << "  gridn: " << gridn;
 
 pf.start(pfm2);
@@ -3790,7 +3792,7 @@ pf.stop(pfm2);
   }
 
  } else { // It doesn't exist; we must generate it!
-  dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
+  if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
   map tmp_map(traps);
 // overx, overy is where in the overmap we need to pull data from
 // Each overmap square is two nonants; to prevent overlap, generate only at
@@ -3842,13 +3844,13 @@ pf.start(pfm0);
      implicit_om = true;
  }
 
- dbg(D_INFO) << "map::loadn(game[" << g << "], worldx["<<worldx<<"], worldy["<<worldy<<"], gridx["<<gridx<<"], gridy["<<gridy<<"])";
+ if(_dbg==true) dbg(D_INFO) << "map::loadn(game[" << g << "], worldx["<<worldx<<"], worldy["<<worldy<<"], gridx["<<gridx<<"], gridy["<<gridy<<"])";
 
  const int absx = om->pos().x * OMAPX * 2 + worldx + gridx,
            absy = om->pos().y * OMAPY * 2 + worldy + gridy,
            gridn = gridx + gridy * my_MAPSIZE;
 
- dbg(D_INFO) << "map::loadn absx: " << absx << "  absy: " << absy
+ if(_dbg==true) dbg(D_INFO) << "map::loadn absx: " << absx << "  absy: " << absy
             << "  gridn: " << gridn;
 
 pf.start(pfm2);
@@ -3893,7 +3895,7 @@ if( update_vehicles ) {
   }
 }
  } else { // It doesn't exist; we must generate it!
-  dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating for " << absx << "," << absy;
+  if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating for " << absx << "," << absy;
 
   map tmp_map(traps);
 
@@ -3943,6 +3945,28 @@ if( update_vehicles ) {
 
 pf.start(pfm1);
   tmp_map.generate(g, this_om, newmapx, newmapy, worldz, int(g->turn));
+
+
+g->add_msg("map.generate: [%d,%d] pg0(%d): %dms pg1(%d): %dms pg2(%d): %dms pg3(%d): %dms\
+ pg4(%d): %dms pg5(%d): %dms pg6(%d): %dms pg7(%d): %dms pg8(%d): %dms",
+newmapx, newmapy,
+  pf.getcount(pg0),pf.get(pg0),
+  pf.getcount(pg1),pf.get(pg1),
+  pf.getcount(pg2),pf.get(pg2),
+  pf.getcount(pg3),pf.get(pg3),
+  pf.getcount(pg4),pf.get(pg4),
+  pf.getcount(pg5),pf.get(pg5),
+  pf.getcount(pg6),pf.get(pg6),
+  pf.getcount(pg7),pf.get(pg7),
+  pf.getcount(pg8),pf.get(pg8)
+);
+pf.reset(pg0);
+pf.reset(pg1);pf.reset(pg2);pf.reset(pg3);
+pf.reset(pg4);pf.reset(pg5);pf.reset(pg6);
+pf.reset(pg7);pf.reset(pg8);
+
+
+
 pf.stop(pfm1);
 pf.stop(pfm0);
   return false;
@@ -3953,7 +3977,7 @@ pf.stop(pfm0);
 
 void map::copy_grid(const int to, const int from)
 {
-/* dbg(D_INFO) << stringfmt("copy_grid from[%d]: %d,%d to[%d]: %d,%d",from,to,
+/* if(_dbg==true) dbg(D_INFO) << stringfmt("copy_grid from[%d]: %d,%d to[%d]: %d,%d",from,to,
   grid[from]->x,grid[from]->y,
   grid[to]->x,grid[to]->y); */
  grid[to] = grid[from];
@@ -4288,7 +4312,7 @@ point map::getabs(const int x, const int y ) {
         grid[0]->x,grid[0]->y,abs_sub.x,abs_sub.y,
         sx,sy,ax,ay
       );
-      dbg(D_WARNING) << "getabs: wtf: " << stringfmt("grid[0]=%d,%d != abs_sub=%d,%d // s=%d, %d != a=%d,%d",
+      if(_dbg==true) dbg(D_WARNING) << "getabs: wtf: " << stringfmt("grid[0]=%d,%d != abs_sub=%d,%d // s=%d, %d != a=%d,%d",
         grid[0]->x,grid[0]->y,abs_sub.x,abs_sub.y,
         sx,sy,ax,ay
         );
