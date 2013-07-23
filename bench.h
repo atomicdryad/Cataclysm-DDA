@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <sys/time.h>
+#define pfnewmethod 1
 
 enum pfs {
   pf0,pf1,pf2,pf3,pf4,pf5,pf6,pfm0,pfm1,pfm2,pfm3,pfdout,
@@ -52,7 +53,9 @@ class Timer {
 
         return static_cast<long int>(secs * 1000000 + usecs);
     }
-
+    int done1() {
+        stop(); return diff();
+    }
     int done() {
         stop(); return diff2();
     }
@@ -80,17 +83,20 @@ struct pfents {
     times[i] += T;
     utimes[i] += (T*1000);
   };
-  void stop(int i) {    
+  void stop(int i) {
+#ifdef pfnewmethod
     utimes[i] += timers[i].done();
+#else
+    times[i] += timers[i].done1();
+#endif
     count[i]++;
   }
   int get(int i) {
+#ifdef pfnewmethod
     return static_cast<int>( utimes[i] / 1000.0 + 0.5 );
-//times[i];
-  }
-  int get1(int i) {
-    return times[i];//static_cast<int>( utimes[i] / 1000.0 + 0.5 );
-//times[i];
+#else
+    return times[i];
+#endif
   }
 
   int getcount(int i) {
@@ -98,11 +104,9 @@ struct pfents {
   }
   void reset(int i) {
       times[i]=0;
-utimes[i]=0;
+      utimes[i]=0;
       count[i]=0;
   }
-//    int& operator[] (pfs i) { return times[i]; };
-//    int& operator[] (int i) { return times[i]; };
 };
 extern pfents pf;
 
