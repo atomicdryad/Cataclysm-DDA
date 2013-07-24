@@ -3984,9 +3984,6 @@ pf.stop(pfm0);
 
 void map::copy_grid(const int to, const int from)
 {
-/* if(_dbg==true) dbg(D_INFO) << stringfmt("copy_grid from[%d]: %d,%d to[%d]: %d,%d",from,to,
-  grid[from]->x,grid[from]->y,
-  grid[to]->x,grid[to]->y); */
  grid[to] = grid[from];
  for( std::vector<vehicle*>::iterator it = grid[to]->vehicles.begin(),
        end = grid[to]->vehicles.end(); it != end; ++it ) {
@@ -4073,8 +4070,6 @@ bool map::inbounds(const int x, const int y)
 }
 
 bool map::inboundsabs(const int x, const int y) {
-//  point minpos=getabs(0, 0);
-//  point maxpos=point(minpos.x + (SEEX * my_MAPSIZE), minpos.y + (SEEY * my_MAPSIZE) );
   return ( x >= abs_min.x && x < abs_max.x && y >= abs_min.y && y < abs_max.y );
 }
 
@@ -4303,8 +4298,8 @@ void map::build_map_cache(game *g)
 
 void map::set_abs_sub( const int x, const int y ) {
   abs_sub=point(x, y);
-  abs_min=point(x, y);
-  abs_max=point(x + (SEEX * my_MAPSIZE), y + (SEEY * my_MAPSIZE) );
+  abs_min=point(x*SEEX, y*SEEY);
+  abs_max=point(x*SEEX + (SEEX * my_MAPSIZE), y*SEEY + (SEEY * my_MAPSIZE) );
 }
 
 point map::getabs(const int x, const int y ) {
