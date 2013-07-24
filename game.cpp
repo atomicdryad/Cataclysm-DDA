@@ -11556,6 +11556,7 @@ pf.start(pf2);
     const int mincrater=6;
     const int maxcrater=endcrater+mincrater;
     const point loc_center=point(66,66);
+point abs_center(cm.abs_pos.x+66,cm.abs_pos.y+66);
 //real_coords tmpcm
 
     std::vector<std::string> omstr;
@@ -11644,16 +11645,19 @@ pf.stop(pf3);
                              tmpmap.ter_set(i, j, t_ash);
                              tmpmap.add_field(NULL, i, j, fd_fire, rng(3,3));
                         } else {
-                             tmpmap.ter_set(i, j, t_rubble );
+                 //            tmpmap.ter_set(i, j, t_rubble );
                         }
                    }
               } else if (tmpmap.has_flag(flammable,i,j)) {
                    tmpmap.add_field(NULL, i, j, fd_fire, rng(3,3));
               }
           }
+if(dist % 12 == 0 ) tmpmap.ter_set(i, j, t_rubble );
+if(rl_dist(cm.abs_pos.x+i,cm.abs_pos.y+j,abs_center.x,abs_center.y) % 12 == 0 ) tmpmap.add_item(i, j, bonepile);
          if ( ( i == 66 || j == 66 ) || (i==0 || i==tmpmap.mapsize()*12-1) ) {
               tmpmap.ter_set(i, j, t_ash);
          }
+
 
          if ( i % 12 == 0 && j % 12 == 0 ) {
               int sx=i/12;int sy=j/12;
@@ -11760,22 +11764,79 @@ hehe.addentry("oms[%d][%d] = om[%d,%d] omp[%d,%d] (%d,%d) : %d",lox,loy,omx,omy,
 }
 //delete tgt_om;
 pf.start(pf6);
+real_coords gmap;
+gmap.fromabs(m.getabs());
+    point gmzero=point((cm.abs_pos.x+66) - (gmap.abs_pos.x),(cm.abs_pos.y+66) - (gmap.abs_pos.y));
 real_coords ocm;
-ocm.fromabs ( cm.abs_pos.x-(11*12), cm.abs_pos.y-(11*12) );
+//ocm.fromabs ( cm.abs_pos.x-(11*12), cm.abs_pos.y-(11*12) );
 real_coords ocmlim;
-ocmlim.fromabs ( cm.abs_pos.x+(2*11*12), cm.abs_pos.y+(2+11*12) );
+//ocmlim.fromabs ( cm.abs_pos.x+(2*11*12), cm.abs_pos.y+(2+11*12) );
 //real_coords ocmcur;
-for ( int sx=ocm.abs_sub.x; sx < ocmlim.abs_sub.x; sx++ ) {
-  for ( int sy=ocm.abs_sub.y; sy < ocmlim.abs_sub.y; sy++ ) {
-    ocmcur.fromabs(sx*12,sy*12);
-    hehe.addentry("[%d,%d] %d,%d %d,%d %d,%d",sx,sy, ocmcur.abs_pos.x, ocmcur.abs_pos.y,
+int tc=0;long int sc=0;int ig=0;
+for ( int shmapx=-1;shmapx <= 1; shmapx++ ) {
+  for ( int shmapy=-1;shmapy <=1; shmapy++ ) {
+    if ( shmapx == 0 && shmapy == 0 ) continue;
+    ocm.fromabs ( cm.abs_pos.x+((10*12)*shmapx), cm.abs_pos.y+((10*12)*shmapy) );
+//    ocmlim.fromabs ( cm.abs_pos.x+((11*12)*shmapx+1)-1, cm.abs_pos.y+((11*12)*shmapy+1)-1 );
+    point gzero=point(abs_center.x - ( ocm.abs_pos.x ),abs_center.y - ( ocm.abs_pos.y ));
+tgt_om = &overmap_buffer.get(this, ocm.abs_om.x, ocm.abs_om.y );
+  //map otmpmap(&traps);
+    tmpmap.load(this, ocm.abs_om_sub.x, ocm.abs_om_sub.y, 0, false, tgt_om);
+    hehe.addentry("[%d,%d] (%d,%d) %d,%d %d,%d: %d : %d,%d",shmapx,shmapy, ocm.abs_sub.x, ocm.abs_sub.y,
+      ocm.abs_om.x,ocm.abs_om.y, ocm.abs_om_pos.x, ocm.abs_om_pos.y,tmpmap.mapsize()-1,gzero.x,gzero.y
+    );
+    map * mptr=&tmpmap;
+    for( int lx=0;lx<(tmpmap.mapsize()*12)-1;lx++) {
+      for( int ly=0;ly<(tmpmap.mapsize()*12)-1;ly++) {
+        int tlx=lx; int tly=ly;
+        sc++;
+bool ingame=false;
+int dzero;
+if( m.inboundsabs(tmpmap.getabs(lx,ly).x,tmpmap.getabs(lx,ly).y) == true ) {
+ig++;
+ingame=true;
+tlx=abs(gmap.abs_sub.x-(cm.abs_sub.x))+lx;
+tly=abs(gmap.abs_sub.y-(cm.abs_sub.y))+ly;
+
+//tly=m.getabs().y-cm.abs_pos.y;;
+mptr=&m;
+dzero=rl_dist(tlx,tly,gmzero.x,gmzero.y);
+}else{
+mptr=&tmpmap;
+dzero=rl_dist(tlx,tly,gzero.x,gzero.y);
+}
+        if ( dzero % 12 == 0 ) { //|| ((lx % 12 == 0 ) && ( ly % 12 == 0 )) ) {
+          tc++;
+          mptr->ter_set(tlx, tly, (ingame==true ? t_sand : t_ash ));
+/*if(lx==ly) {
+  tmpmap.add_graffiti(this,lx,ly,stringfmt("dzero: %d",dzero));
+}*/
+        }
+      }
+    }
+    tmpmap.save(tgt_om, turn, ocm.abs_om_sub.x, ocm.abs_om_sub.y, 0);
+  }
+}
+pf.stop(pf6);
+/*
+for ( int sx=ocm.abs_pos.x; sx < ocmlim.abs_pos.x; sx++ ) {
+  for ( int sy=ocm.abs_pos.y; sy < ocmlim.abs_pos.y; sy++ ) {
+tc++;
+    if ( sx % 12 == 0 && sy % 12 == 0 ) {
+sc++;
+       ocmcur.fromabs(sx,sy);
+    }
+
+//    ocmcur.fromabs(sx*12,sy*12);
+
+    hehe.addentry("[%d,%d] %d,%d %d,%d %d,%d",sx,sy, ocmcur.abs_sub.x, ocmcur.abs_sub.y,
       ocmcur.abs_om.x,ocmcur.abs_om.y, ocmcur.abs_om_pos.x, ocmcur.abs_om_pos.y
     );
   }
 }
 pf.stop(pf6);
 pf.stop(pf0);
-  popup("om: %d,%d tgt: %d,%d\n\
+  popup("%d %d\nom: %d,%d tgt: %d,%d\n\
 ===tgt %d %d : %d %d %d %d ===\n\
 abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
 abs_om_sub: %d,%d\n\
@@ -11784,7 +11845,7 @@ abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
 abs_om_sub: %d,%d\n\
 ===ocm %d %d : %d %d %d %d ===\n\
 abs_om_pos: %d,%d abs_sub: %d,%d abs_om %d,%d\n\
-abs_om_sub: %d,%d",
+abs_om_sub: %d,%d",tc,sc,
     cur_om->pos().x, cur_om->pos().y, tx,ty,
     tgt.abs_pos.x, tgt.abs_pos.y, cur_om->pos().x, cur_om->pos().y, tx, ty,
     tgt.abs_om_pos.x, tgt.abs_om_pos.y, tgt.abs_sub.x, tgt.abs_sub.y, tgt.abs_om.x, tgt.abs_om.y,
@@ -11797,8 +11858,8 @@ abs_om_sub: %d,%d",
     ocm.abs_om_sub.x, ocm.abs_om_sub.y
 );
 
-
-hehe.addentry("%d = %d %d %d %d %d %d",pf.get(pf0),
+*/
+hehe.addentry("(%d/%d/ig:%d) %d = %d %d %d %d %d :%d",tc,sc,ig,pf.get(pf0),
 pf.get(pf1),pf.get(pf2),pf.get(pf3),pf.get(pf4),pf.get(pf5),pf.get(pf6));
 hehe.query();
 
