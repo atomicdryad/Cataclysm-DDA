@@ -3762,38 +3762,38 @@ pf.stop(pfm2);
      set_abs_sub(absx,absy);
  }
  if (tmpsub) {
-  grid[gridn] = tmpsub;
+   grid[gridn] = tmpsub;
+   if( update_vehicles ) {
+     // Update vehicle data
+     for( std::vector<vehicle*>::iterator it = tmpsub->vehicles.begin(),
+           end = tmpsub->vehicles.end(); update_vehicles && it != end; ++it ) {
 
-  // Update vehicle data
-  for( std::vector<vehicle*>::iterator it = tmpsub->vehicles.begin(),
-        end = tmpsub->vehicles.end(); update_vehicles && it != end; ++it ) {
-
-   // Only add if not tracking already.
-   if( vehicle_list.find( *it ) == vehicle_list.end() ) {
-    // gridx/y not correct. TODO: Fix
-    (*it)->smx = gridx;
-    (*it)->smy = gridy;
-    vehicle_list.insert(*it);
-    update_vehicle_cache(*it);
-   }
-  }
-
-  // check spoiled stuff
-  for(int x = 0; x < 12; x++) {
-      for(int y = 0; y < 12; y++) {
-          for(std::vector<item, std::allocator<item> >::iterator it = tmpsub->itm[x][y].begin();
-              it != tmpsub->itm[x][y].end();) {
-              if(it->goes_bad()) {
-                  it_comest *food = dynamic_cast<it_comest*>(it->type);
-                  int maxShelfLife = it->bday + (food->spoils * 600)*2;
-                  if(g->turn >= maxShelfLife) {
-                      it = tmpsub->itm[x][y].erase(it);
-                  } else { ++it; }
-              } else { ++it; }
-          }
+      // Only add if not tracking already.
+      if( vehicle_list.find( *it ) == vehicle_list.end() ) {
+       // gridx/y not correct. TODO: Fix
+       (*it)->smx = gridx;
+       (*it)->smy = gridy;
+       vehicle_list.insert(*it);
+       update_vehicle_cache(*it);
       }
-  }
+     }
 
+     // check spoiled stuff
+     for(int x = 0; x < 12; x++) {
+         for(int y = 0; y < 12; y++) {
+             for(std::vector<item, std::allocator<item> >::iterator it = tmpsub->itm[x][y].begin();
+                 it != tmpsub->itm[x][y].end();) {
+                 if(it->goes_bad()) {
+                     it_comest *food = dynamic_cast<it_comest*>(it->type);
+                     int maxShelfLife = it->bday + (food->spoils * 600)*2;
+                     if(g->turn >= maxShelfLife) {
+                         it = tmpsub->itm[x][y].erase(it);
+                     } else { ++it; }
+                 } else { ++it; }
+             }
+         }
+     }
+   }
  } else { // It doesn't exist; we must generate it!
   if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
   tinymap tmp_map(traps);
@@ -3867,38 +3867,38 @@ pf.stop(pfm2);
  }
 
  if (tmpsub) {
-  grid[gridn] = tmpsub;
-  // Update vehicle data
-if( update_vehicles ) {
-  for( std::vector<vehicle*>::iterator it = tmpsub->vehicles.begin(),
-        end = tmpsub->vehicles.end(); it != end; ++it ) {
+   grid[gridn] = tmpsub;
+   // Update vehicle data
+   if( update_vehicles ) {
+     for( std::vector<vehicle*>::iterator it = tmpsub->vehicles.begin(),
+           end = tmpsub->vehicles.end(); it != end; ++it ) {
 
-   // Only add if not tracking already.
-   if( vehicle_list.find( *it ) == vehicle_list.end() ) {
-    // gridx/y not correct. TODO: Fix
-    (*it)->smx = gridx;
-    (*it)->smy = gridy;
-    vehicle_list.insert(*it);
-    update_vehicle_cache(*it);
-   }
-  }
-
-  // check spoiled stuff
-  for(int x = 0; x < 12; x++) {
-      for(int y = 0; y < 12; y++) {
-          for(std::vector<item, std::allocator<item> >::iterator it = tmpsub->itm[x][y].begin();
-              it != tmpsub->itm[x][y].end();) {
-              if(it->goes_bad()) {
-                  it_comest *food = dynamic_cast<it_comest*>(it->type);
-                  int maxShelfLife = it->bday + (food->spoils * 600)*2;
-                  if(g->turn >= maxShelfLife) {
-                      it = tmpsub->itm[x][y].erase(it);
-                  } else { ++it; }
-              } else { ++it; }
-          }
+      // Only add if not tracking already.
+      if( vehicle_list.find( *it ) == vehicle_list.end() ) {
+       // gridx/y not correct. TODO: Fix
+       (*it)->smx = gridx;
+       (*it)->smy = gridy;
+       vehicle_list.insert(*it);
+       update_vehicle_cache(*it);
       }
-  }
-}
+     }
+
+     // check spoiled stuff
+     for(int x = 0; x < 12; x++) {
+         for(int y = 0; y < 12; y++) {
+             for(std::vector<item, std::allocator<item> >::iterator it = tmpsub->itm[x][y].begin();
+                 it != tmpsub->itm[x][y].end();) {
+                 if(it->goes_bad()) {
+                     it_comest *food = dynamic_cast<it_comest*>(it->type);
+                     int maxShelfLife = it->bday + (food->spoils * 600)*2;
+                     if(g->turn >= maxShelfLife) {
+                         it = tmpsub->itm[x][y].erase(it);
+                     } else { ++it; }
+                 } else { ++it; }
+             }
+         }
+     }
+   }
  } else { // It doesn't exist; we must generate it!
   if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
 
