@@ -8,9 +8,11 @@
  (x >= 0 && x < SEEX * MAPSIZE && y >= 0 && y < SEEY * MAPSIZE)
 #define LIGHTMAP_CACHE_X SEEX * MAPSIZE
 #define LIGHTMAP_CACHE_Y SEEY * MAPSIZE
+#include "bench.h"
 
 void map::generate_lightmap(game* g)
 {
+pf.start(lm1);
  memset(lm, 0, sizeof(lm));
  memset(sm, 0, sizeof(sm));
 
@@ -93,11 +95,11 @@ void map::generate_lightmap(game* g)
 		switch(cur->getFieldType()) {
     case fd_fire:
 		if (3 == cur->getFieldDensity())
-      apply_light_source(sx, sy, 160, trigdist);
+      apply_light_source(sx, sy, 160, false);
      else if (2 == cur->getFieldDensity())
-      apply_light_source(sx, sy, 60, trigdist);
+      apply_light_source(sx, sy, 60, false);
      else
-      apply_light_source(sx, sy, 16, trigdist);
+      apply_light_source(sx, sy, 16, false);
      break;
     case fd_fire_vent:
     case fd_flame_burst:
@@ -186,6 +188,7 @@ if (g->u.has_active_bionic("bio_night") ) {
       }
    }
   }
+pf.stop(lm1);
 }
 
 lit_level map::light_at(int dx, int dy)

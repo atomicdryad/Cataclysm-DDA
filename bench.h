@@ -5,6 +5,8 @@
 enum pfs {
   pf0,pf1,pf2,pf3,pf4,pf5,pf6,pfm0,pfm1,pfm2,pfm3,pfdout,
 pg0,pg1,pg2,pg3,pg4,pg5,pg6,pg7,pg8,pg9,pgwtf,
+lm0,lm1,lm2,lm3,lm4,lm5,lm6,lm7,lm8,lm9,
+fd0,fd1,fd2,fd3,fd4,fd5,fd6,fd7,fd8,fd9,
 n_pf
 };
 
