@@ -557,15 +557,6 @@ pf.start(fd1);
                                             } else if (spreading_field.findField(fd_smoke)) {
                                                 nosmoke = false;
                                             }
-/*
-											if (spreading_field.findField(fd_fire) && spreading_field.findField(fd_fire)->getFieldDensity() == 3)
-												smoke++; //The higher this gets, the more likely for smoke.
-											else if (spreading_field.findField(fd_fire) &&
-												spreading_field.findField(fd_fire)->getFieldDensity() == 2 && one_in(4))
-												smoke++;
-											else if (spreading_field.findField(fd_smoke))
-												nosmoke = false; //slightly, slightly, less likely to make smoke if there is already smoke
-*/
 										}
 									}
 									// If we're not spreading, maybe we'll stick out some smoke, huh?
@@ -1593,7 +1584,25 @@ Good for checking for exitence of a field: if(myfield.findField(fd_fire)) would 
 field_entry* field::findField(const field_id field_to_find){
 pf.start(fd2);
 	field_entry* tmp = NULL;
-
+        int fsize=field_list.size();
+//        std::vector<int> nuke;
+        for( int i=0; i < fsize; i++ ) {
+            if( field_list[i] == NULL ) {
+//                nuke.push_back(i);
+                continue;
+            }
+            if ( field_list[i]->getFieldType() == field_to_find) {
+                tmp=field_list[i];
+                break;
+            }
+        }
+/*        if ( nuke.size() > 0 ) {
+            for ( int i = 0; i < nuke.size(); i++ ) {
+                field_list.erase(nuke[i]);
+            }
+        }
+*/
+/*
 	for(std::vector<field_entry*>::iterator it = field_list.begin(); it != field_list.end(); it++){
 		if((*it) == NULL){
 			//In the event someone deleted the field_entry memory somewhere else clean up the list.
@@ -1604,6 +1613,7 @@ pf.start(fd2);
 			return (*it);
 		}
 	};
+*/
 pf.stop(fd2);
 	return tmp;
 
