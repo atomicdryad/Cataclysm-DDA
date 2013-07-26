@@ -2955,6 +2955,7 @@ void map::disarm_trap(game *g, const int x, const int y)
 
 field& map::field_at(const int x, const int y)
 {
+//dbg(D_INFO) << "field_at " << x << "," << y;
  if (!INBOUNDS(x, y)) {
   nulfield = field();
   return nulfield;

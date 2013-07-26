@@ -503,7 +503,7 @@ pf.start(fd1);
 	field_entry* tmpfld = NULL;
 	field_id curtype; //Holds cur->getFieldType() as thats what the old system used before rewrite.
 
-const bool cfire=true;
+ bool cachefire=true;
     int rc=0;
 	//Loop through all tiles in this submap indicated by gridn
 	for (int locx = 0; locx < SEEX; locx++) {
@@ -808,7 +808,7 @@ pf.stop(fd4);pf.start(fd5);
 								}
 							}
 					}
-pf.stop(fd5)//;pf.start(fd6);
+pf.stop(fd5);//;pf.start(fd6);
 					// Consume adjacent fuel / terrain / webs to spread.
 					// Randomly offset our x/y shifts by 0-2, to randomly pick a square to spread to
 					//Fires can only spread under 30 age. This is arbitrary but seems to work well.
@@ -821,10 +821,12 @@ pf.stop(fd5)//;pf.start(fd6);
 						for (int j = 0; j < 3; j++) {
 							int fx = x + ((i + starti) % 3) - 1, fy = y + ((j + startj) % 3) - 1;
 							if (INBOUNDS(fx, fy)) {
-pf.start(fd7);
+pf.start(fd6);
                                 field &nearby_field = g->m.field_at(fx, fy);
                                 field_entry* nearwebfld = NULL;
                                 nearwebfld=nearby_field.findField(fd_web);
+pf.start(fd6);
+pf.start(fd7);
 
 								int spread_chance = 25 * (cur->getFieldDensity() - 1);
 								if (nearwebfld)
