@@ -14,7 +14,12 @@
 #include "basecamp.h"
 #include "iexamine.h"
 #include <iosfwd>
-
+struct fire_smoke {
+   unsigned char fstr;
+   unsigned char sstr;
+   short fage;
+   short sage;
+};
 /*
 struct field_t
 Used to store the master field effects list metadata. Not used to store a field, just queried to find out specifics
@@ -140,7 +145,7 @@ public:
         return is_alive;
     }
 
-private:
+// screw this oop madness fire exceeds 1000ms // private:
     field_id type; //The field identifier.
     signed char density; //The density, or intensity (higher is stronger), of the field entry.
     int age; //The age, or time to live, of the field effect. 0 is permanent.
@@ -190,8 +195,9 @@ public:
     //Returns the total move cost from all fields
     int move_cost() const;
 
-private:
+
     std::vector<field_entry*> field_list; //A listing of all field effects on the current tile.
+private:
     //Draw_symbol currently is equal to the last field added to the square. You can modify this behavior in the class functions if you wish.
     field_id draw_symbol;
     bool dirty; //true if this is a copy of the class, false otherwise.

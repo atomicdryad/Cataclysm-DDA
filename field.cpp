@@ -163,9 +163,312 @@ void game::init_fields()
     }
 }
 
+#include "debug.h";
+#define dbg(x) dout((DebugLevel)(x),D_MAP) << __FILE__ << ":" << __LINE__ << ": "
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::vector<point> map::process_cached_fire(game *g) {
+  std::vector<point> ret;
+  const int cmax=MAPSIZE*SEEY;
+int ft=0;int tt=0;int fft=0;
+  for(int x=0;x < cmax; x++) {
+    for(int y=0;y < cmax; y++) {
+//      field_entry * cur=
+      if(fire_field_cache[x][y].getFieldType() == fd_fire) ft++;
+      if(burncache[x][y].fstr > 0 ) fft++; 
+      tt++;
+    }
+  }
+//  popup("%d %d/%d/%d",sizeof(fire_field_cache),ft,fft,tt);
+  return ret;
+/*
+                    // Consume items as fuel to help us grow/last longer.
+                    bool destroyed = false; //Is the item destroyed?
+                    
+                    // Volume, Smoke generation probability, consumed items count
+                    int vol = 0, smoke = 0, consumed = 0;
+                    for (int i = 0; i < i_at(x, y).size() && consumed < cur->getFieldDensity() * 2; i++) {
+                        //Stop when we hit the end of the item buffer OR we consumed enough items given our fire size.
+                        destroyed = false;
+                        //vol = i_at(x, y)[i].volume(); //Used to feed the fire based on volume of item burnt.
+                         
+                        item *it = &(i_at(x, y)[i]); //Pointer to the item we are dealing with.
+                        vol = it->volume();
+                        it_ammo *ammo_type = NULL; //Special case if its ammo.
+
+                        if (it->is_ammo())
+                        {
+                            ammo_type = dynamic_cast<it_ammo*>(it->type);
+                        }
+                        //Flame type ammo removed so gasoline isn't explosive, it just burns.
+                        if(ammo_type != NULL &&
+         (ammo_type->ammo_effects.count("INCENDIARY") ||
+          ammo_type->ammo_effects.count("EXPLOSIVE") ||
+          ammo_type->ammo_effects.count("FRAG") ||
+          ammo_type->ammo_effects.count("NAPALM") ||
+          ammo_type->ammo_effects.count("EXPLOSIVE_BIG") ||
+          ammo_type->ammo_effects.count("TEARGAS") ||
+          ammo_type->ammo_effects.count("SMOKE") ||
+          ammo_type->ammo_effects.count("FLASHBANG") ||
+          ammo_type->ammo_effects.count("COOKOFF")))
+                        {
+                            //Any kind of explosive ammo (IE: not arrows and pebbles and such)
+                            const int rounds_exploded = rng(1, it->charges);
+                            // TODO: Vary the effect based on the ammo flag instead of just exploding them all.
+                            // cook off ammo instead of just burning it.
+                            for(int j = 0; j < (rounds_exploded / 10) + 1; j++)
+                            {
+        //Blow up with half the ammos damage in force, for each bullet.
+        g->explosion(x, y, ammo_type->damage / 2, true, false);
+                            }
+                            it->charges -= rounds_exploded; //Get rid of the spent ammo.
+                            if(it->charges == 0) destroyed = true; //No more ammo, item should be removed.
+                        } else if (it->made_of("paper")) {
+                            //paper items feed the fire moderatly.
+                            destroyed = it->burn(cur->getFieldDensity() * 3);
+                            consumed++;
+                            if (cur->getFieldDensity() == 1)
+                                cur->setFieldAge(cur->getFieldAge() - vol * 10); //lower age is a longer lasting fire
+                            if (vol >= 4)
+                                smoke++; //Large paper items give chance to smoke.
+
+                        } else if ((it->made_of("wood") || it->made_of("veggy"))) {
+                            //Wood or vegy items burn slowly.
+                            if (vol <= cur->getFieldDensity() * 10 || cur->getFieldDensity() == 3) {
+                                cur->setFieldAge(cur->getFieldAge() - 20);
+                                destroyed = it->burn(cur->getFieldDensity());
+                                smoke++;
+                                consumed++;
+                            } else if (it->burnt < cur->getFieldDensity()) {
+                                destroyed = it->burn(1);
+                                smoke++;
+                            }
+
+                        } else if ((it->made_of("cotton") || it->made_of("wool"))) {
+                            //Cotton and Wool burn slowly but don't feed the fire much.
+                            if (vol <= cur->getFieldDensity() * 5 || cur->getFieldDensity() == 3) {
+                                cur->setFieldAge(cur->getFieldAge() - 1);
+                                destroyed = it->burn(cur->getFieldDensity());
+                                smoke++;
+                                consumed++;
+                            } else if (it->burnt < cur->getFieldDensity()) {
+                                destroyed = it->burn(1);
+                                smoke++;
+                            }
+
+                        } else if ((it->made_of("flesh"))||(it->made_of("hflesh"))) {
+                            //Same as cotton/wool really but more smokey.
+                            if (vol <= cur->getFieldDensity() * 5 || (cur->getFieldDensity() == 3 && one_in(vol / 20))) {
+                                cur->setFieldAge(cur->getFieldAge() - 1);
+                                destroyed = it->burn(cur->getFieldDensity());
+                                smoke += 3;
+                                consumed++;
+                            } else if (it->burnt < cur->getFieldDensity() * 5 || cur->getFieldDensity() >= 2) {
+                                destroyed = it->burn(1);
+                                smoke++;
+                            }
+
+                        } else if (it->made_of(LIQUID)) {
+                            //Lots of smoke if alcohol, and LOTS of fire fueling power, kills a fire otherwise.
+                            if(it->type->id == "tequila" || it->type->id == "whiskey" ||
+                                it->type->id == "vodka" || it->type->id == "rum" || it->type->id == "gasoline") {
+                                    cur->setFieldAge(cur->getFieldAge() - 300);
+                                    smoke += 6;
+                            } else {
+                                cur->setFieldAge(cur->getFieldAge() + rng(80 * vol, 300 * vol));
+                                smoke++;
+                            }
+                            it->charges -= cur->getFieldDensity();
+                            if(it->charges <= 0){
+                                destroyed = true;
+                            }
+                                consumed++;
+                        } else if (it->made_of("powder")) {
+                            //Any powder will fuel the fire as much as its volume but be immediately destroyed.
+                            cur->setFieldAge(cur->getFieldAge() - vol);
+                            destroyed = true;
+                            smoke += 2;
+
+                        } else if (it->made_of("plastic")) {
+                            //Smokey material, doesn't fuel well.
+                            smoke += 3;
+                            if (it->burnt <= cur->getFieldDensity() * 2 || (cur->getFieldDensity() == 3 && one_in(vol))) {
+                                destroyed = it->burn(cur->getFieldDensity());
+                                if (one_in(vol + it->burnt))
+                                    cur->setFieldAge(cur->getFieldAge() - 1);
+                            }
+                        }
+
+                        if (destroyed) {
+                            //If we decided the item was destroyed by fire, remove it.
+                            for (int m = 0; m < i_at(x, y)[i].contents.size(); m++)
+                                i_at(x, y).push_back( i_at(x, y)[i].contents[m] );
+                            i_at(x, y).erase(i_at(x, y).begin() + i);
+                            i--;
+                        }
+                    }
+
+                    veh = veh_at(x, y, part); //Get the part of the vehicle in the fire.
+                    if (veh)
+                        veh->damage (part, cur->getFieldDensity() * 10, false); //Damage the vehicle in the fire.
+                    // If the flames are in a brazier, they're fully contained, so skip consuming terrain
+                    if((tr_brazier != tr_at(x, y))&&(has_flag(fire_container, x, y) != true )) {
+                        // Consume the terrain we're on
+                        if (has_flag(explodes, x, y)) {
+                            //This is what destroys houses so fast.
+                            ter_set(x, y, ter_id(int(ter(x, y)) + 1));
+                            cur->setFieldAge(0); //Fresh level 3 fire.
+                            cur->setFieldDensity(3);
+                            g->explosion(x, y, 40, 0, true); //Boom.
+
+                        } else if (has_flag(flammable, x, y) && one_in(32 - cur->getFieldDensity() * 10)) {
+                            //The fire feeds on the ground itself until max density.
+                            cur->setFieldAge(cur->getFieldAge() - cur->getFieldDensity() * cur->getFieldDensity() * 40);
+                            smoke += 15;
+                            if (cur->getFieldDensity() == 3)
+                                g->m.destroy(g, x, y, false);
+
+                        } else if (has_flag(flammable2, x, y) && one_in(32 - cur->getFieldDensity() * 10)) {
+                            //The fire feeds on the ground itself until max density.
+                            cur->setFieldAge(cur->getFieldAge() - cur->getFieldDensity() * cur->getFieldDensity() * 40);
+                            smoke += 15;
+                            if (cur->getFieldDensity() == 3){
+                                ter_set(x, y, t_ash);
+                                if(has_furn(x,y))
+                                    furn_set(x,y,f_null);
+                            }
+
+                        } else if (has_flag(l_flammable, x, y) && one_in(62 - cur->getFieldDensity() * 10)) {
+                            //The fire feeds on the ground itself until max density.
+                            cur->setFieldAge(cur->getFieldAge() - cur->getFieldDensity() * cur->getFieldDensity() * 30);
+                            smoke += 10;
+                            if (cur->getFieldDensity() == 3)
+                                g->m.destroy(g, x, y, false);
+
+                        } else if (terlist[ter(x, y)].flags & mfb(swimmable))
+                            cur->setFieldAge(cur->getFieldAge() + 800);    // Flames die quickly on water
+                    }
+                    // If we consumed a lot, the flames grow higher
+                    while (cur->getFieldDensity() < 3 && cur->getFieldAge() < 0) {
+                        //Fires under 0 age grow in size. Level 3 fires under 0 spread later on.
+                        cur->setFieldAge(cur->getFieldAge() + 300);
+                        cur->setFieldDensity(cur->getFieldDensity() + 1);
+                    }
+
+                    // If the flames are in a pit, it can't spread to non-pit
+                    bool in_pit = (ter(x, y) == t_pit);
+                    // If the flames are REALLY big, they contribute to adjacent flames
+                    if (cur->getFieldDensity() == 3 && cur->getFieldAge() < 0 && tr_brazier != tr_at(x, y)
+                        && (has_flag(fire_container, x, y) != true  ) ){
+                            // Randomly offset our x/y shifts by 0-2, to randomly pick a square to spread to
+                            int starti = rng(0, 2);
+                            int startj = rng(0, 2);
+                            tmpfld = NULL;
+                            // Basically: Scan around for a spot,
+                    // if there is more fire there, make it bigger and both flames renew in power
+                            // This is how level 3 fires spend their excess age: making other fires bigger. Flashpoint.
+                            for (int i = 0; i < 3 && cur->getFieldAge() < 0; i++) {
+                                for (int j = 0; j < 3 && cur->getFieldAge() < 0; j++) {
+                                    int fx = x + ((i + starti) % 3) - 1, fy = y + ((j + startj) % 3) - 1;
+                                    tmpfld = g->m.field_at(fx,fy).findField(fd_fire);
+                                    if (tmpfld && tmpfld != cur && cur->getFieldAge() < 0 && tmpfld->getFieldDensity() < 3 &&
+                                        (in_pit == (ter(fx, fy) == t_pit))) {
+                                            tmpfld->setFieldDensity(tmpfld->getFieldDensity() + 1);
+                                            //tmpfld->setFieldAge(0);
+                                            cur->setFieldAge(cur->getFieldAge() + 150);
+                                    }
+                                }
+                            }
+                    }
+                    // Consume adjacent fuel / terrain / webs to spread.
+                    // Randomly offset our x/y shifts by 0-2, to randomly pick a square to spread to
+                    //Fires can only spread under 30 age. This is arbitrary but seems to work well.
+                    //The reason is to differentiate a fire that spawned vs one created really.
+                    //Fires spawned by fire in a new square START at 30 age, so if its a square with no fuel on it
+                    //the fire won't keep crawling endlessly across the map.
+                    int starti = rng(0, 2);
+                    int startj = rng(0, 2);
+                    for (int i = 0; i < 3; i++) {
+                        for (int j = 0; j < 3; j++) {
+                            int fx = x + ((i + starti) % 3) - 1, fy = y + ((j + startj) % 3) - 1;
+                            if (INBOUNDS(fx, fy)) {
+                                field &nearby_field = g->m.field_at(fx, fy);
+                                field_entry* nearwebfld = NULL;
+                                nearwebfld=nearby_field.findField(fd_web);
+
+                                int spread_chance = 25 * (cur->getFieldDensity() - 1);
+                                if (nearwebfld)
+                                    spread_chance = 50 + spread_chance / 2;
+                                if (has_flag(explodes, fx, fy) && one_in(8 - cur->getFieldDensity()) &&
+                                    tr_brazier != tr_at(x, y) && (has_flag(fire_container, x, y) != true ) ) {
+                                        ter_set(fx, fy, ter_id(int(ter(fx, fy)) + 1));
+                                        g->explosion(fx, fy, 40, 0, true); //Nearby explodables? blow em up.
+                                } else if ((i != 0 || j != 0) && rng(1, 100) < spread_chance && cur->getFieldAge() < 200 &&
+                                    tr_brazier != tr_at(x, y) &&
+                                    (has_flag(fire_container, x, y) != true )&&
+                                    (in_pit == (ter(fx, fy) == t_pit)) &&
+                                    (
+                                    (cur->getFieldDensity() >= 2 &&
+                                    (has_flag(flammable, fx, fy) && one_in(20))) ||
+                                    (cur->getFieldDensity() >= 2  &&
+                                    (has_flag(flammable2, fx, fy) && one_in(10))) ||
+                                    (cur->getFieldDensity() == 3  &&
+                                    (has_flag(l_flammable, fx, fy) && one_in(10))) ||
+                                    flammable_items_at(fx, fy) ||
+                                    nearwebfld )) {
+                                        add_field(g, fx, fy, fd_fire, 1); //Nearby open flammable ground? Set it on fire.
+                                        tmpfld = nearby_field.findField(fd_fire);
+                                        if(tmpfld){
+                                            tmpfld->setFieldAge(100);
+                                            cur->setFieldAge(cur->getFieldAge() + 50);
+                                        }
+                                        if(nearwebfld)
+                                            g->m.remove_field(fx,fy,fd_web);
+                                    //g->m.fire_field_cache[fx][fy]=tmpfld;
+                                } else {
+                                    bool nosmoke = true;
+                                    for (int ii = -1; ii <= 1; ii++) {
+                                        for (int jj = -1; jj <= 1; jj++) {
+                                            field &spreading_field = g->m.field_at(x+ii, y+jj);
+                                            tmpfld = NULL;
+
+                                            tmpfld = spreading_field.findField(fd_fire);
+                                            if ( tmpfld ) {
+                                                int tmpflddens=tmpfld->getFieldDensity();
+                                                if ( ( tmpflddens == 3 ) || ( tmpflddens == 2 && one_in(4) ) ) {
+                                                    smoke++;
+                                                } else if (spreading_field.findField(fd_smoke)) {
+                                                    nosmoke = false;
+                                                }
+                                            } else if (spreading_field.findField(fd_smoke)) {
+                                                nosmoke = false;
+                                            }
+                                        }
+                                    }
+                                    // If we're not spreading, maybe we'll stick out some smoke, huh?
+                                    if(!(is_outside(fx, fy))){
+                                        //Lets make more smoke indoors since it doesn't dissipate
+                                        smoke += 5; //10 is just a magic number. To much smoke indoors? Lower it. To little, raise it.
+                                    }
+                                    if (move_cost(fx, fy) > 0 &&
+                                        (!one_in(smoke) || (nosmoke && one_in(40))) &&
+                                        rng(3, 35) < cur->getFieldDensity() * 5 && cur->getFieldAge() < 1000 &&
+                                        (has_flag(suppress_smoke, x, y) != true )) {
+                                            smoke--;
+                                            add_field(g, fx, fy, fd_smoke, rng(1, cur->getFieldDensity())); //Add smoke!
+                                    }
+                                }
+                            }
+                        }
+                    }
+*/
+}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool map::process_fields(game *g)
 {
 pf.start(fd0);
+process_cached_fire(g);
+pf.stop(fd0);
  bool found_field = false;
  for (int x = 0; x < my_MAPSIZE; x++) {
   for (int y = 0; y < my_MAPSIZE; y++) {
@@ -173,23 +476,6 @@ pf.start(fd0);
     found_field |= process_fields_in_submap(g, x + y * my_MAPSIZE);
   }
  }
-pf.stop(fd0);
-g->add_msg("fd(%d): %d fd1(%d) %dms, fd1(%d) %dms,fd1(%d) %dms,fd1(%d) %dms,fd1(%d) %dms,fd1(%d) %dms",
-pf.getcount(fd0), pf.get(fd0),
-pf.getcount(fd1), pf.get(fd1),
-pf.getcount(fd2), pf.get(fd2),
-pf.getcount(fd3), pf.get(fd3),
-pf.getcount(fd4), pf.get(fd4),
-pf.getcount(fd5), pf.get(fd5),
-pf.getcount(fd6), pf.get(fd6)
-);
-pf.reset(fd0);
-pf.reset(fd1);
-pf.reset(fd2);
-pf.reset(fd3);
-pf.reset(fd4);
-pf.reset(fd5);
-pf.reset(fd6);
 
  return found_field;
 }
@@ -200,6 +486,7 @@ Iterates over every field on every tile of the given submap indicated by NONANT 
 This is the general update function for field effects. This should only be called once per game turn.
 If you need to insert a new field behavior per unit time add a case statement in the switch below.
 */
+#define cfire 1
 bool map::process_fields_in_submap(game *g, int gridn)
 {
 pf.start(fd1);
@@ -216,7 +503,8 @@ pf.start(fd1);
 	field_entry* tmpfld = NULL;
 	field_id curtype; //Holds cur->getFieldType() as thats what the old system used before rewrite.
 
-
+const bool cfire=true;
+    int rc=0;
 	//Loop through all tiles in this submap indicated by gridn
 	for (int locx = 0; locx < SEEX; locx++) {
 		for (int locy = 0; locy < SEEY; locy++) {
@@ -231,7 +519,7 @@ pf.start(fd1);
     // This is a translation from local coordinates to submap coords.
     // All submaps are in one long 1d array.
 				int x = locx + SEEX * (gridn % my_MAPSIZE);
-    int y = locy + SEEY * int(gridn / my_MAPSIZE);
+                int y = locy + SEEY * int(gridn / my_MAPSIZE);
 
 				curtype = cur->getFieldType();
     //Setting our return value. fd_null really doesn't exist anymore, its there for legacy support.
@@ -300,15 +588,35 @@ pf.start(fd1);
 
 					// TODO-MATERIALS: use fire resistance
 				case fd_fire: {
+if(g->m.burncache[x][y].fstr == cur->getFieldDensity() ) {
+rc++;
+} else {
+}
+//pf.start(fd9);pf.start(fd6);
+/*
+field_entry * ccur=&(g->m.fire_field_cache[x][y]);
+if (ccur && cur->getFieldDensity() <= ccur->getFieldDensity() ) {
+  rc++;
+  //popup_nowait("cache %d <=> %d real / %d",ccur->getFieldDensity(),cur->getFieldDensity(),rc);
+cur = ccur;
+}else {
+continue;
+}*/
+pf.stop(fd1);
+//continue;
+pf.start(fd2);
 					// Consume items as fuel to help us grow/last longer.
 					bool destroyed = false; //Is the item destroyed?
      // Volume, Smoke generation probability, consumed items count
 					int vol = 0, smoke = 0, consumed = 0;
+pf.start(fd3);
 					for (int i = 0; i < i_at(x, y).size() && consumed < cur->getFieldDensity() * 2; i++) {
 						//Stop when we hit the end of the item buffer OR we consumed enough items given our fire size.
 						destroyed = false;
-						vol = i_at(x, y)[i].volume(); //Used to feed the fire based on volume of item burnt.
+//						vol = i_at(x, y)[i].volume(); //Used to feed the fire based on volume of item burnt.
+                         
 						item *it = &(i_at(x, y)[i]); //Pointer to the item we are dealing with.
+                        vol = it->volume();
 						it_ammo *ammo_type = NULL; //Special case if its ammo.
 
 						if (it->is_ammo())
@@ -422,12 +730,13 @@ pf.start(fd1);
 							i--;
 						}
 					}
-
+pf.stop(fd3);pf.start(fd4);
 					veh = veh_at(x, y, part); //Get the part of the vehicle in the fire.
 					if (veh)
 						veh->damage (part, cur->getFieldDensity() * 10, false); //Damage the vehicle in the fire.
 					// If the flames are in a brazier, they're fully contained, so skip consuming terrain
 					if((tr_brazier != tr_at(x, y))&&(has_flag(fire_container, x, y) != true )) {
+
 						// Consume the terrain we're on
 						if (has_flag(explodes, x, y)) {
 							//This is what destroys houses so fast.
@@ -463,17 +772,20 @@ pf.start(fd1);
 						} else if (terlist[ter(x, y)].flags & mfb(swimmable))
 							cur->setFieldAge(cur->getFieldAge() + 800);	// Flames die quickly on water
 					}
-
+//pf.stop(fd6);pf.stop(fd9);
+//continue;
+pf.start(fd4);
 					// If we consumed a lot, the flames grow higher
 					while (cur->getFieldDensity() < 3 && cur->getFieldAge() < 0) {
 						//Fires under 0 age grow in size. Level 3 fires under 0 spread later on.
 						cur->setFieldAge(cur->getFieldAge() + 300);
 						cur->setFieldDensity(cur->getFieldDensity() + 1);
 					}
-
+pf.stop(fd4);pf.start(fd5);
 					// If the flames are in a pit, it can't spread to non-pit
 					bool in_pit = (ter(x, y) == t_pit);
 					// If the flames are REALLY big, they contribute to adjacent flames
+
 					if (cur->getFieldDensity() == 3 && cur->getFieldAge() < 0 && tr_brazier != tr_at(x, y)
 						&& (has_flag(fire_container, x, y) != true  ) ){
 							// Randomly offset our x/y shifts by 0-2, to randomly pick a square to spread to
@@ -486,7 +798,7 @@ pf.start(fd1);
 							for (int i = 0; i < 3 && cur->getFieldAge() < 0; i++) {
 								for (int j = 0; j < 3 && cur->getFieldAge() < 0; j++) {
 									int fx = x + ((i + starti) % 3) - 1, fy = y + ((j + startj) % 3) - 1;
-									tmpfld = field_at(fx,fy).findField(fd_fire);
+									tmpfld = g->m.field_at(fx,fy).findField(fd_fire);
 									if (tmpfld && tmpfld != cur && cur->getFieldAge() < 0 && tmpfld->getFieldDensity() < 3 &&
 										(in_pit == (ter(fx, fy) == t_pit))) {
 											tmpfld->setFieldDensity(tmpfld->getFieldDensity() + 1);
@@ -496,6 +808,7 @@ pf.start(fd1);
 								}
 							}
 					}
+pf.stop(fd5)//;pf.start(fd6);
 					// Consume adjacent fuel / terrain / webs to spread.
 					// Randomly offset our x/y shifts by 0-2, to randomly pick a square to spread to
 					//Fires can only spread under 30 age. This is arbitrary but seems to work well.
@@ -508,6 +821,7 @@ pf.start(fd1);
 						for (int j = 0; j < 3; j++) {
 							int fx = x + ((i + starti) % 3) - 1, fy = y + ((j + startj) % 3) - 1;
 							if (INBOUNDS(fx, fy)) {
+pf.start(fd7);
                                 field &nearby_field = g->m.field_at(fx, fy);
                                 field_entry* nearwebfld = NULL;
                                 nearwebfld=nearby_field.findField(fd_web);
@@ -540,12 +854,17 @@ pf.start(fd1);
 										}
 										if(nearwebfld)
 											g->m.remove_field(fx,fy,fd_web);
+pf.stop(fd7);
+//g->m.fire_field_cache[fx][fy]=tmpfld;
 								} else {
+pf.start(fd8);
 									bool nosmoke = true;
+pf.start(fd9);
 									for (int ii = -1; ii <= 1; ii++) {
 										for (int jj = -1; jj <= 1; jj++) {
                                             field &spreading_field = g->m.field_at(x+ii, y+jj);
                                             tmpfld = NULL;
+
                                             tmpfld = spreading_field.findField(fd_fire);
                                             if ( tmpfld ) {
                                                 int tmpflddens=tmpfld->getFieldDensity();
@@ -559,6 +878,7 @@ pf.start(fd1);
                                             }
 										}
 									}
+pf.stop(fd9);
 									// If we're not spreading, maybe we'll stick out some smoke, huh?
 									if(!(is_outside(fx, fy))){
 										//Lets make more smoke indoors since it doesn't dissipate
@@ -571,10 +891,13 @@ pf.start(fd1);
 											smoke--;
 											add_field(g, fx, fy, fd_smoke, rng(1, cur->getFieldDensity())); //Add smoke!
 									}
+pf.stop(fd8);
 								}
 							}
 						}
 					}
+//pf.stop(fd6);
+pf.stop(fd2);
 							} break;
 
 				case fd_smoke:
@@ -978,6 +1301,7 @@ pf.start(fd1);
 			}
 		}
 	}
+//g->add_msg("rc: %d",rc);
 pf.stop(fd1);
 	return found_field;
 }
@@ -1582,9 +1906,8 @@ Returns a field entry corresponding to the field_id parameter passed in. If no f
 Good for checking for exitence of a field: if(myfield.findField(fd_fire)) would tell you if the field is on fire.
 */
 field_entry* field::findField(const field_id field_to_find){
-pf.start(fd2);
 	field_entry* tmp = NULL;
-        int fsize=field_list.size();
+/*        int fsize=field_list.size();
 //        std::vector<int> nuke;
         for( int i=0; i < fsize; i++ ) {
             if( field_list[i] == NULL ) {
@@ -1596,13 +1919,14 @@ pf.start(fd2);
                 break;
             }
         }
+*/
 /*        if ( nuke.size() > 0 ) {
             for ( int i = 0; i < nuke.size(); i++ ) {
                 field_list.erase(nuke[i]);
             }
         }
 */
-/*
+
 	for(std::vector<field_entry*>::iterator it = field_list.begin(); it != field_list.end(); it++){
 		if((*it) == NULL){
 			//In the event someone deleted the field_entry memory somewhere else clean up the list.
@@ -1613,14 +1937,12 @@ pf.start(fd2);
 			return (*it);
 		}
 	};
-*/
-pf.stop(fd2);
+
 	return tmp;
 
 };
 
 const field_entry* field::findFieldc(const field_id field_to_find){
-pf.start(fd4);
 	const field_entry* tmp = NULL;
 
 	for(std::vector<field_entry*>::iterator it = field_list.begin(); it != field_list.end(); it++){
@@ -1633,7 +1955,6 @@ pf.start(fd4);
 			return (*it);
 		}
 	};
-pf.stop(fd4);
 	return tmp;
 
 };
@@ -1647,7 +1968,6 @@ If you wish to modify an already existing field use findField and modify the res
 Density defaults to 1, and age to 0 (permanent) if not specified.
 */
 bool field::addField(const field_id field_to_add, const unsigned char new_density, const int new_age){
-pf.start(fd5);
 	for(std::vector<field_entry*>::iterator it = field_list.begin(); it != field_list.end(); ++it){
 		if( ((*it)->getFieldType()) == field_to_add){
 			//Already exists, but lets update it. This is tentative.
@@ -1659,7 +1979,6 @@ pf.start(fd5);
 	};
 	field_list.push_back(new field_entry(field_to_add, new_density, new_age));
 	draw_symbol = field_to_add;
-pf.stop(fd5);
 	return true;
 
 };
@@ -1725,7 +2044,6 @@ field_id field::fieldSymbol() const{
 }
 
 int field::move_cost() const{
-pf.start(fd3);
     if(fieldCount() < 1){
         return 0;
     }
@@ -1735,6 +2053,5 @@ pf.start(fd3);
          ++current_field){
         current_cost += (*current_field)->move_cost();
     }
-pf.stop(fd3);
     return current_cost;
 }

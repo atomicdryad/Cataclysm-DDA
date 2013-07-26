@@ -3598,15 +3598,6 @@ if(om==NULL) {
   }
  }
 }
-g->add_msg("loadn(%d): %dms lookup(%d): %dms generate(%d): %dms dout(%d): %d submap gen(%d): %d",
-  pf.getcount(pfm0),pf.get(pfm0),
-  pf.getcount(pfm2),pf.get(pfm2),
-  pf.getcount(pfm1),pf.get(pfm1),
-  pf.getcount(pfdout),pf.get(pfdout),
-pf.getcount(pg9),pf.get(pg9)
-);
-pf.reset(pfm0);pf.reset(pfm1);pf.reset(pfm2);pf.reset(pg9);
-pf.reset(pfdout);
 //
 }
 
@@ -4205,8 +4196,20 @@ void map::build_outside_cache(const game *g)
 }
 
 // TODO Consider making this just clear the cache and dynamically fill it in as trans() is called
-void map::build_transparency_cache()
+void map::build_transparency_cache() // fixme: populate fire_field && smoke_field caches
 {
+fire_smoke fs_null;
+fs_null.fstr=0;
+fs_null.sstr=0;
+fs_null.fage=0;
+fs_null.sage=0;
+
+memset(fire_field_cache, fd_null, sizeof(fire_field_cache));
+memset(smoke_field_cache, NULL, sizeof(smoke_field_cache));
+memset(partial_lightsource_cache, -1, sizeof(partial_lightsource_cache));
+memset(burncache, 0, (size_t)(MAPSIZE*SEEX*MAPSIZE*SEEX) * sizeof(struct fire_smoke));
+
+int ff=0;int ffd=0;int ffo=0;
  for(int x = 0; x < my_MAPSIZE * SEEX; x++) {
   for(int y = 0; y < my_MAPSIZE * SEEY; y++) {
 
@@ -4230,6 +4233,15 @@ void map::build_transparency_cache()
 			   // Fields are either transparent or not, however we want some to be translucent
 			   switch(cur->getFieldType()) {
 			   case fd_smoke:
+				   smoke_field_cache[x][y]=cur;
+burncache[x][y].sstr=cur->density;
+burncache[x][y].sage=cur->age;
+
+				   if(cur->getFieldDensity() == 3)
+					   transparency_cache[x][y] = LIGHT_TRANSPARENCY_SOLID;
+				   if(cur->getFieldDensity() == 2)
+					   transparency_cache[x][y] *= 0.5;
+				   break;
 			   case fd_toxic_gas:
 			   case fd_tear_gas:
 				   if(cur->getFieldDensity() == 3)
@@ -4244,6 +4256,22 @@ void map::build_transparency_cache()
 				   transparency_cache[x][y] = LIGHT_TRANSPARENCY_SOLID;
 				   break;
 			   }
+		   } else if ( cur->getFieldType() == fd_fire ) {
+ff++;
+                      field_entry * ccur=&(fire_field_cache[x][y]);
+                      if ( ccur->getFieldType() != fd_null ) {
+ffd++;
+                      } else {
+ffo++;
+                      }
+                      if ( ! ccur || cur->getFieldDensity() > ccur->getFieldDensity() ) {
+			fire_field_cache[x][y]=(*cur);
+burncache[x][y].fstr=cur->density;
+burncache[x][y].fage=cur->age;
+                        int dens=fire_field_cache[x][y].getFieldDensity();
+                        partial_lightsource_cache[x][y]=( dens == 3 ? 160 : ( dens == 2 ? 60 : 16 ) );
+                        
+                      }
 		   }
 
 		   // TODO: [lightmap] Have glass reduce light as well
@@ -4251,6 +4279,7 @@ void map::build_transparency_cache()
    }
   }
  }
+//popup("%d: o: %d d: %d",ff,ffo,ffd);
 }
 
 void map::build_seen_cache(game *g)
@@ -4265,11 +4294,11 @@ void map::build_seen_cache(game *g)
   }
 }
 
-void map::build_map_cache(game *g)
+void map::build_map_cache(game *g) // fixme: generate fire_field_cache && light_source_cache 
 {
  build_outside_cache(g);
 
- build_transparency_cache();
+ build_transparency_cache(); // generate here to save opcycles
 
  // Cache all the vehicle stuff in one loop
  VehicleList vehs = get_vehicles();
@@ -4293,7 +4322,7 @@ void map::build_map_cache(game *g)
  }
 
  build_seen_cache(g);
- generate_lightmap(g);
+ generate_lightmap(g); // fixme: ensure fire_field_cache && light_source_cache exist
 }
 
 void map::set_abs_sub( const int x, const int y ) {

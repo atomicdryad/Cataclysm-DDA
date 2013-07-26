@@ -611,7 +611,7 @@ bool game::do_turn()
      while (u.moves > 0) {
           cleanup_dead();
           if (!u.has_disease("sleep") && u.activity.type == ACT_NULL)
-              draw();
+              draw(); ///////////////////////////////// fixme: ensure  fire_field_cache was generated
 
           if(handle_action()) {
               ++moves_since_last_save;
@@ -628,7 +628,7 @@ bool game::do_turn()
  }
  update_scent();
  m.vehmove(this);
- m.process_fields(this);
+ m.process_fields(this); ////////////////////////////// fixme: ensure fire_field_cache was generated
  m.process_active_items(this);
  m.step_in_field(u.posx, u.posy, this);
 
@@ -653,6 +653,42 @@ bool game::do_turn()
  rustCheck();
  if (turn % 10 == 0)
   u.update_morale();
+if(pf.getcount(pfm0) > 0 ) {
+g->add_msg("loadn(%d): %dms lookup(%d): %dms generate(%d): %dms dout(%d): %d submap gen(%d): %d",
+  pf.getcount(pfm0),pf.get(pfm0),
+  pf.getcount(pfm2),pf.get(pfm2),
+  pf.getcount(pfm1),pf.get(pfm1),
+  pf.getcount(pfdout),pf.get(pfdout),
+pf.getcount(pg9),pf.get(pg9)
+);
+pf.reset(pfm0);pf.reset(pfm1);pf.reset(pfm2);pf.reset(pg9);
+pf.reset(pfdout);
+}
+
+g->add_msg("lm(%d) %dms / fd(%d): %d fd1(%d) %dms, fd2(%d) %dms, fd3(%d) %dms, fd4(%d) %dms, fd5(%d) %dms, fd6(%d) %dms,  fd7(%d) %dms,  fd8(%d) %dms, fd9(%d) %dms",
+pf.getcount(lm1), pf.get(lm1),
+pf.getcount(fd0), pf.get(fd0),
+pf.getcount(fd1), pf.get(fd1),
+pf.getcount(fd2), pf.get(fd2),
+pf.getcount(fd3), pf.get(fd3),
+pf.getcount(fd4), pf.get(fd4),
+pf.getcount(fd5), pf.get(fd5),
+pf.getcount(fd6), pf.get(fd6),
+pf.getcount(fd7), pf.get(fd7),
+pf.getcount(fd8), pf.get(fd8),
+pf.getcount(fd9), pf.get(fd9)
+
+);
+pf.reset(lm1);
+pf.reset(fd0);
+pf.reset(fd1);
+pf.reset(fd2);
+pf.reset(fd3);
+pf.reset(fd4);
+pf.reset(fd5);
+pf.reset(fd6);
+pf.reset(fd9);
+
  return false;
 }
 
@@ -2662,7 +2698,7 @@ void game::load(std::string name)
 // Now load up the master game data; factions (and more?)
  load_master();
  load_weatherlog();
- update_map(u.posx, u.posy);
+ update_map(u.posx, u.posy); // fixme: generate cache
  set_adjacent_overmaps(true);
  MAPBUFFER.set_dirty();
  draw();
@@ -3715,7 +3751,7 @@ void game::draw_ter(int posx, int posy)
   posx = u.posx + u.view_offset_x;
  if (posy == -999)
   posy = u.posy + u.view_offset_y;
- m.build_map_cache(this);
+ m.build_map_cache(this); // fixme: ensure fire_field_cache was generated
  m.draw(this, w_terrain, point(posx, posy));
 
  // Draw monsters
@@ -10473,7 +10509,7 @@ void game::plmove(int x, int y)
   }
   if (x < SEEX * int(MAPSIZE / 2) || y < SEEY * int(MAPSIZE / 2) ||
       x >= SEEX * (1 + int(MAPSIZE / 2)) || y >= SEEY * (1 + int(MAPSIZE / 2)))
-   update_map(x, y);
+   update_map(x, y); // fixme: generate cache
 
 // If the player is in a vehicle, unboard them from the current part
   if (u.in_vehicle)
@@ -11049,7 +11085,7 @@ void game::update_map(int &x, int &y)
 
  }
  // Make sure map cache is consistent since it may have shifted.
- m.build_map_cache(this);
+ m.build_map_cache(this); // fixme: ensure fire_field_cache was generated
 // Update what parts of the world map we can see
  update_overmap_seen();
  draw_minimap();
