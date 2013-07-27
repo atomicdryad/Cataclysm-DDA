@@ -139,7 +139,7 @@ void uimenu::show() {
         autoassign.clear();
         int pad = pad_left + pad_right + 2;
         for ( int i = 0; i < entries.size(); i++ ) {
-			int txtwidth = utf8_width(entries[ i ].txt.c_str());
+            int txtwidth = utf8_width(entries[ i ].txt.c_str());
             if(entries[ i ].enabled) {
                 if( entries[ i ].hotkey > 0 ) {
                     keymap[ entries[ i ].hotkey ] = i;
@@ -156,6 +156,9 @@ void uimenu::show() {
                 if ( w_auto && w_width < txtwidth + pad + 4 ) {
                     w_width = txtwidth + pad + 4;    // todo: or +5 if header
                 }
+            }
+            if ( entries[ i ].text_color == C_UNSET_MASK ) {
+                entries[ i ].text_color = text_color;
             }
         }
         if ( autoassign.size() > 0 ) {
@@ -181,7 +184,8 @@ void uimenu::show() {
         }
 
         if(text.size() > 0 ) {
-			int twidth = utf8_width(text.c_str());
+            int twidth = utf8_width(text.c_str());
+            bool formattxt=true;
             if ( textwidth == -1 ) {
                 if ( w_autofold || !w_auto ) {
                    realtextwidth = w_width - 4;
@@ -191,13 +195,25 @@ void uimenu::show() {
                        if ( realtextwidth + 4 > TERMX ) {
                            realtextwidth = TERMX - 4;
                        }
-                       w_width = realtextwidth + 4;
+                       textformatted = foldstring(text, realtextwidth);
+                       formattxt=false;
+                       realtextwidth = 10;
+                       for ( int l=0; l < textformatted.size(); l++ ) {
+                           if ( utf8_width(textformatted[l].c_str()) > realtextwidth ) {
+                               realtextwidth = utf8_width(textformatted[l].c_str());
+                           }
+                       }
+                       if ( realtextwidth + 4 > w_width ) {
+                           w_width = realtextwidth + 4;
+                       }
                    }
                 }
             } else if ( textwidth != -1 ) {
                 realtextwidth = textwidth;
             }
-            textformatted = foldstring(text, realtextwidth);
+            if ( formattxt == true ) {
+                textformatted = foldstring(text, realtextwidth);
+            }
         }
 
         if (h_auto) {
@@ -250,7 +266,12 @@ void uimenu::show() {
     }
     for ( int ei = vshift, si=0; si < vmax; ei++,si++ ) {
         if ( ei < entries.size() ) {
-            nc_color co = ( ei == selected ? hilight_color : ( entries[ ei ].enabled ? text_color : disabled_color ) );
+            nc_color co = ( ei == selected ?
+               hilight_color : 
+               ( entries[ ei ].enabled ? 
+                  entries[ ei ].text_color : 
+               disabled_color ) 
+            );
             if ( hilight_full ) {
                mvwprintz(window, estart + si, pad_left + 1, co , "%s", padspaces.c_str());
             }
@@ -340,4 +361,36 @@ uimenu::~uimenu() {
     delwin(window);
     window = NULL;
     init();
+}
+
+void uimenu::addentry(std::string str) {
+   entries.push_back(str);
+}
+
+void uimenu::addentry(const char *format, ...) {
+   char buf[4096];
+   va_list ap;
+   va_start(ap, format);
+   int safe=vsnprintf(buf, sizeof(buf), format, ap);
+   if ( safe >= 4096 || safe < 0 ) {
+     popup("BUG: Increase buf[4096] in ui.cpp");
+     return;
+   }
+   entries.push_back(std::string(buf));
+}
+
+void::uimenu::settext(std::string str) {
+   text = str;
+}
+
+void uimenu::settext(const char *format, ...) {
+   char buf[16384];
+   va_list ap;
+   va_start(ap, format);
+   int safe=vsnprintf(buf, sizeof(buf), format, ap);
+   if ( safe >= 16384 || safe < 0 ) {
+     popup("BUG: Increase buf[16384] in ui.cpp");
+     return;
+   }
+   text = std::string(buf);
 }
