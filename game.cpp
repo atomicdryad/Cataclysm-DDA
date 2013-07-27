@@ -2488,12 +2488,12 @@ void game::load_weatherlog() {
   if(!fin.is_open()) {
     return;
   }
-  //int wlversion;
+  int wlversion;
   getline ( fin, data );
   if(!fin.eof()) {
      std::stringstream wline;
      wline.str(data);
-     wline >> junk >> junk >> junk; /*wlversion;*/
+     wline >> junk >> junk >> junk >> wlversion;
      getline( fin, data );
 
      while(!fin.eof()) {
