@@ -15,8 +15,8 @@
 #include "iexamine.h"
 #include <iosfwd>
 struct fire_smoke {
-   unsigned char fstr;
-   unsigned char sstr;
+   char fstr;
+   char sstr;
    short fage;
    short sage;
 };

@@ -15,7 +15,7 @@
 const oter_t uoterlist[num_ter_types] = {
 {"nothing",		'%',	c_white,	0, no_extras, false, false, 0, 0x0},
 {"crater",		'O',	c_red,		2, field_extras, false, false, 0, 0x0},
-{"field",		'.',	c_brown,	2, field_extras, false, false, 0, 0x0 /*0x2591*/},
+{"field",		'.',	c_brown,	2, field_extras, false, false, 0, 0x0 /*8036 0x2591*/},
 {"forest",		'F',	c_green,	3, field_extras, false, false, 0, 0x234B},
 {"forest",		'F',	c_green,	4, field_extras, false, false, 0, 0x1FA2},
 {"swamp",		'F',	c_cyan,		4, field_extras, false, false, 0, 0x0},

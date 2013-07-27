@@ -2987,8 +2987,14 @@ bool map::add_field(game *g, const int x, const int y,
 	if (!grid[nonant]->fld[lx][ly].findField(t)) //TODO: Update overall field_count appropriately. This is the spirit of "fd_null" that it used to be.
 		grid[nonant]->field_count++; //Only adding it to the count if it doesn't exist.
 	grid[nonant]->fld[lx][ly].addField(t, density, 0); //This will insert and/or update the field.
-	if(g != NULL && x == g->u.posx && y == g->u.posy)
+	if(g != NULL) {
+           if(t==fd_fire) {
+                burncache[x][y].fstr=density;
+                burncache[x][y].fage=1;
+           }
+           if( x == g->u.posx && y == g->u.posy)
 		step_in_field(x,y,g); //Hit the player with the field if it spawned on top of them.
+        }
 	return true;
 }
 
@@ -4209,7 +4215,7 @@ memset(fire_field_cache, fd_null, sizeof(fire_field_cache));
 memset(smoke_field_cache, NULL, sizeof(smoke_field_cache));
 memset(partial_lightsource_cache, -1, sizeof(partial_lightsource_cache));
 memset(burncache, 0, (size_t)(MAPSIZE*SEEX*MAPSIZE*SEEX) * sizeof(struct fire_smoke));
-
+uimenu dm;
 int ff=0;int ffd=0;int ffo=0;
  for(int x = 0; x < my_MAPSIZE * SEEX; x++) {
   for(int y = 0; y < my_MAPSIZE * SEEY; y++) {
@@ -4259,20 +4265,24 @@ burncache[x][y].sage=cur->age;
 			   }
 		   } else if ( cur->getFieldType() == fd_fire ) {
 ff++;
-                      field_entry * ccur=&(fire_field_cache[x][y]);
+/*                      field_entry * ccur=&(fire_field_cache[x][y]);
                       if ( ccur->getFieldType() != fd_null ) {
 ffd++;
                       } else {
 ffo++;
                       }
                       if ( ! ccur || cur->getFieldDensity() > ccur->getFieldDensity() ) {
-			fire_field_cache[x][y]=(*cur);
+*/
+	//		fire_field_cache[x][y]=(*cur);
 burncache[x][y].fstr=cur->density;
 burncache[x][y].fage=cur->age;
-                        int dens=fire_field_cache[x][y].getFieldDensity();
-                        partial_lightsource_cache[x][y]=( dens == 3 ? 160 : ( dens == 2 ? 60 : 16 ) );
+/*dm.addentry("%d,%d: %d/%d <=> %d/%d",x,y,burncache[x][y].fstr,burncache[x][y].fage,
+cur->density,cur->age
+);*/
+    //                    int dens=fire_field_cache[x][y].getFieldDensity();
+      //                  partial_lightsource_cache[x][y]=( dens == 3 ? 160 : ( dens == 2 ? 60 : 16 ) );
                         
-                      }
+  //                    }
 		   }
 
 		   // TODO: [lightmap] Have glass reduce light as well
@@ -4280,6 +4290,7 @@ burncache[x][y].fage=cur->age;
    }
   }
  }
+//dm.query();
 //popup("%d: o: %d d: %d",ff,ffo,ffd);
 }
 
