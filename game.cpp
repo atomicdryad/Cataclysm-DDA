@@ -665,7 +665,7 @@ pf.reset(pfm0);pf.reset(pfm1);pf.reset(pfm2);pf.reset(pg9);
 pf.reset(pfdout);
 }
 
-g->add_msg("lm(%d) %dms / fd(%d): %d fd1(%d) %dms, fd2(%d) %dms, fd3(%d) %dms, fd4(%d) %dms, fd5(%d) %dms, fd6(%d) %dms,  fd7(%d) %dms,  fd8(%d) %dms, fd9(%d) %dms",
+g->add_msg("lm(%d) %dms / fd0(%d): %dms fd1(%d) %dms, fd2(%d) %dms, fd3(%d) %dms, fd4(%d) %dms, fd5(%d) %dms, fd6(%d) %dms,  fd7(%d) %dms,  fd8(%d) %dms, fd9(%d) %dms",
 pf.getcount(lm1), pf.get(lm1),
 pf.getcount(fd0), pf.get(fd0),
 pf.getcount(fd1), pf.get(fd1),
@@ -7502,8 +7502,8 @@ point game::look_debug(point coords) {
     field &curfield = m.field_at(lx, ly);
     if (curfield.fieldCount() > 0) {
 		field_entry *cur = NULL;
-		for(std::vector<field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it){
-			cur = (*field_list_it);
+		for(std::map<field_id, field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it){
+			cur = field_list_it->second;
 			if(cur == NULL) continue;
 			mvwprintz(w_look, off, 1, fieldlist[cur->getFieldType()].color[cur->getFieldDensity()-1], _("field: %s (%d) density %d age %d"),
 				fieldlist[cur->getFieldType()].name[cur->getFieldDensity()-1].c_str(), cur->getFieldType(), cur->getFieldDensity(), cur->getFieldAge()
@@ -7682,8 +7682,8 @@ std::vector<field_entry*>::iterator field_list_it = curfield.getFieldStart(); fi
 */
       int curflds[num_fields];
       field_entry * cur;
-      for ( std::vector<field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it) {
-          cur = (*field_list_it);
+      for ( std::map<field_id, field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it) {
+          cur = field_list_it->second;
           if(cur == NULL) continue;
           curflds[cur->getFieldType()]=cur->getFieldDensity();
       }
@@ -7898,8 +7898,8 @@ point game::look_around()
 
    if (tmpfield.fieldCount() > 0) {
 		field_entry *cur = NULL;
-		for(std::vector<field_entry*>::iterator field_list_it = tmpfield.getFieldStart(); field_list_it != tmpfield.getFieldEnd(); ++field_list_it){
-			cur = (*field_list_it);
+		for(std::map<field_id, field_entry*>::iterator field_list_it = tmpfield.getFieldStart(); field_list_it != tmpfield.getFieldEnd(); ++field_list_it){
+			cur = field_list_it->second;
 			if(cur == NULL) continue;
 			mvwprintz(w_look, off, 1, fieldlist[cur->getFieldType()].color[cur->getFieldDensity()-1], "%s",
 				fieldlist[cur->getFieldType()].name[cur->getFieldDensity()-1].c_str());
@@ -10410,9 +10410,9 @@ void game::plmove(int x, int y)
   //Ask for EACH bad field, maybe not? Maybe say "theres X bad shit in there don't do it."
   field_entry *cur = NULL;
   field &tmpfld = m.field_at(x, y);
-  for(std::vector<field_entry*>::iterator field_list_it = tmpfld.getFieldStart();
+  for(std::map<field_id, field_entry*>::iterator field_list_it = tmpfld.getFieldStart();
       field_list_it != tmpfld.getFieldEnd(); ++field_list_it) {
-		cur = (*field_list_it);
+		cur = field_list_it->second;
 		if(cur == NULL) continue;
 		if (cur->is_dangerous() &&
 			!query_yn(_("Really step into that %s?"), cur->name().c_str()))

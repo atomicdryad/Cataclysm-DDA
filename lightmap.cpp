@@ -53,7 +53,7 @@ pf.start(lm1);
    for(int sy = 0; sy < LIGHTMAP_CACHE_Y; ++sy) {
     const ter_id terrain = g->m.ter(sx, sy);
     const std::vector<item> &items = g->m.i_at(sx, sy);
-// how about no //    field &current_field = g->m.field_at(sx, sy);
+    field &current_field = g->m.field_at(sx, sy);
     // When underground natural_light is 0, if this changes we need to revisit
     if (natural_light > LIGHT_AMBIENT_LOW) {
      if (!g->m.is_outside(sx, sy)) {
@@ -87,10 +87,10 @@ pf.start(lm1);
    } else if(terrain == t_emergency_light) {
      apply_light_source(sx, sy, 3, false);
    }
-/*
+
    field_entry *cur = NULL;
-	for(std::vector<field_entry*>::iterator field_list_it = current_field.getFieldStart(); field_list_it != current_field.getFieldEnd(); ++field_list_it){
-		cur = (*field_list_it);
+	for(std::map<field_id, field_entry*>::iterator field_list_it = current_field.getFieldStart(); field_list_it != current_field.getFieldEnd(); ++field_list_it){
+		cur = field_list_it->second;
 		if(cur == NULL) continue;
    // TODO: [lightmap] Attach light brightness to fields
 		switch(cur->getFieldType()) {
@@ -117,7 +117,7 @@ pf.start(lm1);
    }
 
 	}
-*/
+
   }
  }
 

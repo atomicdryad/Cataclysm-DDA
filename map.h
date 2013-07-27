@@ -522,7 +522,7 @@ private:
  field_entry * smoke_field_cache[MAPSIZE*SEEX][MAPSIZE*SEEY]; // and this
  fire_smoke burncache[MAPSIZE*SEEX][MAPSIZE*SEEY]; // and this
 
- std::vector<point> process_cached_fire(game *g);
+ void process_cached_fire(game *g);
  submap* grid[MAPSIZE * MAPSIZE];
 };
 
