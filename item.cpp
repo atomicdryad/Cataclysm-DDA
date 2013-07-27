@@ -39,6 +39,8 @@ item::item()
  last_rot_check = -1;
  accumulated_rot = 0;
 
+ objtype=OBJECT_TYPE_ITEM;
+ parentref=&nullobject;
 }
 
 item::item(itype* it, unsigned int turn)
@@ -179,6 +181,8 @@ void item::make_corpse(itype* it, mtype* mt, unsigned int turn)
  bday = turn;
  last_rot_check = -1;
  accumulated_rot = 0;
+ objtype=OBJECT_TYPE_ITEM;
+ parentref=&nullobject;
 }
 
 itype * item::nullitem_m = new itype();
@@ -203,6 +207,8 @@ void item::make(itype* it)
  else
   type = it;
  contents.clear();
+ objtype=OBJECT_TYPE_ITEM;
+objstr="item::make";
 }
 
 void item::clear()

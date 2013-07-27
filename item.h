@@ -3,13 +3,13 @@
 
 #include <string>
 #include <vector>
+#include "object.h"
 #include "itype.h"
 #include "mtype.h"
 //#include "npc.h"
 
 class player;
 class npc;
-
 // Thresholds for radiation dosage for the radiation film badge.
 const int rad_dosage_thresholds[] = { 0, 30, 60, 120, 240, 500};
 const std::string rad_threshold_colors[] = { "green", "blue", "yellow", "orange", "red", "black"};
@@ -34,8 +34,8 @@ struct iteminfo{
    bLowerIsBetter = bIn1;
   }
 };
-
-class item
+class baseobject;
+class item: public virtual baseobject
 {
 public:
  item();
@@ -46,6 +46,7 @@ public:
  ~item();
  void make(itype* it);
  void clear(); // cleanup that's required to re-use an item variable
+ virtual void basefunc() {};
 
 // returns the default container of this item, with this item in it
  item in_its_container(std::map<std::string, itype*> *itypes);
@@ -182,6 +183,7 @@ public:
  int mission_id;// Refers to a mission in game's master list
  int player_id;	// Only give a mission to the right player!
  std::map<std::string, std::string> item_vars;
+std::string getname() { return type->name; }
  static itype * nullitem();
 
  item clone();
