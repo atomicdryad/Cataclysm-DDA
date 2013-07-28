@@ -802,6 +802,8 @@ struct submap {
  furn_id        frn[SEEX][SEEY]; // Furniture on each square
  trap_id		trp[SEEX][SEEY]; // Trap on each square
  field			fld[SEEX][SEEY]; // Field on each square
+ sfield                 sfld[SEEX][SEEY];
+ std::map<int, field_entry*> field_list;
  int			rad[SEEX][SEEY]; // Irradiation of each square
  int x, y, z;
  graffiti graf[SEEX][SEEY]; // Graffiti on each square

@@ -487,7 +487,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 							int fx = x + ((i + starti) % 3) - 1, fy = y + ((j + startj) % 3) - 1;
 							if (INBOUNDS(fx, fy)) {
                                 field &nearby_field = g->m.field_at(fx, fy);
-                                nearwebfld=nearby_field.findField(fd_web);
+                                field_entry * nearwebfld=nearby_field.findField(fd_web);
 								int spread_chance = 25 * (cur->getFieldDensity() - 1);
 								if (nearwebfld)
 									spread_chance = 50 + spread_chance / 2;
