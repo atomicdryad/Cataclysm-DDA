@@ -163,7 +163,6 @@ void game::init_fields()
     }
 }
 
-///////////////////////////////////////////////////////////////////////////////////////////////////////////
 bool map::process_fields(game *g)
 {
  bool found_field = false;
@@ -184,7 +183,6 @@ If you need to insert a new field behavior per unit time add a case statement in
 */
 bool map::process_fields_in_submap(game *g, int gridn)
 {
-//pf.start(fd1);
  // Realistically this is always true, this function only gets called if fields exist.
 	bool found_field = false;
  // Used to hold a copy of the current field.
@@ -402,12 +400,12 @@ bool map::process_fields_in_submap(game *g, int gridn)
 							i--;
 						}
 					}
+
 					veh = veh_at(x, y, part); //Get the part of the vehicle in the fire.
 					if (veh)
 						veh->damage (part, cur->getFieldDensity() * 10, false); //Damage the vehicle in the fire.
 					// If the flames are in a brazier, they're fully contained, so skip consuming terrain
 					if((tr_brazier != tr_at(x, y))&&(has_flag(fire_container, x, y) != true )) {
-
 						// Consume the terrain we're on
 						if (has_flag(explodes, x, y)) {
 							//This is what destroys houses so fast.
@@ -443,16 +441,17 @@ bool map::process_fields_in_submap(game *g, int gridn)
 						} else if (terlist[ter(x, y)].flags & mfb(swimmable))
 							cur->setFieldAge(cur->getFieldAge() + 800);	// Flames die quickly on water
 					}
+
 					// If we consumed a lot, the flames grow higher
 					while (cur->getFieldDensity() < 3 && cur->getFieldAge() < 0) {
 						//Fires under 0 age grow in size. Level 3 fires under 0 spread later on.
 						cur->setFieldAge(cur->getFieldAge() + 300);
 						cur->setFieldDensity(cur->getFieldDensity() + 1);
 					}
+
 					// If the flames are in a pit, it can't spread to non-pit
 					bool in_pit = (ter(x, y) == t_pit);
 					// If the flames are REALLY big, they contribute to adjacent flames
-
 					if (cur->getFieldDensity() == 3 && cur->getFieldAge() < 0 && tr_brazier != tr_at(x, y)
 						&& (has_flag(fire_container, x, y) != true  ) ){
 							// Randomly offset our x/y shifts by 0-2, to randomly pick a square to spread to
@@ -465,7 +464,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 							for (int i = 0; i < 3 && cur->getFieldAge() < 0; i++) {
 								for (int j = 0; j < 3 && cur->getFieldAge() < 0; j++) {
 									int fx = x + ((i + starti) % 3) - 1, fy = y + ((j + startj) % 3) - 1;
-									tmpfld = g->m.field_at(fx,fy).findField(fd_fire);
+									tmpfld = field_at(fx,fy).findField(fd_fire);
 									if (tmpfld && tmpfld != cur && cur->getFieldAge() < 0 && tmpfld->getFieldDensity() < 3 &&
 										(in_pit == (ter(fx, fy) == t_pit))) {
 											tmpfld->setFieldDensity(tmpfld->getFieldDensity() + 1);

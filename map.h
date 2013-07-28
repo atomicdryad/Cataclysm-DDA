@@ -514,15 +514,6 @@ private:
  bool outside_cache[MAPSIZE*SEEX][MAPSIZE*SEEY];
  float transparency_cache[MAPSIZE*SEEX][MAPSIZE*SEEY];
  bool seen_cache[MAPSIZE*SEEX][MAPSIZE*SEEY];
-
- char partial_lightsource_cache[MAPSIZE*SEEX][MAPSIZE*SEEY]; // precalculate light source positions to prevent pointless casting of lightrays into them
-
- field_entry fire_field_cache[MAPSIZE*SEEX][MAPSIZE*SEEY]; // process_fields_in_submap makes the game slow to a crawl primarily due to this
- field_entry * fire_field_pcache[MAPSIZE*SEEX][MAPSIZE*SEEY]; // process_fields_in_submap makes the game slow to a crawl primarily due to this
- field_entry * smoke_field_cache[MAPSIZE*SEEX][MAPSIZE*SEEY]; // and this
- fire_smoke burncache[MAPSIZE*SEEX][MAPSIZE*SEEY]; // and this
-
- void process_cached_fire(game *g);
  submap* grid[MAPSIZE * MAPSIZE];
 };
 

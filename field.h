@@ -14,12 +14,7 @@
 #include "basecamp.h"
 #include "iexamine.h"
 #include <iosfwd>
-struct fire_smoke {
-   char fstr;
-   char sstr;
-   short fage;
-   short sage;
-};
+
 /*
 struct field_t
 Used to store the master field effects list metadata. Not used to store a field, just queried to find out specifics
@@ -185,19 +180,15 @@ public:
     //Note: If you are using "field_at" function, set the return to a temporary field variable! If you somehow
     //query an out of bounds field location it returns a different field every inquery. This means that
     //the start and end iterators won't match up and will crash the system.
-//    std::vector<field_entry*>::iterator getFieldStart();
-std::map<field_id, field_entry*>::iterator getFieldStart();
+    std::map<field_id, field_entry*>::iterator getFieldStart();
     //Returns the vector iterator to end searching through the list.
-//    std::vector<field_entry*>::iterator getFieldEnd();
-std::map<field_id, field_entry*>::iterator getFieldEnd();
-//    std::vector<field_entry*>& getEntries();
+    std::map<field_id, field_entry*>::iterator getFieldEnd();
 
     //Returns the total move cost from all fields
     int move_cost() const;
 
-std::map<field_id, field_entry*>& getEntries();
-//    std::vector<field_entry*> field_list; //A listing of all field effects on the current tile.
-    std::map<field_id, field_entry*> field_list;
+    std::map<field_id, field_entry*>& getEntries();
+    std::map<field_id, field_entry*> field_list; //A pointer lookup table of all field effects on the current tile.
 private:
     //Draw_symbol currently is equal to the last field added to the square. You can modify this behavior in the class functions if you wish.
     field_id draw_symbol;
