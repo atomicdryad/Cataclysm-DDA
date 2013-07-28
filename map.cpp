@@ -4205,18 +4205,8 @@ void map::build_outside_cache(const game *g)
 // TODO Consider making this just clear the cache and dynamically fill it in as trans() is called
 void map::build_transparency_cache() // fixme: populate fire_field && smoke_field caches
 {
-fire_smoke fs_null;
-fs_null.fstr=0;
-fs_null.sstr=0;
-fs_null.fage=0;
-fs_null.sage=0;
-
-memset(fire_field_cache, fd_null, sizeof(fire_field_cache));
-memset(smoke_field_cache, NULL, sizeof(smoke_field_cache));
-memset(partial_lightsource_cache, -1, sizeof(partial_lightsource_cache));
-memset(burncache, 0, (size_t)(MAPSIZE*SEEX*MAPSIZE*SEEX) * sizeof(struct fire_smoke));
-uimenu dm;
-int ff=0;int ffd=0;int ffo=0;
+ memset(partial_lightsource_cache, -1, sizeof(partial_lightsource_cache));
+ //memset(burncache, (char)0, (size_t)(MAPSIZE*SEEX*MAPSIZE*SEEX) * sizeof(struct fire_smoke));
  for(int x = 0; x < my_MAPSIZE * SEEX; x++) {
   for(int y = 0; y < my_MAPSIZE * SEEY; y++) {
 
@@ -4240,10 +4230,8 @@ int ff=0;int ffd=0;int ffo=0;
 			   // Fields are either transparent or not, however we want some to be translucent
 			   switch(cur->getFieldType()) {
 			   case fd_smoke:
-				   smoke_field_cache[x][y]=cur;
-burncache[x][y].sstr=cur->density;
-burncache[x][y].sage=cur->age;
-
+                   //burncache[x][y].sstr=cur->density;
+                   //burncache[x][y].sage=cur->age;
 				   if(cur->getFieldDensity() == 3)
 					   transparency_cache[x][y] = LIGHT_TRANSPARENCY_SOLID;
 				   if(cur->getFieldDensity() == 2)
@@ -4264,25 +4252,10 @@ burncache[x][y].sage=cur->age;
 				   break;
 			   }
 		   } else if ( cur->getFieldType() == fd_fire ) {
-ff++;
-/*                      field_entry * ccur=&(fire_field_cache[x][y]);
-                      if ( ccur->getFieldType() != fd_null ) {
-ffd++;
-                      } else {
-ffo++;
-                      }
-                      if ( ! ccur || cur->getFieldDensity() > ccur->getFieldDensity() ) {
-*/
-	//		fire_field_cache[x][y]=(*cur);
-burncache[x][y].fstr=cur->density;
-burncache[x][y].fage=cur->age;
-/*dm.addentry("%d,%d: %d/%d <=> %d/%d",x,y,burncache[x][y].fstr,burncache[x][y].fage,
-cur->density,cur->age
-);*/
-    //                    int dens=fire_field_cache[x][y].getFieldDensity();
-      //                  partial_lightsource_cache[x][y]=( dens == 3 ? 160 : ( dens == 2 ? 60 : 16 ) );
-                        
-  //                    }
+               //burncache[x][y].fstr=cur->density;
+               //burncache[x][y].fage=cur->age;
+               int dens=fire_field_cache[x][y].getFieldDensity();
+               partial_lightsource_cache[x][y]=( dens == 3 ? 160 : ( dens == 2 ? 60 : 16 ) );
 		   }
 
 		   // TODO: [lightmap] Have glass reduce light as well
@@ -4290,8 +4263,6 @@ cur->density,cur->age
    }
   }
  }
-//dm.query();
-//popup("%d: o: %d d: %d",ff,ffo,ffd);
 }
 
 void map::build_seen_cache(game *g)
