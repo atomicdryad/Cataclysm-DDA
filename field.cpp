@@ -182,7 +182,6 @@ Iterates over every field on every tile of the given submap indicated by NONANT 
 This is the general update function for field effects. This should only be called once per game turn.
 If you need to insert a new field behavior per unit time add a case statement in the switch below.
 */
-#define cfire 1
 bool map::process_fields_in_submap(game *g, int gridn)
 {
 //pf.start(fd1);
@@ -199,7 +198,6 @@ bool map::process_fields_in_submap(game *g, int gridn)
 	field_entry* tmpfld = NULL;
 	field_id curtype; //Holds cur->getFieldType() as thats what the old system used before rewrite.
 
-    int rc=0;
 	//Loop through all tiles in this submap indicated by gridn
 	for (int locx = 0; locx < SEEX; locx++) {
 		for (int locy = 0; locy < SEEY; locy++) {
@@ -526,15 +524,11 @@ bool map::process_fields_in_submap(game *g, int gridn)
                                             field &spreading_field = g->m.field_at(x+ii, y+jj);
 
                                             tmpfld = spreading_field.findField(fd_fire);
-                                            if ( tmpfld ) {
-                                                int tmpflddens=tmpfld->getFieldDensity();
-                                                if ( ( tmpflddens == 3 ) || ( tmpflddens == 2 && one_in(4) ) ) {
-                                                    smoke++;
-                                                } else if (spreading_field.findField(fd_smoke)) {
-                                                    nosmoke = false;
-                                                }
+                                            int tmpflddens = ( tmpfld ? tmpfld->getFieldDensity() : 0 );
+                                            if ( ( tmpflddens == 3 ) || ( tmpflddens == 2 && one_in(4) ) ) {
+                                                smoke++; //The higher this gets, the more likely for smoke.
                                             } else if (spreading_field.findField(fd_smoke)) {
-                                                nosmoke = false;
+                                                nosmoke = false; //slightly, slightly, less likely to make smoke if there is already smoke
                                             }
 										}
 									}
@@ -569,7 +563,6 @@ bool map::process_fields_in_submap(game *g, int gridn)
 						for (int a = -1; a <= 1; a++) {
 							for (int b = -1; b <= 1; b++) {
         field &wandering_field = g->m.field_at(x + a, y + b);
-                                tmpfld = NULL;
                                 tmpfld = wandering_field.findField(fd_smoke);
 								if ((tmpfld && tmpfld->getFieldDensity() < 3) ||
             (move_cost(x+a, y+b) > 0)) // todo: expensive, cache
