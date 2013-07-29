@@ -15,9 +15,6 @@
 #include "iexamine.h"
 #include <iosfwd>
 
-#define FIELDX 12
-#define FIELDXY ( FIELDX * FIELDX ) + FIELDX
-
 /*
 struct field_t
 Used to store the master field effects list metadata. Not used to store a field, just queried to find out specifics
@@ -73,11 +70,6 @@ enum field_id {
  fd_acid_vent,
  num_fields
 };
-
-int fieldidx(int x, int y, field_id f) {
-  return (int)f + ( x + ( y * FIELDX ) * FIELDXY );
-};
-
 
 /*
 Controls the master listing of all possible field effects, indexed by a field_id. Does not store active fields, just metadata.
@@ -153,20 +145,6 @@ public:
     signed char density; //The density, or intensity (higher is stronger), of the field entry.
     int age; //The age, or time to live, of the field effect. 0 is permanent.
     bool is_alive; //True if this is an active field, false if it should be destroyed next check.
-};
-class sfield {
-public:
-    //Field constructor
-    sfield();
-    //Frees all memory assigned to the field's field_entry vector and general cleanup.
-    ~sfield();
-
-    //Returns a field entry corresponding to the field_id parameter passed in. 
-    //If no fields are found then a field_entry with type fd_null is returned.
-    field_entry* findField(const field_id field_to_find);
-    char posidx;
-    bool dirty;
-    std::map<int, field_entry*>& flist;
 };
 
 //Represents a variable sized collection of field entries on a given map square.
