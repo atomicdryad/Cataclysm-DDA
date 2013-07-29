@@ -69,6 +69,8 @@ class uimenu {
     void query(bool loop=true);
     void addentry(std::string str);
     void addentry(const char *format, ...);
+    void addentry(int r, bool e, int k, std::string str);
+    void addentry(int r, bool e, int k, const char *format, ...);
     void settext(std::string str);
     void settext(const char *format, ...);
     ~uimenu ();

@@ -13,18 +13,17 @@
 
 
 ////////////////////////////////////
-
-
 int getfoldedwidth (std::vector<std::string> foldedstring) {
     int ret=0;
     for ( int i=0; i < foldedstring.size() ; i++ ) {
-		int width = utf8_width(foldedstring[i].c_str());
+        int width = utf8_width(foldedstring[i].c_str());
         if ( width > ret ) {
-			ret=width;
-		}
+	    ret=width;
+        }
     }
     return ret;
 }
+
 ////////////////////////////////////
 uimenu::uimenu() {
     init();
@@ -143,7 +142,7 @@ void uimenu::show() {
             if(entries[ i ].enabled) {
                 if( entries[ i ].hotkey > 0 ) {
                     keymap[ entries[ i ].hotkey ] = i;
-                } else if ( entries[ i ].hotkey == -1 ) {
+                } else if ( entries[ i ].hotkey == -1 && i < 100 ) {
                     autoassign.push_back(i);
                 }
                 if ( entries[ i ].retval == -1 ) {
@@ -164,17 +163,19 @@ void uimenu::show() {
         if ( autoassign.size() > 0 ) {
             for ( int a = 0; a < autoassign.size(); a++ ) {
                 int palloc = autoassign[ a ];
+                int setkey=-1;
                 if ( palloc < 9 ) {
-                    entries[ palloc ].hotkey = palloc + 49; // 1-9;
+                    setkey = palloc + 49; // 1-9;
                 } else if ( palloc == 9 ) {
-                    entries[ palloc ].hotkey = palloc + 39; // 0;
+                    setkey = palloc + 39; // 0;
                 } else if ( palloc < 36 ) {
-                    entries[ palloc ].hotkey = palloc + 87; // a-z
+                    setkey = palloc + 87; // a-z
                 } else if ( palloc < 61 ) {
-                    entries[ palloc ].hotkey = palloc + 29; // A-Z
+                    setkey = palloc + 29; // A-Z
                 }
-                if ( palloc < 61 ) {
-                    keymap[ entries[ palloc ].hotkey ] = palloc;
+                if ( setkey != -1 && keymap.find(setkey) == keymap.end() ) {
+                    entries[ palloc ].hotkey = setkey;
+                    keymap[ setkey ] = palloc;
                 }
             }
         }
@@ -291,10 +292,13 @@ void uimenu::query(bool loop) {
     if ( entries.size() < 1 ) {
         return;
     }
-    //int last_selected = selected;
-    int startret = ret;
+    int last_selected = selected;
+    int startret = UIMENU_INVALID;
+    ret = UIMENU_INVALID;
+    show();
     do {
-        show();
+        //show();
+        last_selected = selected;
         keypress = getch();
         if ( keypress == KEY_UP || keypress == KEY_PPAGE ) {
             if ( keypress == KEY_PPAGE ) {
@@ -351,6 +355,7 @@ void uimenu::query(bool loop) {
                 ret = -1;
             }
         }
+        show();
     } while ( loop & (ret == startret ) );
 }
 
@@ -367,6 +372,10 @@ void uimenu::addentry(std::string str) {
    entries.push_back(str);
 }
 
+void uimenu::addentry(int r, bool e, int k, std::string str) {
+   entries.push_back(uimenu_entry(r, e, k, str));
+}
+
 void uimenu::addentry(const char *format, ...) {
    char buf[4096];
    va_list ap;
@@ -377,6 +386,19 @@ void uimenu::addentry(const char *format, ...) {
      return;
    }
    entries.push_back(std::string(buf));
+}
+
+void uimenu::addentry(int r, bool e, int k, const char *format, ...) {
+   char buf[4096];
+   int rv=r; bool en=e; int ke=k;
+   va_list ap;
+   va_start(ap, format);
+   int safe=vsnprintf(buf, sizeof(buf), format, ap);
+   if ( safe >= 4096 || safe < 0 ) {
+     popup("BUG: Increase buf[4096] in ui.cpp");
+     return;
+   }
+   entries.push_back(uimenu_entry(rv, en, ke, std::string(buf)));
 }
 
 void::uimenu::settext(std::string str) {
