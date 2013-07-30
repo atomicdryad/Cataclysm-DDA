@@ -105,10 +105,7 @@ vehicle* map::veh_at(const int x, const int y, int &part_num)
   part_num = it->second.second;
   return it->second.first;
  }
- debugmsg ("vehicle part cache cache indicated vehicle not found: %d %d, me= size %d abs %d %d",
-x,y,
-my_MAPSIZE,grid[0]->x,grid[0]->y
-); // 16 7
+ debugmsg ("vehicle part cache cache indicated vehicle not found: %d %d",x,y);
  return NULL;
 }
 
@@ -1155,7 +1152,10 @@ switch (furn(x, y)) {
    furn_set(x, y, f_null);
    spawn_item(x, y, "scrap",       0, rng(0, 6));
    spawn_item(x, y, "steel_chunk", 0, rng(0, 3));
-   spawn_item(x, y, "element",     0, rng(0, 4));
+   spawn_item(x, y, "element", 0, rng(1, 3));
+   spawn_item(x, y, "sheet_metal", 0, 0, rng(2, 6));
+   spawn_item(x, y, "cable", 0, 0, rng(1,3));
+
    return true;
   } else {
    sound += "clang!";
@@ -3786,7 +3786,7 @@ pf.stop(pfm2);
      }
    }
  } else { // It doesn't exist; we must generate it!
-  if(_dbg==true) dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
+  dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
   tinymap tmp_map(traps);
 // overx, overy is where in the overmap we need to pull data from
 // Each overmap square is two nonants; to prevent overlap, generate only at

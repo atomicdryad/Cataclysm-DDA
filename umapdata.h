@@ -11,7 +11,7 @@
 #include "mapdata.h"
 #include "omdata.h"
 #include "mapdata.h"
-
+#ifdef meh
 const oter_t uoterlist[num_ter_types] = {
 {"nothing",		'%',	c_white,	0, no_extras, false, false, 0, 0x0},
 {"crater",		'O',	c_red,		2, field_extras, false, false, 0, 0x0},
@@ -799,5 +799,5 @@ const furn_t ufurnlist[num_furniture_types] = { // MUST match enum furn_id above
 {"mutated poppy flower", 'f', c_red,    1, -1,
     mfb(transparent), &iexamine::flower_poppy, 0x0}
 };
-
+#endif
 #endif

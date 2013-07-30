@@ -81,6 +81,7 @@ c_ltblue_red  = COLOR_PAIR(26) | A_BOLD,
 c_ltcyan_red  = COLOR_PAIR(27) | A_BOLD,
 c_pink_red    = COLOR_PAIR(28) | A_BOLD,
 c_yellow_red  = COLOR_PAIR(29) | A_BOLD,
+
 c_unset       = COLOR_PAIR(31),
 
  c_black_white  = COLOR_PAIR(32),
@@ -163,7 +164,6 @@ c_unset       = COLOR_PAIR(31),
  c_pink_cyan  = COLOR_PAIR(70) | A_BOLD,
  c_cyan_cyan  = COLOR_PAIR(71),
  c_ltcyan_cyan  = COLOR_PAIR(71) | A_BOLD
-
 
 };
 

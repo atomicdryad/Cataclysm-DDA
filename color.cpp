@@ -89,7 +89,6 @@ void init_colors()
  init_pair(70, COLOR_MAGENTA, COLOR_CYAN);
  init_pair(71, COLOR_CYAN, COLOR_CYAN);
 
-
 }
 
 int color_to_int(nc_color col)
@@ -157,6 +156,7 @@ int color_to_int(nc_color col)
   case c_ltcyan_red : return 60;
   case c_pink_red   : return 61;
   case c_yellow_red : return 62;
+
   case c_unset      : return 63;
 
    case c_black_white  : return 64;
@@ -319,7 +319,6 @@ nc_color int_to_color(int key)
   case 62: return c_yellow_red ;
 
   case 63: return c_unset;
-  
 
    case 64: return c_black_white;
    case 65: return c_dkgray_white;
@@ -405,8 +404,6 @@ nc_color int_to_color(int key)
    case 141: return c_pink_cyan;
    case 142: return c_cyan_cyan;
    case 143: return c_ltcyan_cyan;
-
-
 
  }
  return c_black;
