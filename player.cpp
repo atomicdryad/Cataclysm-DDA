@@ -8426,7 +8426,7 @@ int player::getID ()
 
 bool player::uncanny_dodge(bool is_u)
 {
-    if( this->power_level >= 3 && this->has_active_bionic("bio_uncanny_dodge") ) { return false; }
+    if( this->power_level < 3 || !this->has_active_bionic("bio_uncanny_dodge") ) { return false; }
     point adjacent = adjacent_tile();
     power_level -= 3;
     if (adjacent.x != posx || adjacent.y != posy)
