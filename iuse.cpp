@@ -98,7 +98,8 @@ static bool inscribe_item( game *g, player *p, std::string verb, std::string ger
 
     std::map<std::string, std::string>::iterator ent = cut->item_vars.find("item_note");
     sprintf(buf, _("%1$s on this %2$s is a note saying: "), gerund.c_str(), cut->type->name.c_str());
-    std::string message = buf;
+    std::string messageprefix = buf;
+    std::string message = "";
     sprintf(buf, _("%s what?"), verb.c_str()); 
     message = string_input_popup(buf, 64, (ent != cut->item_vars.end() ?
                                                        cut->item_vars["item_note"] : message ));
