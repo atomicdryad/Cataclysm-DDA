@@ -20,6 +20,8 @@
 #define dbg(x) dout((DebugLevel)(x),D_MAP) << __FILE__ << ":" << __LINE__ << ": "
 #define _dbg true
 
+#include "bench.h"
+
 enum astar_list {
  ASL_NONE,
  ASL_OPEN,
@@ -945,6 +947,7 @@ bool map::trans(const int x, const int y)
   tertr = terlist[ter(x, y)].flags & mfb(transparent);
  if( tertr ){
   // Fields may obscure the view, too
+
 	 field &curfield = field_at(x,y);
 	 if(curfield.fieldCount() > 0){
 	 field_entry *cur = NULL;
@@ -954,12 +957,15 @@ bool map::trans(const int x, const int y)
 			 if(cur == NULL) continue;
 			 //If ANY field blocks vision, the tile does.
 			 if(!fieldlist[cur->getFieldType()].transparent[cur->getFieldDensity() - 1]){
+//if ( transparency_cache[x][y] != LIGHT_TRANSPARENCY_SOLID ) dbg(D_INFO) << stringfmt("sub0 %d,%d %d,%d trans=0 trans!=cache %.4f != %.4f", abs_sub.x,abs_sub.y,x,y,transparency_cache[x][y],LIGHT_TRANSPARENCY_SOLID );
 				 return false;
 			 }
 	  }
 	 }
+//if ( INBOUNDS(x,y) && transparency_cache[x][y] == LIGHT_TRANSPARENCY_SOLID ) dbg(D_INFO) << stringfmt("sub0 %d,%d %d,%d trans=1 trans!=cache %.4f == %.4f", abs_sub.x,abs_sub.y,x,y,transparency_cache[x][y],LIGHT_TRANSPARENCY_SOLID );
 	 return true; //no blockers found, this is transparent
  }
+//if ( transparency_cache[x][y] != LIGHT_TRANSPARENCY_SOLID ) dbg(D_INFO) << stringfmt("sub0 %d,%d %d,%d trans=0 trans!=cache %.4f != %.4f", abs_sub.x,abs_sub.y,x,y,transparency_cache[x][y],LIGHT_TRANSPARENCY_SOLID );
  return false; //failsafe block vision
 }
 
@@ -3077,6 +3083,7 @@ void map::debug()
 
 void map::draw(game *g, WINDOW* w, const point center)
 {
+ pf.start(mc5);
  g->reset_light_level();
  const int g_light_level = (int)g->light_level();
  const int natural_sight_range = g->u.sight_range(1);
@@ -3192,6 +3199,10 @@ UTF-8: e2 98 a2  UTF-16BE: 2622  Decimal: &#9762;
 */
   g->mapRain[aty][atx] = false;
  }
+pf.stop(mc5);
+dbg(D_INFO) << stringfmt("%d draw %d",int(g->turn),pf.get(mc5));
+pf.reset(mc5);
+
 }
 
 void map::drawsq(WINDOW* w, player &u, const int x, const int y, const bool invert_arg,
@@ -3579,7 +3590,6 @@ void map::save(overmap *om, unsigned const int turn, const int x, const int y, c
    saven(om, turn, x, y, z, gridx, gridy);
  }
 }
-#include "bench.h"
 
 void map::load(game *g, const int wx, const int wy, const int wz, const bool update_vehicle, overmap *om)
 {
@@ -4167,6 +4177,7 @@ float map::light_transparency(const int x, const int y) const
 
 void map::build_outside_cache(const game *g)
 {
+//dbg(D_INFO) << int(g->turn) << " build_outside_cache";
     if (g->levz < 0)
     {
         memset(outside_cache, false, sizeof(outside_cache));
@@ -4194,10 +4205,13 @@ void map::build_outside_cache(const game *g)
         }
     }
 }
+/////
 
+/////
 // TODO Consider making this just clear the cache and dynamically fill it in as trans() is called
 void map::build_transparency_cache()
 {
+//dbg(D_INFO) << "  build_transparency_cache";
  for(int x = 0; x < my_MAPSIZE * SEEX; x++) {
   for(int y = 0; y < my_MAPSIZE * SEEY; y++) {
 
@@ -4246,6 +4260,7 @@ void map::build_transparency_cache()
 
 void map::build_seen_cache(game *g)
 {
+//dbg(D_INFO) << int(g->turn) << " build_seen_cache";
   memset(seen_cache, false, sizeof(seen_cache));
   const int j = (SEEX * my_MAPSIZE) - 1;
   for (int i = 0; i < SEEX * my_MAPSIZE; i++) {
@@ -4256,12 +4271,17 @@ void map::build_seen_cache(game *g)
   }
 }
 
+// draw_ter: 1
 void map::build_map_cache(game *g)
 {
+
+//dbg(D_INFO) << int(g->turn) << " build_map_cache";
+//std::string _debugmsg=stringfmt("%d build_map_cache ",int(g->turn));
+pf.start(mc1);
  build_outside_cache(g);
-
+pf.stop(mc1);pf.start(mc2);
  build_transparency_cache();
-
+pf.stop(mc2);
  // Cache all the vehicle stuff in one loop
  VehicleList vehs = get_vehicles();
  for(int v = 0; v < vehs.size(); ++v) {
@@ -4282,9 +4302,16 @@ void map::build_map_cache(game *g)
    }
   }
  }
-
+pf.start(mc3);
  build_seen_cache(g);
+pf.stop(mc3);pf.start(mc4);
  generate_lightmap(g);
+pf.stop(mc4);
+dbg(D_INFO) << stringfmt("%d build_map_cache: outside %d, transparency %d, seen %d, lightmap %d",int(g->turn),
+  pf.get(mc1),pf.get(mc2),pf.get(mc3),pf.get(mc4));
+
+pf.reset(mc1);pf.reset(mc2);pf.reset(mc3); pf.reset(mc4);
+
 }
 
 void map::set_abs_sub( const int x, const int y ) {

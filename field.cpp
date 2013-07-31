@@ -213,10 +213,12 @@ static void spread_gas( map *m, field_entry *cur, int x, int y, field_id curtype
         }
     }
 }
-
+#include "debug.h"
+#define dbg(x) dout((DebugLevel)(x),D_MAP) << __FILE__ << ":" << __LINE__ << ": "
 
 bool map::process_fields(game *g)
 {
+pf.start(fd0);
  bool found_field = false;
  for (int x = 0; x < my_MAPSIZE; x++) {
   for (int y = 0; y < my_MAPSIZE; y++) {
@@ -224,6 +226,9 @@ bool map::process_fields(game *g)
     found_field |= process_fields_in_submap(g, x + y * my_MAPSIZE);
   }
  }
+pf.stop(fd0);
+dbg(D_INFO) << int(g->turn) << "process_fields_in_submap " << pf.get(fd0);pf.reset(fd0);
+
  return found_field;
 }
 

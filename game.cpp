@@ -274,6 +274,7 @@ void game::setup()
  if (opening_screen()) {// Opening menu
 // Finally, draw the screen!
   refresh_all();
+  dbg(D_INFO) << int(turn) << " draw (setup)";
   draw();
  }
 }
@@ -470,6 +471,8 @@ bool game::do_turn()
  }
 // Actual stuff
  gamemode->per_turn(this);
+dbg(D_INFO) << int(turn) << " -> turn ->  " << (1+int(turn)) << " -----------------------------------------------------";
+
  turn.increment();
  process_events();
  process_missions();
@@ -618,9 +621,10 @@ bool game::do_turn()
  if(u.moves > 0) {
      while (u.moves > 0) {
           cleanup_dead();
-          if (!u.has_disease("sleep") && u.activity.type == ACT_NULL)
+          if (!u.has_disease("sleep") && u.activity.type == ACT_NULL) {
+dbg(D_INFO) << int(turn) << " draw (do_turn !activity)";
               draw(); ///////////////////////////////// fixme: ensure  fire_field_cache was generated
-
+          }
           if(handle_action()) {
               ++moves_since_last_save;
               u.action_taken();
@@ -652,6 +656,7 @@ bool game::do_turn()
  }
 
  if (u.has_disease("sleep") && int(turn) % 300 == 0) {
+dbg(D_INFO) << int(turn) << " draw (do_turn turn % 300)";
   draw();
   refresh();
  }
@@ -662,18 +667,19 @@ bool game::do_turn()
  if (turn % 10 == 0)
   u.update_morale();
 if(pf.getcount(pfm0) > 0 ) {
-g->add_msg("loadn(%d): %dms lookup(%d): %dms generate(%d): %dms dout(%d): %d submap gen(%d): %d",
+/*g->add_msg("loadn(%d): %dms lookup(%d): %dms generate(%d): %dms dout(%d): %d submap gen(%d): %d",
   pf.getcount(pfm0),pf.get(pfm0),
   pf.getcount(pfm2),pf.get(pfm2),
   pf.getcount(pfm1),pf.get(pfm1),
   pf.getcount(pfdout),pf.get(pfdout),
 pf.getcount(pg9),pf.get(pg9)
 );
+*/
 pf.reset(pfm0);pf.reset(pfm1);pf.reset(pfm2);pf.reset(pg9);
 pf.reset(pfdout);
 }
 
-g->add_msg("lm(%d) %dms / fd0(%d): %dms fd1(%d) %dms, fd2(%d) %dms, fd3(%d) %dms, fd4(%d) %dms, fd5(%d) %dms, fd6(%d) %dms,  fd7(%d) %dms,  fd8(%d) %dms, fd9(%d) %dms",
+/*g->add_msg("lm(%d) %dms / fd0(%d): %dms fd1(%d) %dms, fd2(%d) %dms, fd3(%d) %dms, fd4(%d) %dms, fd5(%d) %dms, fd6(%d) %dms,  fd7(%d) %dms,  fd8(%d) %dms, fd9(%d) %dms",
 pf.getcount(lm1), pf.get(lm1),
 pf.getcount(fd0), pf.get(fd0),
 pf.getcount(fd1), pf.get(fd1),
@@ -686,7 +692,7 @@ pf.getcount(fd7), pf.get(fd7),
 pf.getcount(fd8), pf.get(fd8),
 pf.getcount(fd9), pf.get(fd9)
 
-);
+);*/
 pf.reset(lm1);
 pf.reset(fd0);
 pf.reset(fd1);
@@ -738,8 +744,10 @@ void game::process_activity()
  it_book* reading;
  bool no_recipes;
  if (u.activity.type != ACT_NULL) {
-  if (int(turn) % 150 == 0)
+  if (int(turn) % 150 == 0) {
+   dbg(D_INFO) << int(turn) << " draw (process_act % 150)";
    draw();
+  }
   if (u.activity.type == ACT_WAIT) {	// Based on time, not speed
    u.activity.moves_left -= 100;
    u.pause(this);
@@ -1651,6 +1659,7 @@ bool game::handle_action()
  int soffsetr = 0 - soffset;
 
  int before_action_moves = u.moves;
+dbg(D_INFO) << stringfmt("%d >>>>>> action[%d] moves %d",int(turn),(int)act,before_action_moves);
 
  switch (act) {
 
@@ -2733,6 +2742,7 @@ void game::load(std::string name)
  update_map(u.posx, u.posy); // fixme: generate cache
  set_adjacent_overmaps(true);
  MAPBUFFER.set_dirty();
+ dbg(D_INFO) << int(turn) << " draw (game_load)";
  draw();
 }
 
@@ -2822,7 +2832,7 @@ void game::save()
 
  fout.open(playerfile.str().c_str());
  // First, write out basic game state information.
- fout << int(turn) << " " << int(last_target) << " " << int(run_mode) << " " <<
+ fout << int(turn) << "  " << int(last_target) << " " << int(run_mode) << " " <<
          mostseen << " " << nextinv << " " << next_npc_id << " " <<
      next_faction_id << " " << next_mission_id << " " << int(nextspawn) << " ";
 
@@ -3722,6 +3732,7 @@ void game::draw()
 {
     // Draw map
     werase(w_terrain);
+dbg(D_INFO) << int(turn) << "   draw draw_ter";
     draw_ter();
     draw_footsteps();
     mon_info();
@@ -3842,7 +3853,10 @@ void game::draw_ter(int posx, int posy)
   posx = u.posx + u.view_offset_x;
  if (posy == -999)
   posy = u.posy + u.view_offset_y;
+dbg(D_INFO) << int(turn) << "   draw_ter m.build_map_cache";
  m.build_map_cache(this); // fixme: ensure fire_field_cache was generated
+dbg(D_INFO) << int(turn) << "   draw_ter m.draw";
+
  m.draw(this, w_terrain, point(posx, posy));
 
  // Draw monsters
@@ -3891,6 +3905,7 @@ void game::draw_ter(int posx, int posy)
 void game::refresh_all()
 {
  m.reset_vehicle_cache();
+dbg(D_INFO) << int(turn) << " draw (refresh_all)";
  draw();
  draw_minimap();
  draw_HP();
@@ -4199,6 +4214,7 @@ unsigned char game::light_level()
 
 void game::reset_light_level()
 {
+
  latest_lightlevel = 0;
  latest_lightlevel_turn = 0;
 }
