@@ -3288,7 +3288,9 @@ z.size(), active_npc.size(), events.size());
   }
   break;
   case 17: {
-      uimenu wl;
+     std::string foo=string_input_popup("Foo?");
+  }
+/*      uimenu wl;
 
       wl.title="test title";
         wl.settext("hour %d turn %d\nhour      | temp | rot / accum    | rain / accum | acid / accum | sun / acc",int(turn)/600,int(turn));
@@ -3309,6 +3311,7 @@ z.size(), active_npc.size(), events.size());
             }
               wl.query();
           }
+*/
   break;
   
   case 18: {
