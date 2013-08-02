@@ -98,13 +98,11 @@ static bool inscribe_item( game *g, player *p, std::string verb, std::string ger
 
     std::map<std::string, std::string>::iterator ent = cut->item_vars.find("item_note");
     std::map<std::string, std::string>::iterator entprefix = cut->item_vars.find("item_note_type");
-    bool hasnote = (ent != cut->item_vars.end()); 
-    sprintf(buf, _("%1$s on this %2$s is a note saying: "), gerund.c_str(), cut->type->name.c_str());
-    std::string messageprefix = std::string( hasnote ? "(To delete, input one '.')\n" : "" );
-    messageprefix += buf;
+    bool hasnote = (ent != cut->item_vars.end());
     std::string message = "";
-    sprintf(buf, _("%s what?"), verb.c_str()); 
-    message = string_input_popup(buf, 64,
+    std::string messageprefix = string_format( hasnote ? _("(To delete, input one '.')\n") : "" ) +
+        string_format("%1$s on this %2$s is a note saying: ", gerund.c_str(), cut->type->name.c_str() );
+    message = string_input_popup(string_format(_("%s what?"), verb.c_str()), 64,
         (hasnote ? cut->item_vars["item_note"] : message ),
         messageprefix, "inscribe_item", 128
     );
