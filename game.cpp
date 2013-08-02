@@ -3310,8 +3310,8 @@ z.size(), active_npc.size(), events.size());
         }
         if ( skset != -1 && skid != -1 ) {
           u.skillLevel(Skill::skills[skid]).level(skset);
-          skmenu.textformatted[0] = stringfmt("%s set to %d             ",Skill::skills[skid]->ident().c_str(),(int)u.skillLevel(Skill::skills[skid])).substr(0,skmenu.w_width-4); ;
-          skmenu.entries[skid + skoffset].txt = stringfmt("@ %d: %s  ",(int)u.skillLevel(Skill::skills[skid]),Skill::skills[skid]->ident().c_str());
+          skmenu.textformatted[0] = string_format("%s set to %d             ",Skill::skills[skid]->ident().c_str(),(int)u.skillLevel(Skill::skills[skid])).substr(0,skmenu.w_width-4); ;
+          skmenu.entries[skid + skoffset].txt = string_format("@ %d: %s  ",(int)u.skillLevel(Skill::skills[skid]),Skill::skills[skid]->ident().c_str());
           skmenu.entries[skid + skoffset].text_color = ( (int)u.skillLevel(Skill::skills[skid]) == origskills[skid] ? skmenu.text_color : c_yellow );
         } else if ( skmenu.ret == 0 && sksel == -1 ) {
           int ret=menu(true,"Set all skills...","+3","+1","-1","-3","To 0","To 5","To 10","(Reset changes)",NULL);
@@ -3328,7 +3328,7 @@ z.size(), active_npc.size(), events.size());
               for (int skid=0; skid < Skill::skills.size(); skid++ ) {
                 int changeto = ( skmod != 0 ? u.skillLevel( Skill::skills[skid] ) + skmod : ( skset != -1 ? skset : origskills[skid] ) );
                 u.skillLevel( Skill::skills[skid] ).level( changeto );
-                skmenu.entries[skid + skoffset].txt = stringfmt("@ %d: %s  ", (int)u.skillLevel(Skill::skills[skid]), Skill::skills[skid]->ident().c_str() );
+                skmenu.entries[skid + skoffset].txt = string_format    ("@ %d: %s  ", (int)u.skillLevel(Skill::skills[skid]), Skill::skills[skid]->ident().c_str() );
                 skmenu.entries[skid + skoffset].text_color = ( (int)u.skillLevel(Skill::skills[skid]) == origskills[skid] ? skmenu.text_color : c_yellow );
               }
           }
