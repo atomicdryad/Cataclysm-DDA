@@ -9,6 +9,9 @@
 #include "item.h"
 #include "options.h"
 #include "uistate.h"
+#include "debug.h"
+
+#define dbg(x) dout((DebugLevel)(x),D_GAME) << __FILE__ << ":" << __LINE__ << ": "
 
 int time_to_fire(player &p, it_gun* firing);
 int recoil_add(player &p);
@@ -626,10 +629,12 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
                                 int hiy, std::vector <monster> t, int &target,
                                 item *relevent)
 {
+std::string rdbg="";
  std::vector<point> ret;
  int tarx, tary, junk, tart;
  int range=(hix-u.posx);
 // First, decide on a target among the monsters, if there are any in range
+rdbg=stringfmt("tsz %d 1tgt %d",t.size(),target);
  if (t.size() > 0) {
 // Check for previous target
   if (target == -1) {
@@ -643,12 +648,14 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
      target = i;
     }
    }
+rdbg+=stringfmt(" tgt %d closest %.2f",target,closest);
   }
   x = t[target].posx;
   y = t[target].posy;
+rdbg+=stringfmt(" @ %d,%d",x,y);
  } else
   target = -1;	// No monsters in range, don't use target, reset to -1
-
+if(target !=-1) rdbg+=stringfmt(" %s",t[target].type->name.c_str() );
  int sideStyle = OPTIONS[OPT_SIDEBAR_STYLE];
  int height = 13;
  int width  = getmaxx(w_messages);
@@ -657,8 +664,8 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
  WINDOW* w_target = newwin(height, width, top, left);
  wborder(w_target, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
                  LINE_OXXO, LINE_OOXX, LINE_XXOO, LINE_XOOX );
+ if(uistate.debug_ranged==true) mvwprintw(w_target,12,2,"< debug on t[%d] >-",target);
  mvwprintz(w_target, 0, 2, c_white, "< ");
- if(uistate.debug_ranged==true) mvwprintw(w_target,12,2,"< debug on >-");
  if (!relevent) { // currently targetting vehicle to refill with fuel
    wprintz(w_target, c_red, _("Select a vehicle"));
  } else {
@@ -672,6 +679,9 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
  }
  wprintz(w_target, c_white, " >");
 /* Annoying clutter @ 2 3 4. */
+if(uistate.debug_ranged) {
+  mvwprintz(w_target, getmaxy(w_target) - 2, 1, c_white,  "%s",rdbg.c_str());
+} else {
  mvwprintz(w_target, getmaxy(w_target) - 4, 1, c_white,
            _("Move cursor to target with directional keys"));
  if (relevent) {
@@ -680,7 +690,7 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
   mvwprintz(w_target, getmaxy(w_target) - 2, 1, c_white,
             _("'0' target self; '*' toggle snap-to-target"));
  }
-
+}
  wrefresh(w_target);
  char ch;
  bool snap_to_target = OPTIONS[OPT_SNAP_TO_TARGET];
@@ -763,6 +773,7 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
     else
      mvwputch(w_terrain, VIEWY + y - center.y, VIEWX + x - center.x, c_red, '*');
    } else if (u_see(&(z[mon_at(x, y)]))) {
+
     z[mon_at(x, y)].print_info(this, w_target,2);
    }
   }
@@ -771,6 +782,9 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
   wrefresh(w_status);
   refresh();
   ch = input();
+if(uistate.debug_ranged==true) {
+mvwprintw(w_target,12,2,"< debug on t[%d] >-",target);
+}
   get_direction(this, tarx, tary, ch);
   if (tarx != -2 && tary != -2 && ch != '.') {	// Direction character pressed
    int mondex = mon_at(x, y), npcdex = npc_at(x, y);
@@ -804,11 +818,13 @@ std::vector<point> game::target(int &x, int &y, int lowx, int lowy, int hix,
    y = t[target].posy;
   } else if (ch == 't' ) {
     uistate.debug_ranged=(!uistate.debug_ranged);
-    mvwprintw(w_target,12,2,"< debug %s >-",uistate.debug_ranged==true?"on":"off");
+    mvwprintw(w_target,12,2,"< debug %s t[%d] >-",uistate.debug_ranged==true?"on":"off",target);
   } else if (ch == '.' || ch == 'f' || ch == 'F' || ch == '\n') {
    for (int i = 0; i < t.size(); i++) {
-    if (t[i].posx == x && t[i].posy == y)
+    if (t[i].posx == x && t[i].posy == y) {
      target = i;
+     if(uistate.debug_ranged) add_msg("tgt -> %d %d,%d",target,t[i].posx,t[i].posy );
+     dbg(D_INFO) << stringfmt("fire -> %d %d,%d",target,t[i].posx,t[i].posy );    }
    }
    if (u.posx == x && u.posy == y)
        ret.clear();

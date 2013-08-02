@@ -69,6 +69,7 @@ struct uistatedata {
       data[std::string("adv_inv_leftarea")] = picojson::value(adv_inv_leftarea);
       data[std::string("adv_inv_rightarea")] = picojson::value(adv_inv_rightarea);
       data[std::string("adv_inv_last_popup_dest")] = picojson::value(adv_inv_last_popup_dest);
+      data[std::string("debug_ranged")] = picojson::value(debug_ranged);
 
       std::map<std::string, picojson::value> histmap;
       for(std::map<std::string, std::vector<std::string>*>::iterator it = input_history.begin(); it != input_history.end(); ++it ) {
@@ -99,6 +100,7 @@ struct uistatedata {
           picoint(data,"adv_inv_leftarea",               adv_inv_leftarea);
           picoint(data,"adv_inv_rightarea",              adv_inv_rightarea);
           picoint(data,"adv_inv_last_popup_dest",        adv_inv_last_popup_dest);
+          picobool(data,"debug_ranged",        debug_ranged);
 
           picojson::object::const_iterator hmit = data.find("input_history");
           if ( ! picoverify() ) return false;
