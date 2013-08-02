@@ -2858,7 +2858,7 @@ void game::load(std::string name)
  u.inv.add_stack(tmpinv);
  fin.close();
  load_auto_pickup(true); // Load character auto pickup rules
- load_uistate();         // Load misc stuff like last sort type, input history, etc
+ load_uistate();
 // Now load up the master game data; factions (and more?)
  load_master();
  load_weatherlog();
@@ -3827,43 +3827,12 @@ void draw_location(game *g) {
 #ifdef showpos
  real_coords abc;
  abc.fromabs( g->m.getabs( g->u.posx, g->u.posy ) );
-
-
-
-#ifdef showfullpos
- int lx = u.posx % SEEX;
- int ly = u.posy % SEEY;
- point ablp=g->m.getabs(0,0);
- real_coords abl;
- abl.fromabs( ablp );
-
- mvprintz(VIEW_OFFSET_Y+3,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,
-  "lev: %d,%d u.pos: %d,%d %d,%d apos[%d,%d]",
-  levx,levy,
-  u.posx,u.posy,
-  lx,ly,
-  abc.abs_pos.x,abc.abs_pos.y
-);
- mvprintz(VIEW_OFFSET_Y+4,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,
-  "asub[%d,%d:%d,%d] aom[%d,%d:%d,%d] %d,%d",
-  abc.abs_sub.x, abc.abs_sub.y, abc.abs_sub_pos.x, abc.abs_sub_pos.y,
-  abc.abs_om.x, abc.abs_om.y, abc.abs_om_pos.x, abc.abs_om_pos.y,
-  abc.abs_pos.x,abc.abs_pos.y
-);
- mvprintz(VIEW_OFFSET_Y+5,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,
-  "lsub[%d,%d:%d,%d] lom[%d,%d:%d,%d] %d,%d",
-  abl.abs_sub.x, abl.abs_sub.y, abl.abs_sub_pos.x, abl.abs_sub_pos.y,
-  abl.abs_om.x, abl.abs_om.y, abl.abs_om_pos.x, abl.abs_om_pos.y,
-  ablp.x,ablp.y
-);
-#else
- mvprintz(VIEW_OFFSET_Y+3,TERMX - MONINFO_WIDTH - VIEW_OFFSET_X,c_cyan,
+ mvprintz(VIEW_OFFSET_Y+3,TERMX - getmaxx(g->w_messages) - VIEW_OFFSET_X,c_cyan,
   "abs[%d,%d] sub[%d.%d,%d.%d] om[%d.%d,%d.%d]",
   abc.abs_pos.x,abc.abs_pos.y,
   abc.abs_sub.x, abc.abs_sub_pos.x, abc.abs_sub.y, abc.abs_sub_pos.y,
   abc.abs_om.x, abc.abs_om_pos.x, abc.abs_om.y, abc.abs_om_pos.y
 );
-#endif
 #endif
 }
 
@@ -3979,6 +3948,8 @@ dbg(D_INFO) << int(turn) << "   draw draw_ter";
 
     // Draw messages
     write_msg();
+/*
+fixme
     if ( w_void_lines > 0 ) {
         if (m.graffiti_at(u.posx, u.posy).contents) {
             mvwprintz(w_void, 0, 1, c_white,_("Written here: "));
@@ -3988,6 +3959,7 @@ dbg(D_INFO) << int(turn) << "   draw draw_ter";
         }
         wrefresh(w_void);
     }
+*/
     draw_location(this);
 }
 
@@ -8407,7 +8379,7 @@ std::string game::ask_item_filter(WINDOW* window, int rows)
     mvwprintz(window, 8, 2, c_white, "%s", _("To exclude items, place - in front"));
     mvwprintz(window, 9, 2, c_white, "%s", _("Example: -pipe,chunk,steel"));
     wrefresh(window);
-    return string_input_popup("Filter:", 55, sFilter, "", "item_filter");
+    return string_input_popup("Filter:", 55, sFilter, _("UP: history, CTRL-U clear line, ESC: abort, ENTER: save"), "item_filter", 256);
 }
 
 
@@ -8626,14 +8598,14 @@ void game::list_items()
             }
             else if(ch == '+')
             {
-                std::string temp = string_input_popup(_("High Priority:"), width, list_item_upvote);
+                std::string temp = string_input_popup(_("High Priority:"), width, list_item_upvote, _("UP: history, CTRL-U clear line, ESC: abort, ENTER: save"), "list_item_priority", 256);
                 list_item_upvote = temp;
                 refilter = true;
                 reset = true;
             }
             else if(ch == '-')
             {
-                std::string temp = string_input_popup(_("Low Priority:"), width, list_item_downvote);
+                std::string temp = string_input_popup(_("Low Priority:"), width, list_item_downvote, _("UP: history, CTRL-U clear line, ESC: abort, ENTER: save"), "list_item_downvote", 256);
                 list_item_downvote = temp;
                 refilter = true;
                 reset = true;
