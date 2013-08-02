@@ -26,6 +26,7 @@ RULES.add(MONSTERS_SUPERZOMBIES, "MONSTERS_SUPERZOMBIES", 1, "Spawn super zombie
 RULES.add(VEHICLE_SPEED_MULT, "VEHICLE_SPEED_MULT", 1, "Vehicle speed multiplier", "desc");
 RULES.add(REVIVE_BURNMAX, "REVIVE_BURNMAX", 500, "Option name", "desc");
 RULES.add(ZOMBIE_DENSITY_GEO, "ZOMBIE_DENSITY_GEO", 0, "Option name", "desc");
+RULES.add(RANGED_NEG_DISPERSAL_FACTOR, "RANGED_NEG_DISPERSAL_FACTOR", 0.5, "Option name", "desc");
 
 
 #ifdef CUSTOMRULES

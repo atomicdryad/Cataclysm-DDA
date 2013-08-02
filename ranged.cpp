@@ -1018,7 +1018,13 @@ if ( debugdevi==true ) dstr=stringfmt("%s\n weapdev[%d]-> %f", dstr.c_str(),p.we
     int adj_recoil = p.recoil + p.driving_recoil;
     deviation += rng(int(adj_recoil / 4), adj_recoil);
 if ( debugdevi==true ) dstr=stringfmt("%s\n recoil[%d]-> %f", dstr.c_str(),adj_recoil,deviation);
-    if (deviation < 0) { return 0; }
+    if (deviation < 0 ) {
+      if ( RULES[RANGED_NEG_DISPERSAL_FACTOR] == 0 ) {
+        return 0;
+      } else {
+        deviation *= RULES[RANGED_NEG_DISPERSAL_FACTOR];
+      }
+    }
     // .013 * trange is a computationally cheap version of finding the tangent.
     // (note that .00325 * 4 = .013; .00325 is used because deviation is a number
     //  of quarter-degrees)

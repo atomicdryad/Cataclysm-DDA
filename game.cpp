@@ -270,6 +270,7 @@ void game::setup()
  }
 
  load_auto_pickup(false); // Load global auto pickup rules
+// load_uistate();
 
  if (opening_screen()) {// Opening menu
 // Finally, draw the screen!
@@ -2379,6 +2380,32 @@ bool game::load_master()
  return true;
 }
 
+void game::load_uistate() {
+    const std::string savedir="save";
+    std::stringstream savefile;
+    savefile << savedir << "/uistate.json";
+
+    std::ifstream fin;
+    fin.open(savefile.str().c_str());
+    if(!fin.good()) {
+        fin.close();
+        return;
+    }
+    picojson::value wrapped_data;
+    fin >> wrapped_data;
+    fin.close();
+    std::string jsonerr=picojson::get_last_error();
+    if ( ! jsonerr.empty() ) {
+       dbg(D_ERROR) << "load_uistate: " << jsonerr.c_str();
+       return;
+    }
+    bool success=uistate.load(wrapped_data);
+    if ( ! success ) {
+       dbg(D_ERROR) << "load_uistate: " << uistate.errdump;
+    }
+    uistate.errdump="";
+}
+
 void game::load_artifacts()
 {
     std::ifstream file_test("save/artifacts.gsav");
@@ -2736,6 +2763,7 @@ void game::load(std::string name)
  u.inv.add_stack(tmpinv);
  fin.close();
  load_auto_pickup(true); // Load character auto pickup rules
+ load_uistate();         // Load misc stuff like last sort type, input history, etc
 // Now load up the master game data; factions (and more?)
  load_master();
  load_weatherlog();
@@ -2789,6 +2817,17 @@ void game::save_maps()
     m.save(cur_om, turn, levx, levy, levz);
     overmap_buffer.save();
     MAPBUFFER.save();
+}
+
+void game::save_uistate() {
+    const std::string savedir="save";
+    std::stringstream savefile;
+    savefile << savedir << "/uistate.json";
+    std::ofstream fout;
+    fout.open(savefile.str().c_str());
+    fout << uistate.save();
+    fout.close();
+    uistate.errdump="";
 }
 
 std::string game::save_weather() const
@@ -2864,6 +2903,7 @@ void game::save()
  save_weatherlog();
  //factions, missions, and npcs, maps and artifact data is saved in cleanup_at_end()
  save_auto_pickup(true); // Save character auto pickup rules
+ save_uistate();
 }
 
 void game::delete_save()
@@ -3288,10 +3328,11 @@ z.size(), active_npc.size(), events.size());
   }
   break;
   case 17: {
-     std::string foo=string_input_popup("Foo?");
+     std::string foo=string_input_popup("Foo?",0,"wark","garble","test123");
+//     save_uistate();
+//     load_uistate();
   }
 /*      uimenu wl;
-
       wl.title="test title";
         wl.settext("hour %d turn %d\nhour      | temp | rot / accum    | rain / accum | acid / accum | sun / acc",int(turn)/600,int(turn));
         for( int i=weather_log.size()-1, c=0; i >=0; i--, c++ ) {
@@ -8260,7 +8301,7 @@ std::string game::ask_item_filter(WINDOW* window, int rows)
     mvwprintz(window, 8, 2, c_white, "%s", _("To exclude certain items, place a - in front"));
     mvwprintz(window, 9, 2, c_white, "%s", _("Example: -pipe,chunk,steel"));
     wrefresh(window);
-    return string_input_popup("Filter:", 55, sFilter);
+    return string_input_popup("Filter:", 55, sFilter, "", "item_filter");
 }
 
 
@@ -8457,14 +8498,14 @@ void game::list_items()
             }
             else if(ch == '+')
             {
-                std::string temp = string_input_popup(_("High Priority:"), 55, list_item_upvote);
+                std::string temp = string_input_popup(_("High Priority:"), 55, list_item_upvote, "", "list_item_priority");
                 list_item_upvote = temp;
                 refilter = true;
                 reset = true;
             }
             else if(ch == '-')
             {
-                std::string temp = string_input_popup(_("Low Priority:"), 55, list_item_downvote);
+                std::string temp = string_input_popup(_("Low Priority:"), 55, list_item_downvote, "", "list_item_downvote");
                 list_item_downvote = temp;
                 refilter = true;
                 reset = true;
@@ -11400,7 +11441,13 @@ void game::despawn_monsters(const bool stairs, const int shiftx, const int shift
     z[i].spawnmapy = rc.sub.y;
     z[i].spawnposx = rc.sub_pos.x;
     z[i].spawnposy = rc.sub_pos.y;
-
+rc.fromabs( m.getabs( z[i].posx, z[i].posy ) );
+if ( rc.sub.x != rc.abs_sub.x || rc.sub.y != rc.abs_sub.y || rc.sub_pos.x != rc.abs_sub_pos.x || rc.sub_pos.y != rc.abs_sub_pos.y ) {
+  add_msg("!!! %d sub %d,%d (%d,%d) <=> %d,%d (%d,%d) asub",
+    z[i].name().c_str(), 
+rc.sub.x , rc.sub.y , rc.sub_pos.x , rc.sub_pos.y ,
+rc.abs_sub.x , rc.abs_sub.y , rc.abs_sub_pos.x ,  rc.abs_sub_pos.y );
+}
     tinymap tmp(&traps);
     tmp.load(this, z[i].spawnmapx, z[i].spawnmapy, levz, false);
     tmp.add_spawn(&(z[i]));
@@ -11931,7 +11978,7 @@ void game::quicksave(){
     save_factions_missions_npcs();
     save_artifacts();
     save_maps();
-
+    save_uistate();
     //Now reset counters for autosaving, so we don't immediately autosave after a quicksave or autosave.
     moves_since_last_save = 0;
     item_exchanges_since_save = 0;
