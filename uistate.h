@@ -46,7 +46,7 @@ struct uistatedata {
       debug_ranged = false;  
       // internal stuff
       _testing_save = true;        // internal: whine on json errors. set false if no complaints in 2 weeks.
-      _really_testing_save = true; // internal: spammy
+      _really_testing_save = false; // internal: spammy
       errdump = "";                // also internal: log errors en masse
   };
 
@@ -85,7 +85,6 @@ struct uistatedata {
 
   bool load(picojson::value parsed) {
       std::string out="";
-      std::stringstream ssout;
       if(parsed.is<picojson::object>() ) {
           const picojson::object& data = parsed.get<picojson::object>();
 
@@ -100,7 +99,6 @@ struct uistatedata {
           if ( ! picoverify() ) return false;
           if ( hmit != data.end() ) {
             if ( hmit->second.is<picojson::object>() ) {
-//               ssout << it->second.get<picojson::object>() << std::endl;
                const picojson::object& hmdata = hmit->second.get<picojson::object>();
                for (picojson::object::const_iterator hit = hmdata.begin(); hit != hmdata.end(); ++hit) {
                   if ( hit->second.is<picojson::array>() ) {
@@ -118,7 +116,6 @@ struct uistatedata {
                      }
                   }
                }
-               popup("ssout: %d",hmdata.size());
                return true;
             } else {
                errdump += "\ninput_history is not an object";
@@ -126,29 +123,6 @@ struct uistatedata {
                return false;
             }
           }
-          /*
-  } else if (v.is<picojson::array>()) {
-    std::cout << "input is an array" << std::endl;
-    const picojson::array& a = v.get<picojson::array>();
-    for (picojson::array::const_iterator i = a.begin(); i != a.end(); ++i) {
-      std::cout << " " << *i << std::endl;
-    }
-  } else if (v.is<picojson::object>()) {
-    std::cout << "input is an object" << std::endl;
-    const picojson::object& o = v.get<picojson::object>();
-    for (picojson::object::const_iterator i = o.begin(); i != o.end(); ++i) {
-      std::cout << i->first << " " << i->second << std::endl;
-    }
-
-*/
-
-
-          for (picojson::object::const_iterator it = data.begin(); it!= data.end(); ++it ) {
-              ssout << it->first << "==" << it->second << std::endl;
-          }
-
-
-          popup("%s",ssout.str().c_str());
           return true;
       }
       return false;
