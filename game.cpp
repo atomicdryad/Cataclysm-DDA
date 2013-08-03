@@ -7767,6 +7767,15 @@ point game::look_debug(point coords) {
     mvwprintw(w_look, off, 1, "%s %s", m.features(lx, ly).c_str(),extras.c_str());
     off++;
 
+    real_coords rc(levx,levy,lx,ly);
+    rc.fromabs(m.getabs(lx,ly));
+    mvwprintw(w_look, off, 1, "%d,%d %d,%d\
+ / %d,%d(%d,%d) %d,%d(%d,%d)", levx,levy, m.get_abs_sub().x,m.get_abs_sub().y,
+
+rc.abs_sub.x, rc.abs_sub.y, rc.abs_sub_pos.x, rc.abs_sub_pos.y,
+rc.sub.x,rc.sub.y, rc.sub_pos.x,rc.sub_pos.y
+);
+
     field &curfield = m.field_at(lx, ly);
     if (curfield.fieldCount() > 0) {
 		field_entry *cur = NULL;
