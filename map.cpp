@@ -4282,6 +4282,7 @@ point map::getabs(const int x, const int y ) {
         ));
     }
 #endif
+    return point(ax,ay);
 }
 
 //this returns points in a spiral pattern starting at center_x/center_y until it hits the radius. clockwise fashion
