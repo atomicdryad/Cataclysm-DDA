@@ -910,7 +910,7 @@ std::string item::tname(game *g)
  else if (burnt > 0)
   burntext = std::string(_("<burnt_adj>burnt "));
  if(burntext.length()>11){
-     burntext = burntext.substr(9);
+     burntext = burntext.substr(11);
  }
 
  std::string maintext = "";
