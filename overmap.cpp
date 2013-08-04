@@ -1892,13 +1892,34 @@ om_unsafe[0].recache=false;
    mvwputch(w, j, i, c_black, ' ');
   }
 
+  real_coords rc;
+  rc.fromomap( g->cur_om->pos().x, g->cur_om->pos().y, cursx, cursy );
+
   if (csee || mode > 0) {
    mvwputch(w, 1, om_map_width + 1, oterlist[ccur_ter].color, oterlist[ccur_ter].sym);
    mvwprintz(w, 1, om_map_width + 3, oterlist[ccur_ter].color, "%s",
              oterlist[ccur_ter].name.c_str());
-  } else
-   mvwprintz(w, 1, om_map_width + 1, c_dkgray, _("# Unexplored"));
+    if ( mode > 0 ) {
+      for (int m=0; m < om_ptr[0]->zg.size(); m++) {
+        if(om_ptr[0]->zg[m].posz == z && om_ptr[0]->zg[m].posx == rc.abs_om_sub.x && om_ptr[0]->zg[m].posy == rc.abs_om_sub.y ) {
+          mongroup * mg = &om_ptr[0]->zg[m];
+          mvwprintz(w, 13, om_map_width + 1, c_ltred, "%s",mg->type.c_str() );
+          mvwprintz(w, 14, om_map_width + 1, c_ltred, "r %d p %d",mg->radius,mg->population);
 
+/*
+std::string type;
+int posx, posy, posz;
+unsigned char radius;
+unsigned int population;
+bool dying;
+bool diffuse;   // group
+*/
+        }
+      }
+    }
+  } else {
+   mvwprintz(w, 1, om_map_width + 1, c_dkgray, _("# Unexplored"));
+  }
   if (target.x != -1 && target.y != -1) {
    int distance = rl_dist(origx, origy, target.x, target.y);
    mvwprintz(w, 3, om_map_width + 1, c_white, _("Distance to target: %d"), distance);
@@ -1910,8 +1931,6 @@ om_unsafe[0].recache=false;
   mvwprintz(w, 19, om_map_width + 1, c_magenta, _("D - Delete a note          "));
   mvwprintz(w, 20, om_map_width + 1, c_magenta, _("L - List notes             "));
   mvwprintz(w, 21, om_map_width + 1, c_magenta, _("Esc or q - Return to game  "));
-  real_coords rc;
-  rc.fromomap( g->cur_om->pos().x, g->cur_om->pos().y, cursx, cursy );
   mvwprintz(w, getmaxy(w)-1, om_map_width + 1, c_red, string_format(_("LEVEL %i / %d,%d"),z, cursx, cursy).c_str());
   mvwprintz(w, 23, om_map_width + 1, c_red, "abs: %d,%d @ %d,%d",
     rc.abs_om_pos.x, rc.abs_om_pos.y, rc.abs_om.x, rc.abs_om.y );
