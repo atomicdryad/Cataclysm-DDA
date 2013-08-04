@@ -3423,11 +3423,43 @@ z.size(), active_npc.size(), events.size());
   }
   break;
   case 17: {
-     std::string foo=string_input_popup("Foo?",0,"wark","garble","test123");
+      
+      uimenu mtest;
+      mtest.text="WARNING: These will do crazy things and possibly destroy your game and/or village.";
+      mtest.entries.push_back(uimenu_entry("test add_item_anywhere: (Cover an 81x81 submap area in pineapples)"));
+      mtest.entries.push_back(uimenu_entry("test add_item_or_charges: (Dump 9000 pineapples on one spot"));
+      mtest.entries.push_back(uimenu_entry("wlog"));
+      mtest.entries.push_back(uimenu_entry(1024,true,'q',"cancel (I hate pineapples)"));
+      mtest.query();
+      if( mtest.ret == 0 ) {
+
+          item it(itypes["can_pineapple"], turn);
+          for (int x=-432; x < 542; x+=6) {
+              for (int y=-432; y < 542; y+=6) {
+                  m.add_item(x,y,it,64,true);
+              }
+          }
+    
+      } else if ( mtest.ret == 1 ) {
+
+          for (int r=0; r<36864; r++) {
+              if ( r % 368 == 0 ) {
+                  popup_nowait("Generating catastrophe... %d / %d.",r,36864);
+              }
+              item it(itypes["can_pineapple"], turn);
+              if( m.add_item_or_charges(u.posx, u.posy+5, it,1)==false ) {
+                  popup("Error adding item # %d", r);
+                  break;
+              }
+          }
+
+      } else if ( mtest.ret == 2 ) {
+
+//     std::string foo=string_input_popup("Foo?",0,"wark","garble","test123");
 //     save_uistate();
 //     load_uistate();
-  }
-/*      uimenu wl;
+  //}
+      uimenu wl;
       wl.title="test title";
         wl.settext("hour %d turn %d\nhour      | temp | rot / accum    | rain / accum | acid / accum | sun / acc",int(turn)/600,int(turn));
         for( int i=weather_log.size()-1, c=0; i >=0; i--, c++ ) {
@@ -3447,7 +3479,7 @@ z.size(), active_npc.size(), events.size());
             }
               wl.query();
           }
-*/
+       }
   break;
   
   case 18: {
