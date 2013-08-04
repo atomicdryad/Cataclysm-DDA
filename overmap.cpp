@@ -53,6 +53,26 @@ map_extras subway_extras(
 map_extras build_extras(
     90,  0,  5, 12,  0, 10,  0,  5,  5,  0, 0, 0, 60,  8,  1,  3);
 
+map_extras default_extras(
+  0,    // Null - 0 chance
+ 40,    // Helicopter
+ 50,    // Military
+120,    // Science
+200,    // Stash
+ 20,    // Drug deal
+ 10,    // Supply drop
+  5,    // Portal
+ 70,    // Minefield
+ 30,    // Wolf pack
+ 40,    // Cougar
+250,    // Puddle
+ 10,    // Crater
+  8,    // Fumarole
+  7,    // One-way portal into this world
+ 10     // Anomaly
+);
+
+
 //see omdata.h
 std::vector<oter_t> oterlist;
 
