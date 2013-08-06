@@ -3437,7 +3437,7 @@ z.size(), active_npc.size(), events.size());
           pf.start(addi2); int success=0; int fail=0;
           for (int x=-432; x < 542; x+=6) {
               for (int y=-432; y < 542; y+=6) {
-                  if ( m.add_item(x,y,it,64,true) {
+                  if ( m.add_item(x,y,it,64,true) ) {
                       success++;
                   } else {
                       fail++;
