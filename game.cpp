@@ -2340,6 +2340,7 @@ bool game::is_game_over()
   return true;
  for (int i = 0; i <= hp_torso; i++) {
   if (u.hp_cur[i] < 1) {
+if(RULES[DEATH_DELETE]==0) { popup ("Blarg"); return true; }
    place_corpse();
    std::stringstream playerfile;
    playerfile << "save/" << base64_encode(u.name) << ".sav";
@@ -3432,14 +3433,20 @@ z.size(), active_npc.size(), events.size());
       mtest.entries.push_back(uimenu_entry(1024,true,'q',"cancel (I hate pineapples)"));
       mtest.query();
       if( mtest.ret == 0 ) {
-
           item it(itypes["can_pineapple"], turn);
+          pf.start(addi2); int success=0; int fail=0;
           for (int x=-432; x < 542; x+=6) {
               for (int y=-432; y < 542; y+=6) {
-                  m.add_item(x,y,it,64,true);
+                  if ( m.add_item(x,y,it,64,true) {
+                      success++;
+                  } else {
+                      fail++;
+                  }
               }
           }
-    
+          pf.stop(addi2);
+          popup("%d drops. %d failures. %dms",success, fail, pf.get(addi2) );
+          pf.reset(addi2);
       } else if ( mtest.ret == 1 ) {
 
           for (int r=0; r<36864; r++) {
@@ -7755,7 +7762,15 @@ point game::look_debug(point coords) {
 
     werase(w_terrain);
     draw_ter(lx, ly);
-    mvwprintz(w_look, 0, 2 ,c_ltgray, "< %d,%d >",lx,ly);
+
+    real_coords rc(levx,levy,lx,ly);
+    rc.fromabs(m.getabs(lx,ly));
+
+    mvwprintz(w_look, 0, 2 ,c_ltgray, "< %d,%d %d,%d / %d,%d %d,%d %d,%d >--",
+      m.get_abs_sub().x, m.get_abs_sub().y, lx, ly,
+      rc.abs_pos.x,rc.abs_pos.y, rc.abs_sub.x, rc.abs_sub.y, rc.abs_om.x, rc.abs_om.y
+    );
+
     for (int i = 1; i < lookHeight; i++) {
       mvwprintz(w_look, i, 1, c_white, padding.c_str());
     }
@@ -7799,15 +7814,13 @@ point game::look_debug(point coords) {
     mvwprintw(w_look, off, 1, "%s %s", m.features(lx, ly).c_str(),extras.c_str());
     off++;
 
-    real_coords rc(levx,levy,lx,ly);
-    rc.fromabs(m.getabs(lx,ly));
-    mvwprintw(w_look, off, 1, "%d,%d %d,%d\
+/*    mvwprintw(w_look, off, 1, "%d,%d %d,%d\
  / %d,%d(%d,%d) %d,%d(%d,%d)", levx,levy, m.get_abs_sub().x,m.get_abs_sub().y,
 
 rc.abs_sub.x, rc.abs_sub.y, rc.abs_sub_pos.x, rc.abs_sub_pos.y,
 rc.sub.x,rc.sub.y, rc.sub_pos.x,rc.sub_pos.y
-);
-
+);off++;
+*/
     field &curfield = m.field_at(lx, ly);
     if (curfield.fieldCount() > 0) {
 		field_entry *cur = NULL;
