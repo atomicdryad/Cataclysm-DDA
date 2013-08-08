@@ -174,7 +174,7 @@ t_card_science, t_card_military, t_card_reader_broken, t_slot_machine,
 // Temple tiles
 t_rock_red, t_rock_green, t_rock_blue, t_floor_red, t_floor_green, t_floor_blue,
  t_switch_rg, t_switch_gb, t_switch_rb, t_switch_even,
-t_tombstone,
+t_tombstone, t_burnfield,
 num_terrain_types
 };
 
@@ -556,6 +556,8 @@ const ter_t terlist[num_terrain_types] = {  // MUST match enum ter_id above!
 	   mfb(transparent), &iexamine::fswitch, 0x0},
 {"tombstone",           'T', c_white,    2, tr_null,
     mfb(transparent)|mfb(thin_obstacle), &iexamine::none, 0x0},
+{"scorched earth",	            ';', c_dkgray,   2, tr_null,
+    mfb(transparent)|mfb(diggable)|mfb(flat), &iexamine::none, 0x0},
 };
 
 struct furn_t {
