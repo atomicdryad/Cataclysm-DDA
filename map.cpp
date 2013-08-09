@@ -4262,11 +4262,11 @@ void map::build_map_cache(game *g)
 
 //dbg(D_INFO) << int(g->turn) << " build_map_cache";
 //std::string _debugmsg=stringfmt("%d build_map_cache ",int(g->turn));
-pf.start(mc1);
+/**/ pf.start(mc1);
  build_outside_cache(g);
-pf.stop(mc1);pf.start(mc2);
+/**/ pf.stop(mc1);pf.start(mc2);
  build_transparency_cache();
-pf.stop(mc2);
+/**/ pf.stop(mc2);
  // Cache all the vehicle stuff in one loop
  VehicleList vehs = get_vehicles();
  for(int v = 0; v < vehs.size(); ++v) {
@@ -4287,15 +4287,14 @@ pf.stop(mc2);
    }
   }
  }
-pf.start(mc3);
+/**/ pf.start(mc3);
  build_seen_cache(g);
-pf.stop(mc3);pf.start(mc4);
+/**/ pf.stop(mc3);pf.start(mc4);
  generate_lightmap(g);
-pf.stop(mc4);
-dbg(D_INFO) << stringfmt("%d build_map_cache: outside %d, transparency %d, seen %d, lightmap %d",int(g->turn),
-  pf.get(mc1),pf.get(mc2),pf.get(mc3),pf.get(mc4));
+/**/ pf.stop(mc4);
+/**/ dbg(D_INFO) << stringfmt("%d build_map_cache: outside %d, transparency %d, seen %d, lightmap %d",int(g->turn), pf.get(mc1),pf.get(mc2),pf.get(mc3),pf.get(mc4));
 
-pf.reset(mc1);pf.reset(mc2);pf.reset(mc3); pf.reset(mc4);
+/**/ pf.reset(mc1);pf.reset(mc2);pf.reset(mc3); pf.reset(mc4);
 
 }
 
