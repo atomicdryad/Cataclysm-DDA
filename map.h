@@ -507,8 +507,8 @@ protected:
 private:
  long determine_wall_corner(const int x, const int y, const long orig_sym);
  void cache_seen(const int fx, const int fy, const int tx, const int ty, const int max_range);
- void apply_light_source(int x, int y, float luminance, bool trig_brightcalc, bool debug=false);
- void add_light_source(int x, int y, float luminance, bool trig_brightcalc, bool debug=false);
+ void apply_light_source(int x, int y, float luminance, bool trig_brightcalc);
+ void add_light_source(int x, int y, float luminance);
  void apply_light_arc(int x, int y, int angle, float luminance, int wideangle = 30 );
  void apply_light_ray(bool lit[MAPSIZE*SEEX][MAPSIZE*SEEY],
                       int sx, int sy, int ex, int ey, float luminance, bool trig_brightcalc = true, bool debug=false);
@@ -521,6 +521,14 @@ private:
  bool outside_cache[MAPSIZE*SEEX][MAPSIZE*SEEY];
  float transparency_cache[MAPSIZE*SEEX][MAPSIZE*SEEY];
  bool seen_cache[MAPSIZE*SEEX][MAPSIZE*SEEY];
+
+ bool light_map_valid; // future anti-redundancy check
+ bool seen_cache_valid; // ""
+ bool transparency_cache_valid; // ""
+
+ bool seen_cache_mask[MAPSIZE*SEEX][MAPSIZE*SEEY];
+ bool transparency_cache_mask[MAPSIZE*SEEX][MAPSIZE*SEEY];
+
  submap* grid[MAPSIZE * MAPSIZE];
 };
 

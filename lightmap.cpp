@@ -3,19 +3,14 @@
 #include "game.h"
 #include "lightmap.h"
 #include "options.h"
-#include "debug.h"
 
 #define INBOUNDS(x, y) \
  (x >= 0 && x < SEEX * MAPSIZE && y >= 0 && y < SEEY * MAPSIZE)
 #define LIGHTMAP_CACHE_X SEEX * MAPSIZE
 #define LIGHTMAP_CACHE_Y SEEY * MAPSIZE
-#include "bench.h"
-#define dbg(x) dout((DebugLevel)(x),D_MAP) << __FILE__ << ":" << __LINE__ << ": "
 
 void map::generate_lightmap(game* g)
 {
-//dbg(D_INFO) << int(g->turn) << "generate_lightmap";
-//pf.start(lm1);
  memset(lm, 0, sizeof(lm));
  memset(sm, 0, sizeof(sm));
 
@@ -54,7 +49,6 @@ void map::generate_lightmap(game* g)
                  // the lightmap  when in less than total sunlight.
                  lm[sx][sy] = natural_light;
              }
-//dbg(D_INFO) << stringfmt("%d,%d %.2f %.2f%s",sx,sy,lm[sx][sy],transparency_cache[sx][sy],(sy%12==0?"\n":"  "));
          }
      }
  }
@@ -132,9 +126,7 @@ void map::generate_lightmap(game* g)
       apply_light_source(sx, sy, LIGHT_SOURCE_LOCAL, trigdist);  // kinda a hack as the square will still get marked
      break;
    }
-
 	}
-
   }
  }
 
@@ -220,7 +212,6 @@ if (g->u.has_active_bionic("bio_night") ) {
       }
    }
   }
-//pf.stop(lm1);
 }
 
 lit_level map::light_at(int dx, int dy)
@@ -313,11 +304,11 @@ void map::cache_seen(int fx, int fy, int tx, int ty, int max_range)
    }
 }
 
-void map::add_light_source(int x, int y, float luminance, bool trig_brightcalc, bool debug ) {
+void map::add_light_source(int x, int y, float luminance ) {
   light_source_buffer[x][y] = luminance;
 }
 
-void map::apply_light_source(int x, int y, float luminance, bool trig_brightcalc, bool debug )
+void map::apply_light_source(int x, int y, float luminance, bool trig_brightcalc )
 {
  bool lit[LIGHTMAP_CACHE_X][LIGHTMAP_CACHE_Y];
  memset(lit, 0, sizeof(lit));
@@ -455,7 +446,7 @@ void map::calc_ray_end(int angle, int range, int x, int y, int* outx, int* outy)
 }
 
 void map::apply_light_ray(bool lit[LIGHTMAP_CACHE_X][LIGHTMAP_CACHE_Y],
-                          int sx, int sy, int ex, int ey, float luminance, bool trig_brightcalc, bool debug)
+                          int sx, int sy, int ex, int ey, float luminance, bool trig_brightcalc)
 {
  int ax = abs(ex - sx) << 1;
  int ay = abs(ey - sy) << 1;
