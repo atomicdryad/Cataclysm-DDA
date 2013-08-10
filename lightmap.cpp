@@ -4,6 +4,8 @@
 #include "lightmap.h"
 #include "options.h"
 
+#define enable_buffer
+
 #define INBOUNDS(x, y) \
  (x >= 0 && x < SEEX * MAPSIZE && y >= 0 && y < SEEY * MAPSIZE)
 #define LIGHTMAP_CACHE_X SEEX * MAPSIZE
@@ -13,7 +15,7 @@ void map::generate_lightmap(game* g)
 {
  memset(lm, 0, sizeof(lm));
  memset(sm, 0, sizeof(sm));
-
+#ifdef enable_buffer
 /* Bulk light sources wastefully cast rays into neighbors; a burning hospital can produce
      significant slowdown, so for stuff like fire and lava:
  * Step 1: Store the position and luminance in buffer via add_light_source, for efficient
@@ -23,7 +25,7 @@ void map::generate_lightmap(game* g)
  * Step 3: Profit! 
  */
  memset(light_source_buffer, 0, sizeof(light_source_buffer));
-
+#endif
  const int dir_x[] = { 1, 0 , -1,  0 };
  const int dir_y[] = { 0, 1 ,  0, -1 };
  const int dir_d[] = { 180, 270, 0, 90 };
@@ -188,6 +190,7 @@ void map::generate_lightmap(game* g)
      }
    }
  }
+#ifdef enable_buffer
 /* Now that we have position and intensity of all bulk light sources, apply_ them
    This may seem like extra work, but take a 12x12 raging inferno:
      unbuffered: (12^2)*(160*4) = apply_light_ray x 92160 
@@ -199,7 +202,7 @@ void map::generate_lightmap(game* g)
             light_source_buffer[sx][sy], ( trigdist && light_source_buffer[sx][sy] > 1. ) );
       }
    }
-
+#endif
 if (g->u.has_active_bionic("bio_night") ) {
    for(int sx = 0; sx < LIGHTMAP_CACHE_X; ++sx)
    {
@@ -305,7 +308,11 @@ void map::cache_seen(int fx, int fy, int tx, int ty, int max_range)
 }
 
 void map::add_light_source(int x, int y, float luminance ) {
+#ifdef enable_buffer
   light_source_buffer[x][y] = luminance;
+#else
+  apply_light_source(x, y, luminance, ( trigdist && luminance > 1. ) );
+#endif
 }
 
 void map::apply_light_source(int x, int y, float luminance, bool trig_brightcalc )
@@ -318,7 +325,7 @@ void map::apply_light_source(int x, int y, float luminance, bool trig_brightcalc
   lm[x][y] += std::max(luminance, static_cast<float>(LL_LOW));
   sm[x][y] += luminance;
  }
-
+#ifdef enable_buffer
 /* If we're a 5 luminance fire , we skip casting rays into ey && sx if we have
      neighboring fires to the north and west that were applied via light_source_buffer
    If there's a 1 luminance candle east in buffer, we still cast rays into ex since it's smaller
@@ -340,7 +347,9 @@ void map::apply_light_source(int x, int y, float luminance, bool trig_brightcalc
   bool south=(y != peer_inbounds && light_source_buffer[x][y+1] < luminance );
   bool east=(x != peer_inbounds && light_source_buffer[x+1][y] < luminance );
   bool west=(x != 0 && light_source_buffer[x-1][y] < luminance );
-
+#else
+  bool north=true, south=true, east=true, west=true;
+#endif
  if (luminance > LIGHT_SOURCE_LOCAL) {
   int range = LIGHT_RANGE(luminance);
   int sx = x - range; int ex = x + range;
@@ -446,7 +455,7 @@ void map::calc_ray_end(int angle, int range, int x, int y, int* outx, int* outy)
 }
 
 void map::apply_light_ray(bool lit[LIGHTMAP_CACHE_X][LIGHTMAP_CACHE_Y],
-                          int sx, int sy, int ex, int ey, float luminance, bool trig_brightcalc)
+                          int sx, int sy, int ex, int ey, float luminance, bool trig_brightcalc, bool debug)
 {
  int ax = abs(ex - sx) << 1;
  int ay = abs(ey - sy) << 1;
