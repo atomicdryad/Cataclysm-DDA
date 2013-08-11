@@ -88,7 +88,7 @@ void game::init_fields()
 
         {
             {_("thin smoke"),	_("smoke"), _("thick smoke")},		'8',
-            {c_white, c_ltgray, c_dkgray},	{true, false, false},{false, true, true},  300,
+            {c_white, c_ltgray, c_dkgray},	{true, true, true},{false, true, true},  300,
             {0,0,0}
         },
 

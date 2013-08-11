@@ -4191,11 +4191,12 @@ void map::build_outside_cache(const game *g)
     }
 }
 /////
-
+tilecombustion burncache_default;
 /////
 // TODO Consider making this just clear the cache and dynamically fill it in as trans() is called
 void map::build_transparency_cache()
 {
+ memset(burn_cache, 0, sizeof(burn_cache));
 //dbg(D_INFO) << "  build_transparency_cache";
  for(int x = 0; x < my_MAPSIZE * SEEX; x++) {
   for(int y = 0; y < my_MAPSIZE * SEEY; y++) {
@@ -4215,11 +4216,24 @@ void map::build_transparency_cache()
 	   for(std::map<field_id, field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it){
 		   cur = field_list_it->second;
 		   if(cur == NULL) continue;
-
-		   if(!fieldlist[cur->getFieldType()].transparent[cur->getFieldDensity() - 1]) {
+			if (cur->getFieldType()==fd_smoke) {
+				burn_cache[x][y].smoke_str=cur->getFieldDensity();
+				burn_cache[x][y].smoke_age=cur->getFieldAge();
+			} else if(cur->getFieldType()==fd_fire) {
+				burn_cache[x][y].fire_str=cur->getFieldDensity();
+				burn_cache[x][y].fire_age=cur->getFieldAge();
+			}
+/*		   if(!fieldlist[cur->getFieldType()].transparent[cur->getFieldDensity() - 1]) {
 			   // Fields are either transparent or not, however we want some to be translucent
 			   switch(cur->getFieldType()) {
 			   case fd_smoke:
+
+				   if(cur->getFieldDensity() == 3)
+					   transparency_cache[x][y] = LIGHT_TRANSPARENCY_SOLID;
+				   if(cur->getFieldDensity() == 2)
+					   transparency_cache[x][y] *= 0.5;
+				   break;
+
 			   case fd_toxic_gas:
 			   case fd_tear_gas:
 				   if(cur->getFieldDensity() == 3)
@@ -4235,7 +4249,7 @@ void map::build_transparency_cache()
 				   break;
 			   }
 		   }
-
+*/
 		   // TODO: [lightmap] Have glass reduce light as well
 	   }
    }
@@ -4266,6 +4280,18 @@ void map::build_map_cache(game *g)
  build_outside_cache(g);
 /**/ pf.stop(mc1);pf.start(mc2);
  build_transparency_cache();
+
+int ct=0;
+for(int x=0; x < SEEX*MAPSIZE; x++) {
+  for(int y=0; y < SEEX*MAPSIZE; y++) {
+     if( (burn_cache[x][y].fire_str+burn_cache[x][y].smoke_str)!=0) {
+        ct++;
+     }
+  }
+}
+if(ct!=0) {
+  g->add_msg("bc: %d",ct);
+}
 /**/ pf.stop(mc2);
  // Cache all the vehicle stuff in one loop
  VehicleList vehs = get_vehicles();
