@@ -2619,8 +2619,12 @@ bool map::add_item_anywhere(point worldpos, const int z, item new_item, const in
   const int sx = dropto.abs_sub_pos.x, sy = dropto.abs_sub_pos.y;
   bool overhead=false;
   submap *tmpsub = MAPBUFFER.lookup_submap( dropto.abs_sub.x, dropto.abs_sub.y, z);
+  int exists=1;
   if ( ! tmpsub ) {
-      dbg(D_WARNING) << "add_item_anywhere: trying to drop " << new_item.type->name << " in ungenerated submap " << worldpos.x << ", " << worldpos.y << ", " << z;
+  exists=0;
+  }
+      dbg(D_WARNING) << "add_item_anywhere: trying to drop " << new_item.type->name << " in ungenerated submap " << worldpos.x << ", " << worldpos.y << ", " << z << " exists: "  << exists;
+  if ( ! tmpsub ) {
       if ( ! generate_sub ) return false;
       overmap * tmp_om;
       if ( dropto.abs_om.x == g->cur_om->pos().x && dropto.abs_om.y == g->cur_om->pos().y ) {
@@ -3598,6 +3602,7 @@ if(om==NULL) {
 
 void map::shift(game *g, const int wx, const int wy, const int wz, const int sx, const int sy)
 {
+
 set_abs_sub( g->cur_om->pos().x * OMAPX * 2 + wx + sx, 
   g->cur_om->pos().y * OMAPY * 2 + wy + sy, wz
 );
@@ -3745,9 +3750,24 @@ pf.start(pfm2);
  submap *tmpsub = MAPBUFFER.lookup_submap(absx, absy, worldz);
 pf.stop(pfm2);
  if ( gridx == 0 && gridy == 0 ) {
-     set_abs_sub(absx, absy, worldz);
+//     set_abs_sub(absx, absy, worldz);
  }
  if (tmpsub) {
+ if ( gridx == 0 && gridy == 0 ) {
+   point oldasub=(-99,-99);
+   point oldsm=(-99,-99);
+   if ( grid[0] ) {
+     oldasub=point(get_abs_sub().x,get_abs_sub().y);
+     oldsm=point(grid[0]->x,grid[0]->y);
+   }
+//   set_abs_sub(absx, absy, worldz);
+   dbg(D_INFO) << this << stringfmt(" grid0: [%d,%d] %d,%d (%d,%d) -> %d,%d (%d,%d)",
+g->levx,g->levy,
+oldasub.x, oldasub.y,
+oldsm.x, oldsm.y,
+absx, absy, tmpsub->x, tmpsub->y
+);
+ }
    grid[gridn] = tmpsub;
    if( update_vehicles ) {
      // Update vehicle data
@@ -3849,10 +3869,26 @@ pf.start(pfm2);
 pf.stop(pfm2);
 
  if ( gridx == 0 && gridy == 0 ) {
-     set_abs_sub(absx, absy, worldz);
+//     set_abs_sub(absx, absy, worldz);
  }
 
  if (tmpsub) {
+ if ( gridx == 0 && gridy == 0 ) {
+   point oldasub=(-99,-99);
+   point oldsm=(-99,-99);
+   if ( grid[0] ) {
+     oldasub=point(get_abs_sub().x,get_abs_sub().y);
+     oldsm=point(grid[0]->x,grid[0]->y);
+   }
+   set_abs_sub(absx, absy, worldz);
+   dbg(D_INFO) << stringfmt("grid0: [%d,%d] %d,%d (%d,%d) -> %d,%d (%d,%d)",
+g->levx,g->levy,
+oldasub.x, oldasub.y,
+oldsm.x, oldsm.y,
+absx, absy, tmpsub->x, tmpsub->y
+);
+ }
+
    grid[gridn] = tmpsub;
    // Update vehicle data
    if( update_vehicles ) {
@@ -4328,6 +4364,8 @@ if(ct!=0) {
  * record grid[0] submap coords
  */
 void map::set_abs_sub( const int x, const int y, const int z ) {
+dbg(D_INFO) << stringfmt("set_abs_sub %d,%d : lev: %d,%d old: %d,%d",x,y,
+g->levx,g->levy,abs_sub.x,abs_sub.y);
   abs_sub=point(x, y);
   world_z = z;
   abs_min=point(x*SEEX, y*SEEY);
@@ -4341,8 +4379,12 @@ point map::getabs(const int x, const int y ) {
     int ay=( abs_sub.y * SEEY ) + y;
 #define sanity_test 1
 #ifdef sanity_test
-    int sx=( grid[0]->x * SEEX ) + x;
-    int sy=( grid[0]->y * SEEY ) + y;
+    int sx=-999;
+    int sy=-999;
+if(grid[0]){
+sx=( grid[0]->x * SEEX ) + x;
+sy=( grid[0]->y * SEEY ) + y;
+
     if ( ax != sx || ay != sy ) {
       popup_nowait("getabs: grid[0]: %d,%d != abs_sub: %d,%d : grid[0]=%d,%d, abs_sub=%d,%d",
         grid[0]->x,grid[0]->y,abs_sub.x,abs_sub.y,
@@ -4358,6 +4400,7 @@ point map::getabs(const int x, const int y ) {
         sx,sy,ax,ay
         ));
     }
+}
 #endif
     return point(ax,ay);
 }

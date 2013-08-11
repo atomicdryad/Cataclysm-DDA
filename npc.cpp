@@ -11,6 +11,9 @@
 #include "line.h"
 #include "item_factory.h"
 
+#include "debug.h"
+#define dbg(x) dout((DebugLevel)(x),D_MAP) << __FILE__ << ":" << __LINE__ << ": "
+
 std::vector<item> starting_clothes(npc_class type, bool male, game *g);
 std::list<item> starting_inv(npc *me, npc_class type, game *g);
 
@@ -1169,8 +1172,10 @@ bool npc::wield(game *g, signed char invlet)
   if (volume_carried() + weapon.volume() <= volume_capacity()) {
    i_add(remove_weapon());
    moves -= 15; // Extra penalty for putting weapon away
-  } else // No room for weapon, so we drop it
+  } else { // No room for weapon, so we drop it
+dbg(D_INFO) << stringfmt("[%d,%d] %d,%d wield: drop",g->levx,g->levy,posx,posy);
    g->m.add_item(posx, posy, remove_weapon());
+  }
   moves -= 15;
   weapon.make( g->itypes[styles[index]] );
   if (g->u_see(posx, posy))
@@ -1181,8 +1186,11 @@ bool npc::wield(game *g, signed char invlet)
  if (volume_carried() + weapon.volume() <= volume_capacity()) {
   i_add(remove_weapon());
   moves -= 15;
- } else // No room for weapon, so we drop it
+ } else { // No room for weapon, so we drop it
+dbg(D_INFO) << stringfmt("[%d,%d] %d,%d wield: drop",g->levx,g->levy,posx,posy);
+
   g->m.add_item(posx, posy, remove_weapon());
+}
  moves -= 15;
  weapon = inv.item_by_letter(invlet);
  i_remn(invlet);
@@ -2088,6 +2096,8 @@ void npc::die(game *g, bool your_fault)
  item my_body;
  my_body.make_corpse(g->itypes["corpse"], g->mtypes[mon_null], g->turn);
  my_body.name = name;
+dbg(D_INFO) << stringfmt("[%d,%d] %d,%d kaput",g->levx,g->levy,posx,posy);
+
  g->m.add_item(posx, posy, my_body);
  std::vector<item *> dump;
  inv.dump(dump);

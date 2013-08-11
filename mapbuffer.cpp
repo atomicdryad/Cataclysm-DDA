@@ -72,7 +72,8 @@ submap* mapbuffer::lookup_submap(int x, int y, int z)
  if (submaps.count(p) == 0)
   return NULL;
 
- dbg(D_INFO) << "mapbuffer::lookup_submap success: "<< submaps[p];
+ dbg(D_INFO) << "mapbuffer::lookup_submap success: " << x << "," << y << " = " << submaps[p]->x << "," << submaps[p]->y;
+//<< submaps[p];
 
  return submaps[p];
 }

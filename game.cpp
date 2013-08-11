@@ -464,7 +464,17 @@ int(MAPSIZE / 2) + 1 , (cur_om->npcs[i]->is_active(this) ?"y":"n")
         {
             int dx = cur_om->npcs[i]->mapx - levx, dy = cur_om->npcs[i]->mapy - levy;
             if (debugmon)debugmsg("game::load_npcs: Spawning static NPC, %d:%d (%d:%d)", levx, levy, cur_om->npcs[i]->mapx, cur_om->npcs[i]->mapy);
-            dbg(D_INFO) << stringfmt("game::load_npcs: Spawning static NPC, lev %d:%d map (%d:%d) pos %d,%d", levx, levy, cur_om->npcs[i]->mapx, cur_om->npcs[i]->mapy,cur_om->npcs[i]->posx, cur_om->npcs[i]->posy);
+            dbg(D_INFO) << stringfmt("game::load_npcs: Spawning static NPC, lev %d:%d map (%d:%d) pos %d,%d // chk: (%d,%d, %d,%d) = %d <= %d",
+ levx, levy, cur_om->npcs[i]->mapx, cur_om->npcs[i]->mapy,cur_om->npcs[i]->posx, cur_om->npcs[i]->posy,
+levx + int(MAPSIZE / 2),
+levy + int(MAPSIZE / 2),
+cur_om->npcs[i]->mapx,
+cur_om->npcs[i]->mapy,
+square_dist(levx + int(MAPSIZE / 2), levy + int(MAPSIZE / 2), cur_om->npcs[i]->mapx, cur_om->npcs[i]->mapy),
+int(MAPSIZE / 2) + 1
+
+
+);
 
             npc * temp = cur_om->npcs[i];
 
@@ -479,20 +489,34 @@ int(MAPSIZE / 2) + 1 , (cur_om->npcs[i]->is_active(this) ?"y":"n")
                 temp->posy = SEEY * 2 * (temp->mapy - levy) + rng(0 - SEEY, SEEY);
             } else {
                 if (debugmon) debugmsg("game::load_npcs Static NPC fine location %d:%d (%d:%d)", temp->posx, temp->posy, temp->posx + dx * SEEX, temp->posy + dy * SEEY);
-                 dbg(D_INFO) << stringfmt("game::load_npcs Static NPC fine location %d:%d (%d:%d)", temp->posx, temp->posy, temp->posx + dx * SEEX, temp->posy + dy * SEEY);
+                 dbg(D_INFO) <<
+ stringfmt("game::load_npcs Static NPC %d fine location %d:%d (%d:%d) mapxy %d,%d dx/y %d,%d",i,
+ temp->posx, temp->posy, temp->posx + dx * SEEX, temp->posy + dy * SEEY,
+temp->mapx,temp->mapy,
+dx,dy
+);
                 temp->posx += dx * SEEX;
                 temp->posy += dy * SEEY;
             }
-
+int ox=temp->posx;
+int oy=temp->posy;
         //check if the loaded position doesn't already contain an object, monster or npc.
         //If it isn't free, spiralsearch for a free spot.
         temp->place_near(this, temp->posx, temp->posy);
-
+if ( ox != temp->posx && oy != temp->posy ) {
+                 dbg(D_INFO) <<
+ stringfmt("game::load_npcs Static NPC %d shifted %d,%d => %d,%d",i,ox,oy,temp->posx,temp->posy );
+} else {
+dbg(D_INFO) <<
+stringfmt("game::load_npcs Static NPC %d dropping off at %d,%d",i,temp->posx,temp->posy );
+}
         //In the rare case the npc was marked for death while it was on the overmap. Kill it.
-        if (temp->marked_for_death)
+        if (temp->marked_for_death) {
             temp->die(this, false);
-        else
+                dbg(D_ERROR) << "game::load_npcs: dead " << i;
+        } else {
             active_npc.push_back(temp);
+        }
         }
     }
 }
@@ -3867,7 +3891,7 @@ void draw_location(game *g) {
  real_coords abc;
  abc.fromabs( g->m.getabs( g->u.posx, g->u.posy ) );
  mvprintz(VIEW_OFFSET_Y+3,TERMX - getmaxx(g->w_messages) - VIEW_OFFSET_X,c_cyan,
-  "abs[%d,%d] sub[%d.%d,%d.%d] om[%d.%d,%d.%d]",
+  "%d,%d sm[%d:%d,%d:%d] om[%d:%d,%d:%d]",
   abc.abs_pos.x,abc.abs_pos.y,
   abc.abs_sub.x, abc.abs_sub_pos.x, abc.abs_sub.y, abc.abs_sub_pos.y,
   abc.abs_om.x, abc.abs_om_pos.x, abc.abs_om.y, abc.abs_om_pos.y
@@ -11225,6 +11249,7 @@ void game::fling_player_or_monster(player *p, monster *zz, const int& dir, float
 
 void game::vertical_move(int movez, bool force)
 {
+
 // > and < are used for diving underwater.
  if (m.move_cost(u.posx, u.posy) == 0 && m.has_flag(swimmable, u.posx, u.posy)){
   if (movez == -1) {
