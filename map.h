@@ -529,6 +529,8 @@ private:
  bool seen_cache_mask[MAPSIZE*SEEX][MAPSIZE*SEEY];
  bool transparency_cache_mask[MAPSIZE*SEEX][MAPSIZE*SEEY];
 
+ tilecombustion burn_cache[MAPSIZE*SEEX][MAPSIZE*SEEY];
+
  submap* grid[MAPSIZE * MAPSIZE];
 };
 

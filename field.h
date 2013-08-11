@@ -196,4 +196,47 @@ private:
     bool dirty; //true if this is a copy of the class, false otherwise.
 char posidx;
 };
+
+#ifndef mfb
+#define sfb(n) short(1 << (n))
+#endif
+
+enum tilecombustion_flags {
+    tcombust_null,
+    tcombust_setnone,
+    tcombust_setfire,
+    tcombust_setsmoke,
+    tcombust_contained,
+    tcombust_uncontained
+} __attribute__ ((packed));
+
+class field;
+struct tilecombustion {
+    char fire_str;
+    char smoke_str;
+    short fire_age;
+    short smoke_age;
+    tilecombustion_flags flags;
+    void cache2fld(const int x, const int y, field * fld) {
+      
+    };
+    void fld2cache(const int x, const int y, field * fld) {
+      fire_str=0;
+      smoke_str=0;
+      fire_age=0;
+      smoke_age=0;
+      flags=tilecombustion_flags(tcombust_null & tcombust_setnone);
+      field_entry * tmp=fld->findField(fd_fire);
+      if (tmp != NULL ) {
+        fire_str=(char)tmp->getFieldDensity();
+        fire_age=(short)tmp->getFieldAge();
+      };
+      tmp = fld->findField(fd_smoke);
+      if (tmp != NULL ) {
+        smoke_str=(char)tmp->getFieldDensity();
+        smoke_age=(short)tmp->getFieldAge();
+      };
+    };
+};
+
 #endif
