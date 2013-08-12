@@ -10,13 +10,13 @@
 #define LIGHTMAP_CACHE_Y SEEY * MAPSIZE
 
 // for pre-merge testing of other optimizations
-#define lightsource_cache 
-#define itype_light
+#define lightsource_cache 1
+#define itype_light 1
 void map::generate_lightmap(game* g)
 {
     memset(lm, 0, sizeof(lm));
     memset(sm, 0, sizeof(sm));
-
+#ifdef lightsource_cache
 /* Bulk light sources wastefully cast rays into neighbors; a burning hospital can produce
      significant slowdown, so for stuff like fire and lava:
  * Step 1: Store the position and luminance in buffer via add_light_source, for efficient
@@ -26,6 +26,7 @@ void map::generate_lightmap(game* g)
  * Step 3: Profit! 
  */
     memset(light_source_buffer, 0, sizeof(light_source_buffer));
+#endif
 
     const int dir_x[] = { 1, 0 , -1,  0 };
     const int dir_y[] = { 0, 1 ,  0, -1 };
@@ -86,10 +87,10 @@ void map::generate_lightmap(game* g)
                     add_light_source(sx, sy, (float)itm->type->light_emission );
                 }
 #else
-                if ( itm->has_flag("LIGHT_20")) { add_light_source(sx, sy, 20, trigdist); } else
-                if ( itm->has_flag("LIGHT_1")) { add_light_source(sx, sy, 1, trigdist); } else
-                if ( itm->has_flag("LIGHT_4")) { add_light_source(sx, sy, 4, trigdist); } else
-                if ( itm->has_flag("LIGHT_8")) { add_light_source(sx, sy, 8, trigdist); }
+                if ( itm->has_flag("LIGHT_20")) { add_light_source(sx, sy, 20 ); } else
+                if ( itm->has_flag("LIGHT_1")) { add_light_source(sx, sy, 1 ); } else
+                if ( itm->has_flag("LIGHT_4")) { add_light_source(sx, sy, 4 ); } else
+                if ( itm->has_flag("LIGHT_8")) { add_light_source(sx, sy, 8 ); }
 #endif
             }
 
