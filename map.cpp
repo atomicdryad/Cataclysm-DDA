@@ -4244,8 +4244,10 @@ void map::build_transparency_cache()
    field &curfield = field_at(x,y);
    if(curfield.fieldCount() > 0){
 	   field_entry *cur = NULL;
-	   for(std::map<field_id, field_entry*>::iterator field_list_it = curfield.getFieldStart(); field_list_it != curfield.getFieldEnd(); ++field_list_it){
+	   for( std::map<field_id, field_entry*>::iterator field_list_it = curfield.getFieldStart();
+        field_list_it != curfield.getFieldEnd(); ++field_list_it ) {
 		   cur = field_list_it->second;
+		   if( cur == NULL ) { continue; }
 		   if(cur == NULL) continue;
 			if (cur->getFieldType()==fd_smoke) {
 				burn_cache[x][y].smoke_str=cur->getFieldDensity();
@@ -4254,9 +4256,10 @@ void map::build_transparency_cache()
 				burn_cache[x][y].fire_str=cur->getFieldDensity();
 				burn_cache[x][y].fire_age=cur->getFieldAge();
 			}
-/*		   if(!fieldlist[cur->getFieldType()].transparent[cur->getFieldDensity() - 1]) {
+#ifdef skipsmokeop
+		   if( !fieldlist[ cur->getFieldType() ].transparent[ cur->getFieldDensity() - 1 ] ) {
 			   // Fields are either transparent or not, however we want some to be translucent
-			   switch(cur->getFieldType()) {
+			   switch( cur->getFieldType() ) {
 			   case fd_smoke:
 
 				   if(cur->getFieldDensity() == 3)
@@ -4280,7 +4283,7 @@ void map::build_transparency_cache()
 				   break;
 			   }
 		   }
-*/
+#endif
 		   // TODO: [lightmap] Have glass reduce light as well
 	   }
    }
