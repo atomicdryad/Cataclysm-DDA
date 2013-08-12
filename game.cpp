@@ -510,6 +510,7 @@ if ( ox != temp->posx && oy != temp->posy ) {
 dbg(D_INFO) <<
 stringfmt("game::load_npcs Static NPC %d dropping off at %d,%d",i,temp->posx,temp->posy );
 }
+return;
         //In the rare case the npc was marked for death while it was on the overmap. Kill it.
         if (temp->marked_for_death) {
             temp->die(this, false);
