@@ -511,7 +511,7 @@ private:
  void add_light_source(int x, int y, float luminance);
  void apply_light_arc(int x, int y, int angle, float luminance, int wideangle = 30 );
  void apply_light_ray(bool lit[MAPSIZE*SEEX][MAPSIZE*SEEY],
-                      int sx, int sy, int ex, int ey, float luminance, bool trig_brightcalc = true, bool debug=false);
+                      int sx, int sy, int ex, int ey, float luminance, bool trig_brightcalc = true );
  void calc_ray_end(int angle, int range, int x, int y, int* outx, int* outy);
 
  float lm[MAPSIZE*SEEX][MAPSIZE*SEEY];
