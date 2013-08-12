@@ -83,7 +83,14 @@ void map::generate_lightmap(game* g)
 
             for( std::vector<item>::const_iterator itm = items.begin(); itm != items.end(); ++itm ) {
 #ifdef itype_light
-                if ( itm->type->light_emission > 0 ) {
+                if ( itm->light.luminance > 0 ) {
+                    if ( itm->light.width > 0 ) {
+                        apply_light_arc( sx, sy, (int)itm->light.direction, 
+                                         (float)itm->light.luminance, (int)itm->light.width );
+                    } else {
+                        add_light_source(sx, sy, (float)itm->light.luminance );
+                    }
+                } else if ( itm->type->light_emission > 0 ) {
                     add_light_source(sx, sy, (float)itm->type->light_emission );
                 }
 #else
