@@ -7661,7 +7661,7 @@ point game::look_debug(point coords) {
       mvwprintw(w_look, off, 1, _("Graffiti: %s"), m.graffiti_at(lx, ly).contents->c_str()); off++;
 
     mvwprintw(w_look, boff, 1, _("[t] add trap, [f] add field effect")); boff--;
-    mvwprintw(w_look, boff, 1, _("[g] edit m_ter")); boff--;
+    mvwprintw(w_look, boff, 1, _("[g] edit m_ter, [i]tems")); boff--;
 
     wrefresh(w_look);
     wrefresh(w_terrain);
@@ -7840,6 +7840,61 @@ point game::look_debug(point coords) {
       wrefresh(w_look);
       skip = true;
 	  */
+    } else if ( ch == 'i' ) {
+      uimenu imenu;
+      imenu.w_x=VIEWX * 2 + 8+VIEW_OFFSET_X;
+      imenu.w_y=0;
+      imenu.w_width=48;
+      imenu.w_height=lookHeight-1;
+      imenu.return_invalid=true;
+      std::vector<item>& items = m.i_at(lx , ly );
+      for(int i = 0; i < items.size(); i++) {
+        imenu.addentry(i,true,0,"%s%s",items[i].tname(this).c_str(),items[i].light.luminance > 0 ? " L" : "" );
+      }
+      do {
+        imenu.query();
+        if ( imenu.ret >= 0 && imenu.ret < items.size() ) {
+            item * it = &items[imenu.ret];
+            uimenu lmenu;
+            lmenu.w_x=imenu.w_x;
+            lmenu.w_y=imenu.w_height;
+            lmenu.w_height=TERMX-imenu.w_height;
+            lmenu.w_width=imenu.w_width;
+            lmenu.addentry("lum: %f",(float)it->light.luminance);
+            lmenu.addentry("dir: %d",(int)it->light.direction);
+            lmenu.addentry("width: %d",(int)it->light.width);
+            lmenu.addentry("exit");
+            do {
+                lmenu.query();
+                if ( lmenu.ret >= 0 && lmenu.ret < 3 ) {
+                    int intval=-1;
+                    intval= ( lmenu.ret == 0 ? (int)it->light.luminance : 
+                        lmenu.ret == 1 ? (int)it->light.direction : (int)it->light.width );
+                    int retval=helper::to_int (
+                        string_input_popup( "set: ", 20, helper::to_string(  intval ) )
+                    );
+                    if ( intval != retval ) {
+                        if (lmenu.ret == 0 ) {
+                            it->light.luminance=(unsigned short)retval;
+                            lmenu.entries[0].txt=stringfmt("lum: %f",(float)it->light.luminance);
+                        } else if (lmenu.ret == 1 ) {
+                            it->light.direction=(short)retval;
+                            lmenu.entries[1].txt=stringfmt("dir: %d",(int)it->light.direction);
+                        } else if (lmenu.ret == 2 ) {
+                            it->light.width=(short)retval;
+                            lmenu.entries[2].txt=stringfmt("width: %d",(int)it->light.width);
+                        }
+                        werase(w_terrain);
+                        draw_ter(lx, ly);
+                    }
+                    wrefresh(imenu.window);
+                    wrefresh(lmenu.window);
+                    wrefresh(w_terrain);
+                }
+            } while(lmenu.ret != 3);
+            wrefresh(w_look);
+        }
+      } while (imenu.ret >= 0 || imenu.ret == UIMENU_INVALID);
     } else if ( ch == 't' ) {
       ///////////////////////////////////////////
       ///// trap edit

@@ -18,6 +18,8 @@
 
 std::string default_technique_name(technique_id tech);
 
+light_emission nolight={0,0,0};
+ 
 item::item()
 {
  name = "";
@@ -33,6 +35,7 @@ item::item()
  curammo = NULL;
  corpse = NULL;
  active = false;
+ light = nolight;
  owned = -1;
  mission_id = -1;
  player_id = -1;
@@ -53,6 +56,7 @@ item::item(itype* it, unsigned int turn)
  mode = "NULL";
  item_counter = 0;
  active = false;
+ light = nolight;
  curammo = NULL;
  corpse = NULL;
  owned = -1;
@@ -112,6 +116,7 @@ item::item(itype *it, unsigned int turn, char let)
  poison = 0;
  mode = "NULL";
  item_counter = 0;
+ light=nolight;
  active = false;
  if (it->is_gun()) {
   charges = 0;
@@ -163,6 +168,7 @@ void item::make_corpse(itype* it, mtype* mt, unsigned int turn)
  mode = "NULL";
  item_counter = 0;
  curammo = NULL;
+ light=nolight;
  active = mt->species == species_zombie ? true : false;
  if(!it)
   type = nullitem();
@@ -394,6 +400,7 @@ void item::load_info(std::string data, game *g)
  int lettmp, damtmp, acttmp, corp, tag_count;
  dump >> lettmp >> idtmp >> charges >> damtmp >> tag_count;
 
+ light=nolight;
  for( int i = 0; i < tag_count; ++i )
  {
      dump >> item_tag;

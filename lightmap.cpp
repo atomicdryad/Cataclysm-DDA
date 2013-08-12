@@ -11,7 +11,7 @@
 
 // for pre-merge testing of other optimizations
 #define lightsource_cache 1 // major improvement for lightsource blobs
-//#define itype_light 1 // improvement with many items, needs https://github.com/atomicdryad/Cataclysm-DDA/commit/c5ed718699f0a4f6889fa72815c21b6bb68235e6
+#define itype_light 1 // improvement with many items, needs https://github.com/atomicdryad/Cataclysm-DDA/commit/c5ed718699f0a4f6889fa72815c21b6bb68235e6
 void map::generate_lightmap(game* g)
 {
     memset(lm, 0, sizeof(lm));
@@ -83,7 +83,14 @@ void map::generate_lightmap(game* g)
 
             for( std::vector<item>::const_iterator itm = items.begin(); itm != items.end(); ++itm ) {
 #ifdef itype_light
-                if ( itm->type->light_emission > 0 ) {
+                if ( itm->light.luminance > 0 ) {
+                    if ( itm->light.width > 0 ) {
+                        apply_light_arc( sx, sy, (int)itm->light.direction, 
+                                         (float)itm->light.luminance, (int)itm->light.width );
+                    } else {
+                        add_light_source(sx, sy, (float)itm->light.luminance );
+                    }
+                } else if ( itm->type->light_emission > 0 ) {
                     add_light_source(sx, sy, (float)itm->type->light_emission );
                 }
 #else
