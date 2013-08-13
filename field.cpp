@@ -1,6 +1,7 @@
 #include "rng.h"
 #include "map.h"
 #include "field.h"
+#include "quickstring.h"
 #include "game.h"
 #include "bench.h"
 
@@ -227,7 +228,9 @@ pf.start(fd0);
   }
  }
 pf.stop(fd0);
-dbg(D_INFO) << int(g->turn) << "process_fields_in_submap " << pf.get(fd0);pf.reset(fd0);
+pf.stop(burn1);
+dbg(D_INFO) << int(g->turn) << "process_fields_in_submap " << pf.get(fd0) << " f_items: " << pf.get(burn1);
+pf.reset(fd0);pf.reset(burn1);
 
  return found_field;
 }
@@ -353,15 +356,15 @@ bool map::process_fields_in_submap(game *g, int gridn)
 						}
 						//Flame type ammo removed so gasoline isn't explosive, it just burns.
 						if(ammo_type != NULL &&
-         (ammo_type->ammo_effects.count("INCENDIARY") ||
-          ammo_type->ammo_effects.count("EXPLOSIVE") ||
-          ammo_type->ammo_effects.count("FRAG") ||
-          ammo_type->ammo_effects.count("NAPALM") ||
-          ammo_type->ammo_effects.count("EXPLOSIVE_BIG") ||
-          ammo_type->ammo_effects.count("TEARGAS") ||
-          ammo_type->ammo_effects.count("SMOKE") ||
-          ammo_type->ammo_effects.count("FLASHBANG") ||
-          ammo_type->ammo_effects.count("COOKOFF")))
+         (ammo_type->ammo_effects.count(str_INCENDIARY) ||
+          ammo_type->ammo_effects.count(str_EXPLOSIVE) ||
+          ammo_type->ammo_effects.count(str_FRAG) ||
+          ammo_type->ammo_effects.count(str_NAPALM) ||
+          ammo_type->ammo_effects.count(str_EXPLOSIVE_BIG) ||
+          ammo_type->ammo_effects.count(str_TEARGAS) ||
+          ammo_type->ammo_effects.count(str_SMOKE) ||
+          ammo_type->ammo_effects.count(str_FLASHBANG) ||
+          ammo_type->ammo_effects.count(str_COOKOFF)))
 						{
 							//Any kind of explosive ammo (IE: not arrows and pebbles and such)
 							const int rounds_exploded = rng(1, it->charges);
@@ -374,7 +377,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 							}
 							it->charges -= rounds_exploded; //Get rid of the spent ammo.
 							if(it->charges == 0) destroyed = true; //No more ammo, item should be removed.
-						} else if (it->made_of("paper")) {
+						} else if (it->made_of(str_paper)) {
 							//paper items feed the fire moderatly.
 							destroyed = it->burn(cur->getFieldDensity() * 3);
 							consumed++;
@@ -383,7 +386,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 							if (vol >= 4)
 								smoke++; //Large paper items give chance to smoke.
 
-						} else if ((it->made_of("wood") || it->made_of("veggy"))) {
+						} else if ((it->made_of(str_wood) || it->made_of(str_veggy))) {
 							//Wood or vegy items burn slowly.
 							if (vol <= cur->getFieldDensity() * 10 || cur->getFieldDensity() == 3) {
 								cur->setFieldAge(cur->getFieldAge() - 50);
@@ -395,7 +398,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 								smoke++;
 							}
 
-						} else if ((it->made_of("cotton") || it->made_of("wool"))) {
+						} else if ((it->made_of(str_cotton) || it->made_of(str_wool))) {
 							//Cotton and Wool burn slowly but don't feed the fire much.
 							if (vol <= cur->getFieldDensity() * 5 || cur->getFieldDensity() == 3) {
 								cur->setFieldAge(cur->getFieldAge() - 1);
@@ -407,7 +410,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 								smoke++;
 							}
 
-						} else if ((it->made_of("flesh"))||(it->made_of("hflesh"))) {
+						} else if ((it->made_of(str_flesh))||(it->made_of(str_hflesh))) {
 							//Same as cotton/wool really but more smokey.
 							if (vol <= cur->getFieldDensity() * 5 || (cur->getFieldDensity() == 3 && one_in(vol / 20))) {
 								cur->setFieldAge(cur->getFieldAge() - 1);
@@ -421,8 +424,8 @@ bool map::process_fields_in_submap(game *g, int gridn)
 
 						} else if (it->made_of(LIQUID)) {
 							//Lots of smoke if alcohol, and LOTS of fire fueling power, kills a fire otherwise.
-							if(it->type->id == "tequila" || it->type->id == "whiskey" ||
-								it->type->id == "vodka" || it->type->id == "rum" || it->type->id == "gasoline") {
+							if(it->type->id == str_tequila || it->type->id == str_whiskey ||
+								it->type->id == str_vodka || it->type->id == str_rum || it->type->id == str_gasoline) {
 									cur->setFieldAge(cur->getFieldAge() - 300);
 									smoke += 6;
 							} else {
@@ -434,13 +437,13 @@ bool map::process_fields_in_submap(game *g, int gridn)
 								destroyed = true;
 							}
 								consumed++;
-						} else if (it->made_of("powder")) {
+						} else if (it->made_of(str_powder)) {
 							//Any powder will fuel the fire as much as its volume but be immediately destroyed.
 							cur->setFieldAge(cur->getFieldAge() - vol);
 							destroyed = true;
 							smoke += 2;
 
-						} else if (it->made_of("plastic")) {
+						} else if (it->made_of(str_plastic)) {
 							//Smokey material, doesn't fuel well.
 							smoke += 3;
 							if (it->burnt <= cur->getFieldDensity() * 2 || (cur->getFieldDensity() == 3 && one_in(vol))) {
@@ -578,6 +581,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 								int spread_chance = 25 * (cur->getFieldDensity() - 1);
 								if (nearwebfld)
 									spread_chance = 50 + spread_chance / 2;
+pf.start(burn1);
 								if (has_flag(explodes, fx, fy) && one_in(8 - cur->getFieldDensity()) &&
 									tr_brazier != tr_at(x, y) && (has_flag(fire_container, x, y) != true ) ) {
 										ter_set(fx, fy, ter_id(int(ter(fx, fy)) + 1));
@@ -595,6 +599,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 									(has_flag(l_flammable, fx, fy) && one_in(10))) ||
 									flammable_items_at(fx, fy) ||
 									nearwebfld )) {
+pf.stop(burn1);
 										add_field(g, fx, fy, fd_fire, 1); //Nearby open flammable ground? Set it on fire.
 										tmpfld = nearby_field.findField(fd_fire);
 										if(tmpfld){
@@ -604,6 +609,7 @@ bool map::process_fields_in_submap(game *g, int gridn)
 										if(nearwebfld)
 											g->m.remove_field(fx,fy,fd_web);
 								} else {
+pf.stop(burn1);
 									bool nosmoke = true;
 									for (int ii = -1; ii <= 1; ii++) {
 										for (int jj = -1; jj <= 1; jj++) {
