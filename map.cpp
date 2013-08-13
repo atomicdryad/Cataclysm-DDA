@@ -10,7 +10,6 @@
 #include <cmath>
 #include <stdlib.h>
 #include <fstream>
-#include "quickstring.h"
 #include "debug.h"
 #include "item_factory.h"
 #include "overmapbuffer.h"
@@ -1021,18 +1020,18 @@ bool map::flammable_items_at(const int x, const int y)
  for (int i = 0; i < i_at(x, y).size(); i++) {
   item *it = &(i_at(x, y)[i]);
   int vol = it->volume();
-  if (it->made_of(str_paper) || it->made_of(str_powder) ||
-      it->type->id == str_whiskey || it->type->id == str_vodka ||
-      it->type->id == str_rum || it->type->id == str_tequila)
+  if (it->made_of("paper") || it->made_of("powder") ||
+      it->type->id == "whiskey" || it->type->id == "vodka" ||
+      it->type->id == "rum" || it->type->id == "tequila")
     return true;
-  if ((it->made_of(str_wood) || it->made_of(str_veggy)) && (it->burnt < 1 || vol <= 10))
+  if ((it->made_of("wood") || it->made_of("veggy")) && (it->burnt < 1 || vol <= 10))
     return true;
-  if (it->made_of(str_cotton) && (vol <= 5 || it->burnt < 1))
+  if (it->made_of("cotton") && (vol <= 5 || it->burnt < 1))
     return true;
-  if (it->is_ammo() && it->ammo_type() != str_battery &&
-      it->ammo_type() != str_nail && it->ammo_type() != str_BB &&
-      it->ammo_type() != str_bolt && it->ammo_type() != str_arrow &&
-      it->ammo_type() != str_pebble && it->ammo_type() != str_NULL)
+  if (it->is_ammo() && it->ammo_type() != "battery" &&
+      it->ammo_type() != "nail" && it->ammo_type() != "BB" &&
+      it->ammo_type() != "bolt" && it->ammo_type() != "arrow" &&
+      it->ammo_type() != "pebble" && it->ammo_type() != "NULL")
     return true;
  }
  return false;

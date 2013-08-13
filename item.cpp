@@ -10,7 +10,6 @@
 #include "material.h"
 #include "item_factory.h"
 #include "options.h"
-#include "quickstring.h"
 
 // mfb(n) converts a flag to its appropriate position in covers's bitfield
 #ifndef mfb
@@ -1466,12 +1465,12 @@ bool item::is_two_handed(player *u)
     return (weight() > u->str_cur * 4);
 }
 
-bool item::made_of(const std::string & mat_ident) const
+bool item::made_of(std::string mat_ident) const
 {
  if( is_null() )
   return false;
 
- if (typeId() == str_corpse)
+ if (typeId() == "corpse")
   return (corpse->mat == mat_ident);
 
     return (type->m1 == mat_ident || type->m2 == mat_ident);
