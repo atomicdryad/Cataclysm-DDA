@@ -119,6 +119,9 @@ void uimenu::init() {
     vmax = 0;                // max entries area rows
 }
 
+void uimenu::setup() {
+}
+
 void uimenu::show() {
     if (!started) {
         bool w_auto = (w_width == -1 || w_width == -2 );

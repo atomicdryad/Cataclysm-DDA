@@ -65,6 +65,7 @@ class uimenu {
     uimenu (int startx, int width, int starty, std::string title, std::vector<uimenu_entry> ents);
 
     void init();
+    void setup();
     void show();
     void query(bool loop=true);
     void addentry(std::string str);
