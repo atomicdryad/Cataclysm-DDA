@@ -36,57 +36,63 @@
 
 
 
-void constrain ( point & p ) {
+void constrain ( point &p )
+{
     if ( p.x < 0 ) {
-      p.x = 0;
+        p.x = 0;
     } else if ( p.x >= maplim ) {
-      p.x = maplim - 1;
+        p.x = maplim - 1;
     }
     if ( p.y < 0 ) {
-      p.y = 0;
+        p.y = 0;
     } else if ( p.y >= maplim ) {
-      p.y = maplim - 1;
+        p.y = maplim - 1;
     }
 }
-point editmap::pos2screen( const int x, const int y ) {
-    return point ( tmaxx/2 + x - target.x, tmaxy/2 + y - target.y );
+point editmap::pos2screen( const int x, const int y )
+{
+    return point ( tmaxx / 2 + x - target.x, tmaxy / 2 + y - target.y );
 }
-point editmap::screen2pos( const int i, const int j ) {
+point editmap::screen2pos( const int i, const int j )
+{
     return point (i + target.x - VIEWX, j + target.y - VIEWY);
 }
-bool menu_escape ( int ch ) {
+bool menu_escape ( int ch )
+{
     return ( ch == KEY_ESCAPE || ch == ' ' || ch == 'q' );
 }
 
-bool editmap::eget_direction(int &x, int &y, InputEvent &input, int ch) {
-    x=0;
-    y=0;
+bool editmap::eget_direction(int &x, int &y, InputEvent &input, int ch)
+{
+    x = 0;
+    y = 0;
     if ( ch == 'G' || ch == '0' ) {
         x = ( g->u.posx - ( target.x ) );
         y = ( g->u.posy - ( target.y ) );
         return true;
     } else if ( ch == 'H' ) {
-        x=0-(tmaxx/2);
+        x = 0 - (tmaxx / 2);
     } else if ( ch == 'J' ) {
-        y=0-(tmaxy/2);
+        y = 0 - (tmaxy / 2);
     } else if ( ch == 'K' ) {
-        y=(tmaxy/2);
+        y = (tmaxy / 2);
     } else if ( ch == 'L' ) {
-        x=(tmaxx/2);
+        x = (tmaxx / 2);
     } else {
         get_direction(x, y, input);
         return ( x != -2 && y != -2 );
     }
     return true;
 }
-void editmap::uphelp (std::string txt1, std::string txt2) {
+void editmap::uphelp (std::string txt1, std::string txt2)
+{
     if ( txt1 != "" ) {
-       mvwprintw(w_help, 0, 0, "%s", padding.c_str() );
-       mvwprintw(w_help, 1, 0, "%s", padding.c_str() );
-       mvwprintw(w_help, ( txt2 != "" ? 0 : 1 ), 0, _(txt1.c_str()));
-       if ( txt2 != "" ) {
-          mvwprintw(w_help, 1, 0, _(txt2.c_str()));
-       }
+        mvwprintw(w_help, 0, 0, "%s", padding.c_str() );
+        mvwprintw(w_help, 1, 0, "%s", padding.c_str() );
+        mvwprintw(w_help, ( txt2 != "" ? 0 : 1 ), 0, _(txt1.c_str()));
+        if ( txt2 != "" ) {
+            mvwprintw(w_help, 1, 0, _(txt2.c_str()));
+        }
     }
     wrefresh(w_help);
 }
@@ -102,14 +108,14 @@ point editmap::edit(point coords)
 
     infoHeight = 14;
 
-    w_info = newwin(infoHeight, width, TERMY-infoHeight, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
-    w_help = newwin(2, width-2, TERMY-3, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X + 1);
+    w_info = newwin(infoHeight, width, TERMY - infoHeight, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
+    w_help = newwin(2, width - 2, TERMY - 3, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X + 1);
     do {
 
         target_list.clear();
         target_list.push_back(target);
         update_view(true);
-        uphelp("[t] add trap, [f] add field effect","[g] edit m_ter, edit [i]tem");
+        uphelp("[t] add trap, [f] add field effect", "[g] edit m_ter, edit [i]tem");
         ch = (int)getch();
 
         if(ch) {
@@ -117,16 +123,16 @@ point editmap::edit(point coords)
         }
         if(ch == 'g') {
             edit_ter( target );
-            lastop='g';
+            lastop = 'g';
         } else if ( ch == 'f' ) {
             edit_fld( target );
-            lastop='f';
+            lastop = 'f';
         } else if ( ch == 'i' ) {
             edit_itm( target );
-            lastop='i';
+            lastop = 'i';
         } else if ( ch == 't' ) {
             edit_trp( target );
-            lastop='t';
+            lastop = 't';
         } else {
             //get_direction(mx, my, input);
             //if (mx != -2 && my != -2) {     // Directional key pressed
@@ -183,87 +189,73 @@ void editmap::update_view(bool update_info)
     } else {
         g->m.drawsq(g->w_terrain, g->u, target.x, target.y, true, true, target.x, target.y);
     }
-/*
-int c=0;
-    for ( int x = target.x-3; x < target.x+4; x++ ) {
-        for ( int y = target.y-3; y < target.y+4; y++ ) {
-            target_list.push_back(point(x,y));
-            int wx=getmaxx(g->w_terrain)/2 + x - target.x;
-            int wy=getmaxy(g->w_terrain)/2 + y - target.y;
+    /*
+    int c=0;
+        for ( int x = target.x-3; x < target.x+4; x++ ) {
+            for ( int y = target.y-3; y < target.y+4; y++ ) {
+                target_list.push_back(point(x,y));
+                int wx=getmaxx(g->w_terrain)/2 + x - target.x;
+                int wy=getmaxy(g->w_terrain)/2 + y - target.y;
 
-//            mvprintz(c, 1, c_red, "%d,%d = %d,%d // %d,%d", x,y, wx,wy,VIEWX,VIEWY);
-            c++;
+    //            mvprintz(c, 1, c_red, "%d,%d = %d,%d // %d,%d", x,y, wx,wy,VIEWX,VIEWY);
+                c++;
+            }
         }
-    }
-*/
-//    blink = true;
+    */
+    //    blink = true;
     if ( blink && target_list.size() > 1 ) {
-        for ( int i=0; i < target_list.size(); i++ ) {
-            int x=target_list[i].x;
-            int y=target_list[i].y;
-            int vpart=0;
-          if ( ! g->m.veh_at(x, y, vpart) && ( g->mon_at(x, y) == -1 ) && ( g->npc_at(x, y) == -1 ) ) {
-            char t_sym = terlist[g->m.ter(x,y)].sym;
-            nc_color t_col = terlist[g->m.ter(x,y)].color;
+        for ( int i = 0; i < target_list.size(); i++ ) {
+            int x = target_list[i].x;
+            int y = target_list[i].y;
+            int vpart = 0;
+            if ( ! g->m.veh_at(x, y, vpart) && ( g->mon_at(x, y) == -1 ) && ( g->npc_at(x, y) == -1 ) ) {
+                char t_sym = terlist[g->m.ter(x, y)].sym;
+                nc_color t_col = terlist[g->m.ter(x, y)].color;
 
 
-            if ( g->m.furn(x, y) > 0 ) {
-                furn_t furniture_type = furnlist[g->m.furn(x, y)];
-                t_sym=furniture_type.sym;
-                t_col=furniture_type.color;
-            }
-            field * t_field = &g->m.field_at(x, y);
-            if ( t_field->fieldCount() > 0 ) {
-                field_id t_ftype = t_field->fieldSymbol();
-                field_entry * t_fld = t_field->findField( t_ftype );
-                if ( t_fld != NULL ) {
-                     t_col =  fieldlist[t_ftype].color[t_fld->getFieldDensity()-1];
-                     t_sym = fieldlist[t_ftype].sym;
+                if ( g->m.furn(x, y) > 0 ) {
+                    furn_t furniture_type = furnlist[g->m.furn(x, y)];
+                    t_sym = furniture_type.sym;
+                    t_col = furniture_type.color;
                 }
-//                 t_sym = t_field->
+                field *t_field = &g->m.field_at(x, y);
+                if ( t_field->fieldCount() > 0 ) {
+                    field_id t_ftype = t_field->fieldSymbol();
+                    field_entry *t_fld = t_field->findField( t_ftype );
+                    if ( t_fld != NULL ) {
+                        t_col =  fieldlist[t_ftype].color[t_fld->getFieldDensity()-1];
+                        t_sym = fieldlist[t_ftype].sym;
+                    }
+                }
+                t_col = ( altblink == true ? green_background ( t_col ) : cyan_background ( t_col ) );
+                point scrpos = pos2screen( x, y );
+                mvwputch(g->w_terrain, scrpos.y, scrpos.x, t_col, t_sym);
             }
-            t_col = ( altblink == true ? green_background ( t_col ) : cyan_background ( t_col ) );
-            point scrpos=pos2screen( x,y );
-//            mvprintz(i, 1, c_red, "%d,%d = %d,%d // %d,%d", x,y, scrpos.y,scrpos.x,target.x,target.y);
-
-            mvwputch(g->w_terrain, scrpos.y, scrpos.x, t_col, t_sym);
-          }
         }
     }
     if ( blink && altblink ) {
-        int mpx=(tmaxx/2) + 1;
-        int mpy=(tmaxy/2) + 1;
+        int mpx = (tmaxx / 2) + 1;
+        int mpy = (tmaxy / 2) + 1;
         mvwputch(g->w_terrain, mpy, 1, c_yellow, '<');
-        mvwputch(g->w_terrain, mpy, tmaxx-1, c_yellow, '>');
+        mvwputch(g->w_terrain, mpy, tmaxx - 1, c_yellow, '>');
         mvwputch(g->w_terrain, 1, mpx, c_yellow, '^');
-        mvwputch(g->w_terrain, tmaxy-1, mpx, c_yellow, 'v');
+        mvwputch(g->w_terrain, tmaxy - 1, mpx, c_yellow, 'v');
 
     }
-/*        for (int i = 0; i <= TERRAIN_WINDOW_WIDTH; i++) {
-            for (int j = 0; j <= TERRAIN_WINDOW_HEIGHT; j++) {
-                if ( false ) {
-                    char ter_sym = terlist[g->m.ter(i + target.x - VIEWX, j + target.y - VIEWY)].sym;
-                    nc_color ter_col = cyan_background ( terlist[g->m.ter(i + target.x - VIEWX, j + target.y - VIEWY)].color );
-                    mvwputch(g->w_terrain, j, i, ter_col, ter_sym);
+    
+    /*        for (int i = 0; i <= TERRAIN_WINDOW_WIDTH; i++) {
+                for (int j = 0; j <= TERRAIN_WINDOW_HEIGHT; j++) {
+                    if ( false ) {
+                        char ter_sym = terlist[g->m.ter(i + target.x - VIEWX, j + target.y - VIEWY)].sym;
+                        nc_color ter_col = cyan_background ( terlist[g->m.ter(i + target.x - VIEWX, j + target.y - VIEWY)].color );
+                        mvwputch(g->w_terrain, j, i, ter_col, ter_sym);
 
+                    }
                 }
             }
-        }
-*/
-//    }
-/*
- for (int i = 0; i <= TERRAIN_WINDOW_WIDTH; i++) {
-  for (int j = 0; j <= TERRAIN_WINDOW_HEIGHT; j++) {
-   if (one_in(10)) {
-    char ter_sym = terlist[m.ter(i + x - VIEWX + rng(-2, 2), j + y - VIEWY + rng(-2, 2))].sym;
-    nc_color ter_col = terlist[m.ter(i + x - VIEWX + rng(-2, 2), j + y - VIEWY+ rng(-2, 2))].color;
-    mvwputch(w_terrain, j, i, ter_col, ter_sym);
-   }
-  }
- }
- wrefresh(w_terrain);
-*/        
-    
+    */
+    //    }
+
     wrefresh(g->w_terrain);
 
     if ( update_info ) {
@@ -281,7 +273,7 @@ int c=0;
 #else
         mvwprintz(w_info, 0, 2 , c_ltgray, "< d,%d >--", target.x, target.y);
 #endif
-        for (int i = 1; i < infoHeight; i++) {
+        for (int i = 1; i < infoHeight-2; i++) {
             mvwprintz(w_info, i, 1, c_white, padding.c_str());
         }
 
@@ -292,13 +284,13 @@ int c=0;
                  );
         off++; // 2
         if ( g->m.furn(target.x, target.y) > 0 ) {
-          mvwputch(w_info, off, 2, furniture_type.color, furniture_type.sym);
-          mvwprintw(w_info, off, 4, _("%d: %s; movecost %d movestr %d"), g->m.furn(target.x, target.y),
-                  furniture_type.name.c_str(),
-                  furniture_type.movecost,
-                  furniture_type.move_str_req
-                 );
-          off++; // 3
+            mvwputch(w_info, off, 2, furniture_type.color, furniture_type.sym);
+            mvwprintw(w_info, off, 4, _("%d: %s; movecost %d movestr %d"), g->m.furn(target.x, target.y),
+                      furniture_type.name.c_str(),
+                      furniture_type.movecost,
+                      furniture_type.move_str_req
+                     );
+            off++; // 3
         }
         mvwprintw(w_info, off, 2, _("dist: %d u_see: %d light: %d v_in: %d"), rl_dist(g->u.posx, g->u.posy, target.x, target.y), g->u_see(target.x, target.y), g->m.light_at(target.x, target.y), veh_in );
         off++; // 3-4
@@ -371,7 +363,7 @@ int c=0;
 
         wrefresh(w_info);
 
-        uphelp();        
+        uphelp();
     }
 
 }
@@ -493,10 +485,11 @@ int editmap::edit_ter(point coords)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// field edit
 
-void editmap::update_fmenu_entry(uimenu * fmenu, field * field, int idx) {
+void editmap::update_fmenu_entry(uimenu *fmenu, field *field, int idx)
+{
     int fdens = 1;
-    field_t ftype=fieldlist[idx];
-    field_entry * fld = field->findField((field_id)idx);
+    field_t ftype = fieldlist[idx];
+    field_entry *fld = field->findField((field_id)idx);
     if ( fld != NULL ) {
         fdens = fld->getFieldDensity();
     }
@@ -505,32 +498,34 @@ void editmap::update_fmenu_entry(uimenu * fmenu, field * field, int idx) {
         fmenu->entries[idx].txt += " " + std::string(fdens, '*');
     }
     fmenu->entries[idx].text_color = ( fld != NULL ? c_cyan : fmenu->text_color );
-    fmenu->entries[idx].extratxt.color=ftype.color[fdens-1];
+    fmenu->entries[idx].extratxt.color = ftype.color[fdens-1];
 }
 
-void editmap::setup_fmenu(uimenu * fmenu, field * field) {
+void editmap::setup_fmenu(uimenu *fmenu, field *field)
+{
     std::string fname;
     nc_color fsymcolor;
     field_entry *fld;
     fmenu->entries.clear();
-    for ( int i=0; i < num_fields; i++ ) {
-        field_t ftype=fieldlist[i];
+    for ( int i = 0; i < num_fields; i++ ) {
+        field_t ftype = fieldlist[i];
         int fdens = 1;
         fname = ( ftype.name[fdens-1].size() == 0 ? fids[i] : ftype.name[fdens-1] );
         fmenu->addentry(i, true, -2, "%s", fname.c_str());
-        fmenu->entries[i].extratxt.left=1;
-        fmenu->entries[i].extratxt.txt=string_format("%c",ftype.sym);
+        fmenu->entries[i].extratxt.left = 1;
+        fmenu->entries[i].extratxt.txt = string_format("%c", ftype.sym);
         update_fmenu_entry( fmenu, cur_field, i );
-    }    
+    }
     if ( sel_field >= 0 ) {
         fmenu->selected = sel_field;
     }
 }
 
-bool change_fld(std::vector<point> coords, field_id fid, int density) {
+bool change_fld(std::vector<point> coords, field_id fid, int density)
+{
     return true;
 }
- 
+
 int editmap::edit_fld(point coords)
 {
     int ret = 0;
@@ -540,7 +535,7 @@ int editmap::edit_fld(point coords)
     fmenu.w_height = TERMY - infoHeight;
     fmenu.w_y = 0;
     fmenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
-    fmenu.return_invalid=true;
+    fmenu.return_invalid = true;
     setup_fmenu(&fmenu, cur_field);
 
     do {
@@ -549,11 +544,11 @@ int editmap::edit_fld(point coords)
 
         fmenu.query(false);
         if ( fmenu.selected > 0 && fmenu.selected < num_fields &&
-          ( fmenu.keypress == '\n' || fmenu.keypress == KEY_LEFT || fmenu.keypress == KEY_RIGHT )
-        ) {
+             ( fmenu.keypress == '\n' || fmenu.keypress == KEY_LEFT || fmenu.keypress == KEY_RIGHT )
+           ) {
             int fdens = 0;
             int idx = fmenu.selected;
-            field_entry * fld = cur_field->findField((field_id)idx);
+            field_entry *fld = cur_field->findField((field_id)idx);
             if ( fld != NULL ) {
                 fdens = fld->getFieldDensity();
             }
@@ -565,15 +560,15 @@ int editmap::edit_fld(point coords)
                 femenu.w_y = fmenu.w_height;
                 femenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
 
-                femenu.return_invalid=true;
-                field_t ftype=fieldlist[idx];
-                int fidens=( fdens == 0 ? 0 : fdens - 1 );
+                femenu.return_invalid = true;
+                field_t ftype = fieldlist[idx];
+                int fidens = ( fdens == 0 ? 0 : fdens - 1 );
                 femenu.text = ( ftype.name[fidens].size() == 0 ? fids[idx] : ftype.name[fidens] );
                 femenu.addentry("-clear-");
-                
-                femenu.addentry("1: %s",( ftype.name[0].size() == 0 ? fids[idx].c_str() : ftype.name[0].c_str() ));
-                femenu.addentry("2: %s",( ftype.name[1].size() == 0 ? fids[idx].c_str() : ftype.name[1].c_str() ));
-                femenu.addentry("3: %s",( ftype.name[2].size() == 0 ? fids[idx].c_str() : ftype.name[2].c_str() ));
+
+                femenu.addentry("1: %s", ( ftype.name[0].size() == 0 ? fids[idx].c_str() : ftype.name[0].c_str() ));
+                femenu.addentry("2: %s", ( ftype.name[1].size() == 0 ? fids[idx].c_str() : ftype.name[1].c_str() ));
+                femenu.addentry("3: %s", ( ftype.name[2].size() == 0 ? fids[idx].c_str() : ftype.name[2].c_str() ));
                 femenu.entries[fidens].text_color = c_cyan;
                 femenu.selected = ( sel_fdensity > 0 ? sel_fdensity : fdens );
 
@@ -587,12 +582,12 @@ int editmap::edit_fld(point coords)
                 fsel_dens--;
             }
             if ( fdens != fsel_dens || target_list.size() > 1 ) {
-                for(int t=0; t < target_list.size(); t++ ) {
-                    field * t_field=&g->m.field_at(target_list[t].x, target_list[t].y);
-                    field_entry * t_fld = t_field->findField((field_id)idx);
+                for(int t = 0; t < target_list.size(); t++ ) {
+                    field *t_field = &g->m.field_at(target_list[t].x, target_list[t].y);
+                    field_entry *t_fld = t_field->findField((field_id)idx);
                     int t_dens = 0;
-                    if ( t_fld != NULL ) { 
-                        t_dens=t_fld->getFieldDensity();
+                    if ( t_fld != NULL ) {
+                        t_dens = t_fld->getFieldDensity();
                     }
                     if ( fsel_dens != 0 ) {
                         if ( t_dens != 0 ) {
@@ -612,16 +607,16 @@ int editmap::edit_fld(point coords)
                 sel_fdensity = fsel_dens;
             }
         } else if ( fmenu.selected == 0 && fmenu.keypress == '\n' ) {
-            for(int t=0; t < target_list.size(); t++ ) {
-                field * t_field=&g->m.field_at(target_list[t].x, target_list[t].y);
+            for(int t = 0; t < target_list.size(); t++ ) {
+                field *t_field = &g->m.field_at(target_list[t].x, target_list[t].y);
                 if ( t_field->fieldCount() > 0 ) {
                     for ( std::map<field_id, field_entry *>::iterator field_list_it = cur_field->getFieldStart();
                           field_list_it != cur_field->getFieldEnd(); ++field_list_it
-                    ) {
+                        ) {
                         field_id rmid = field_list_it->first;
                         cur_field->removeField( rmid );
                         if ( target_list[t].x == target.x && target_list[t].y == target.y ) {
-                             update_fmenu_entry( &fmenu, cur_field, (int)rmid );
+                            update_fmenu_entry( &fmenu, cur_field, (int)rmid );
                         }
                     }
                 }
@@ -796,130 +791,134 @@ int editmap::edit_npc(point coords)
 }
 
 
-int editmap::select_shape(shapetype shape) {
-//    point origin = target;
+int editmap::select_shape(shapetype shape)
+{
+    //    point origin = target;
     point orig = target;
     point origor = origin;
     int mx, my;
-    int ch=0;
+    int ch = 0;
     InputEvent input;
     bool update = false;
-    blink=true;
+    blink = true;
     altblink = moveall;
     update_view(false);
-//    timeout(BLINK_SPEED);
+    //    timeout(BLINK_SPEED);
     do {
-      uphelp( 
-                ( moveall == true ? 
-                    "[m] resize, [s]election type" : 
-                    "[m]move, [s]hape, [y] swap, [z] to start" ),
-               "[enter] accept, [q] abort");
-      ch = getch();
-      timeout(BLINK_SPEED);
-      if(ch!=ERR) {
-        blink=true;
-        input = get_input(ch);
-        if(ch == 's') {
-            timeout(-1);
-            uimenu smenu;
-            smenu.text="Selection type";
-            smenu.w_x=(TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X - 16)/2;
-            smenu.addentry(editmap_rect,true,'r',"Rectangle");
-            smenu.addentry(editmap_rect_filled,true,'f',"Filled Rectangle");
-            smenu.addentry(editmap_line,true,'l',"Line");
-            smenu.addentry(editmap_circle,true,'c',"Filled Circle");
-            smenu.addentry(-2,true,'p',"Point");
-            smenu.selected=(int)shape;
-            smenu.query();
-            if ( smenu.ret != -2 ) {
-                shape=(shapetype)smenu.ret;
-                update=true;
-            } else {
-                input=Cancel;
-            }
-            timeout(BLINK_SPEED);
-        } else if ( moveall == false && ch == 'g' ) {
-            target = origin;
-            update = true;
-        } else if ( ch == 'y' ) {
-            point tmporigin=origin;
-            origin = target;
-            target = tmporigin;
-            update = true;
-        } else if ( ch == 'm' ) {
-            moveall=!moveall;
-            altblink = moveall;
-        } else {
-            //get_direction(mx, my, input);
-            //if (mx != -2 && my != -2) {
-            if ( eget_direction(mx, my, input, ch ) == true ) {
-                update = true;
-                target.x += mx;
-                target.y += my;
-                if ( moveall ) {
-                    origin.x += mx;
-                    origin.y += my;
-                } else {
-                    constrain ( target );
-                }
-            }
-        }
-        if (update) {
+        uphelp(
+            ( moveall == true ?
+              "[m] resize, [s]election type" :
+              "[m]move, [s]hape, [y] swap, [z] to start" ),
+            "[enter] accept, [q] abort");
+        ch = getch();
+        timeout(BLINK_SPEED);
+        if(ch != ERR) {
             blink = true;
-            update = false;
-            target_list.clear();
-            switch(shape) {
-                case editmap_circle: {
-                    int radius=rl_dist(origin.x, origin.y, target.x, target.y);
-                    for ( int x=origin.x-radius; x <= origin.x+radius; x++ ) {
-                         for ( int y=origin.y-radius; y <= origin.y+radius; y++ ) {
-                              if(rl_dist(x,y, origin.x, origin.y) <= radius) {
-                                   if ( inbounds(x,y) ) {
-                                        target_list.push_back(point(x,y));
-                                   }
-                              }
-                         }
-                    } 
+            input = get_input(ch);
+            if(ch == 's') {
+                timeout(-1);
+                uimenu smenu;
+                smenu.text = "Selection type";
+                smenu.w_x = (TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X - 16) / 2;
+                smenu.addentry(editmap_rect, true, 'r', "Rectangle");
+                smenu.addentry(editmap_rect_filled, true, 'f', "Filled Rectangle");
+                smenu.addentry(editmap_line, true, 'l', "Line");
+                smenu.addentry(editmap_circle, true, 'c', "Filled Circle");
+                smenu.addentry(-2, true, 'p', "Point");
+                smenu.selected = (int)shape;
+                smenu.query();
+                if ( smenu.ret != -2 ) {
+                    shape = (shapetype)smenu.ret;
+                    update = true;
+                } else {
+                    input = Cancel;
                 }
-                break;
-                case editmap_rect_filled:
-                case editmap_rect:
-                    int sx; int sy; int ex; int ey;
-                    if ( target.x < origin.x ) {
-                         sx=target.x;
-                         ex=origin.x;
+                timeout(BLINK_SPEED);
+            } else if ( moveall == false && ch == 'g' ) {
+                target = origin;
+                update = true;
+            } else if ( ch == 'y' ) {
+                point tmporigin = origin;
+                origin = target;
+                target = tmporigin;
+                update = true;
+            } else if ( ch == 'm' ) {
+                moveall = !moveall;
+                altblink = moveall;
+            } else {
+                //get_direction(mx, my, input);
+                //if (mx != -2 && my != -2) {
+                if ( eget_direction(mx, my, input, ch ) == true ) {
+                    update = true;
+                    target.x += mx;
+                    target.y += my;
+                    if ( moveall ) {
+                        origin.x += mx;
+                        origin.y += my;
                     } else {
-                         sx=origin.x;
-                         ex=target.x;
+                        constrain ( target );
                     }
-                    if ( target.y < origin.y ) {
-                         sy=target.y;
-                         ey=origin.y;
-                    } else {
-                         sy=origin.y;
-                         ey=target.y;
+                }
+            }
+            if (update) {
+                blink = true;
+                update = false;
+                target_list.clear();
+                switch(shape) {
+                    case editmap_circle: {
+                        int radius = rl_dist(origin.x, origin.y, target.x, target.y);
+                        for ( int x = origin.x - radius; x <= origin.x + radius; x++ ) {
+                            for ( int y = origin.y - radius; y <= origin.y + radius; y++ ) {
+                                if(rl_dist(x, y, origin.x, origin.y) <= radius) {
+                                    if ( inbounds(x, y) ) {
+                                        target_list.push_back(point(x, y));
+                                    }
+                                }
+                            }
+                        }
                     }
-                    for ( int x=sx;x <= ex; x++ ) {
-                         for ( int y=sy;y <= ey; y++ ) {
-                              if ( shape == editmap_rect_filled || x==sx || x==ex || y==sy || y==ey ) {
-                                   if ( inbounds(x,y) ) {
-                                         target_list.push_back(point(x,y));
-                                   }
-                              }
-                         }
-                    }
-                break;
-                case editmap_line:
-                    int t=0;
-                    target_list=line_to(origin.x, origin.y, target.x, target.y, t);
-                break;
-            }        
-            update_view(false);            
+                    break;
+                    case editmap_rect_filled:
+                    case editmap_rect:
+                        int sx;
+                        int sy;
+                        int ex;
+                        int ey;
+                        if ( target.x < origin.x ) {
+                            sx = target.x;
+                            ex = origin.x;
+                        } else {
+                            sx = origin.x;
+                            ex = target.x;
+                        }
+                        if ( target.y < origin.y ) {
+                            sy = target.y;
+                            ey = origin.y;
+                        } else {
+                            sy = origin.y;
+                            ey = target.y;
+                        }
+                        for ( int x = sx; x <= ex; x++ ) {
+                            for ( int y = sy; y <= ey; y++ ) {
+                                if ( shape == editmap_rect_filled || x == sx || x == ex || y == sy || y == ey ) {
+                                    if ( inbounds(x, y) ) {
+                                        target_list.push_back(point(x, y));
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    case editmap_line:
+                        int t = 0;
+                        target_list = line_to(origin.x, origin.y, target.x, target.y, t);
+                        break;
+                }
+                update_view(false);
+            }
+        } else {
+            blink = !blink;
         }
-      } else {
-        blink=!blink;
-      }
-      update_view(false);
+        update_view(false);
     } while (input != Close && input != Cancel && ch != 'q' && input != Confirm);
     timeout(-1);
     blink = true;
