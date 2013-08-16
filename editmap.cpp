@@ -114,7 +114,6 @@ point editmap::edit(point coords)
 
     int mx, my;
     int ch;
-    int nextch = 0;
     InputEvent input;
 
     infoHeight = 14;
@@ -177,7 +176,6 @@ void editmap::update_view(bool update_info)
     }
 
     int off = 1;
-    int boff = infoHeight - 2;
 
     target_ter = g->m.ter(target.x, target.y);
     ter_t terrain_type = terlist[target_ter];
@@ -356,9 +354,6 @@ int editmap::edit_ter(point coords)
 {
     int ret = 0;
     int pwh = TERMY - 4;
-    int pww = width;
-    int pwy = 0;
-    int pwx = VIEWX * 2 + 8 + VIEW_OFFSET_X;
 
     WINDOW *w_pickter = newwin(pwh, width, VIEW_OFFSET_Y, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
     wborder(w_pickter, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
@@ -554,7 +549,7 @@ int editmap::edit_ter(point coords)
                 update_view(false);
             } else if ( subch == 's' ) {
                 int sel_tmp = sel_ter;
-                int rret = select_shape(editshape);
+                select_shape(editshape);
                 sel_ter = sel_tmp;
             } else if ( subch == '\t' ) {
                 ter_frn_mode = ( ter_frn_mode == 0 ? 1 : 0 );
@@ -593,7 +588,7 @@ int editmap::edit_ter(point coords)
                 update_view(false);
             } else if ( subch == 's' ) {
                 int sel_tmp = sel_frn;
-                int rret = select_shape(editshape);
+                select_shape(editshape);
                 sel_frn = sel_tmp;
             } else if ( subch == '\t' ) {
                 ter_frn_mode = ( ter_frn_mode == 0 ? 1 : 0 );
@@ -632,8 +627,6 @@ void editmap::update_fmenu_entry(uimenu *fmenu, field *field, int idx)
 void editmap::setup_fmenu(uimenu *fmenu, field *field)
 {
     std::string fname;
-    nc_color fsymcolor;
-    field_entry *fld;
     fmenu->entries.clear();
     for ( int i = 0; i < num_fields; i++ ) {
         field_t ftype = fieldlist[i];
@@ -652,7 +645,6 @@ void editmap::setup_fmenu(uimenu *fmenu, field *field)
 int editmap::edit_fld(point coords)
 {
     int ret = 0;
-    int subch = 0;
     uimenu fmenu;
     fmenu.w_width = width;
     fmenu.w_height = TERMY - infoHeight;
@@ -716,7 +708,8 @@ int editmap::edit_fld(point coords)
                         if ( t_dens != 0 ) {
                             t_fld->setFieldDensity(fsel_dens);
                         } else {
-                            t_field->addField( (field_id)idx, fsel_dens );
+                            //t_field->addField( (field_id)idx, fsel_dens, 0 );
+                            g->m.add_field(g, target_list[t].x, target_list[t].y, (field_id)idx, fsel_dens );
                         }
                     } else {
                         if ( t_dens != 0 ) {
@@ -766,9 +759,6 @@ int editmap::edit_trp(point coords)
 {
     int ret = 0;
     int pwh = TERMY - infoHeight - 1;
-    int pww = width;
-    int pwy = 0;
-    int pwx = VIEWX * 2 + 8 + VIEW_OFFSET_X;
 
     WINDOW *w_picktrap = newwin(pwh, width, VIEW_OFFSET_Y, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
     wborder(w_picktrap, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
@@ -821,8 +811,8 @@ int editmap::edit_trp(point coords)
             update_view(false);
         } else if ( subch == 's' ) {
             int sel_tmp = trsel;
-            int rret = select_shape(editshape);
-            sel_frn = trsel;
+            select_shape(editshape);
+            sel_frn = sel_tmp;
         }
         if( trsel < 0 ) {
             trsel = num_trap_types - 1;
@@ -920,23 +910,23 @@ int editmap::edit_itm(point coords)
                     if ( intval != retval ) {
                         if (imenu.ret == imenu_bday ) {
                             it->bday = retval;
-                            imenu.entries[imenu_bday].txt = stringfmt("bday: %d", it->bday);
+                            imenu.entries[imenu_bday].txt = string_format("bday: %d", it->bday);
                         } else if (imenu.ret == imenu_damage ) {
                             it->damage = retval;
-                            imenu.entries[imenu_damage].txt = stringfmt("damage: %d", it->damage);
+                            imenu.entries[imenu_damage].txt = string_format("damage: %d", it->damage);
                         } else if (imenu.ret == imenu_burnt ) {
                             it->burnt = retval;
-                            imenu.entries[imenu_burnt].txt = stringfmt("burnt: %d", it->burnt);
+                            imenu.entries[imenu_burnt].txt = string_format("burnt: %d", it->burnt);
 #ifdef item_luminance
                         } else if (imenu.ret == imenu_luminance ) {
                             it->light.luminance = (unsigned short)retval;
-                            imenu.entries[imenu_luminance].txt = stringfmt("lum: %f", (float)it->light.luminance);
+                            imenu.entries[imenu_luminance].txt = string_format("lum: %f", (float)it->light.luminance);
                         } else if (imenu.ret == imenu_direction ) {
                             it->light.direction = (short)retval;
-                            imenu.entries[imenu_direction].txt = stringfmt("dir: %d", (int)it->light.direction);
+                            imenu.entries[imenu_direction].txt = string_format("dir: %d", (int)it->light.direction);
                         } else if (imenu.ret == imenu_width ) {
                             it->light.width = (short)retval;
-                            imenu.entries[imenu_width].txt = stringfmt("width: %d", (int)it->light.width);
+                            imenu.entries[imenu_width].txt = string_format("width: %d", (int)it->light.width);
 #endif
                         }
                         werase(g->w_terrain);
