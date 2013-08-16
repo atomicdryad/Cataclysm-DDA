@@ -32,8 +32,14 @@
 #define maplim 132
 #define inbounds(x, y) (x >= 0 && x < maplim && y >= 0 && y < maplim)
 #define pinbounds(p) ( p.x >= 0 && p.x < maplim && p.y >= 0 && p.y < maplim)
-#define has_real_coords
-
+/*
+// pending merge of absolute <=> local coordinate conversion functions
+#define has_real_coords 1
+*/
+/*
+// pending merge of item.light PR
+#define item_luminance 1
+*/
 
 
 void constrain ( point &p )
@@ -49,14 +55,17 @@ void constrain ( point &p )
         p.y = maplim - 1;
     }
 }
+
 point editmap::pos2screen( const int x, const int y )
 {
     return point ( tmaxx / 2 + x - target.x, tmaxy / 2 + y - target.y );
 }
+
 point editmap::screen2pos( const int i, const int j )
 {
     return point (i + target.x - VIEWX, j + target.y - VIEWY);
 }
+
 bool menu_escape ( int ch )
 {
     return ( ch == KEY_ESCAPE || ch == ' ' || ch == 'q' );
@@ -84,6 +93,7 @@ bool editmap::eget_direction(int &x, int &y, InputEvent &input, int ch)
     }
     return true;
 }
+
 void editmap::uphelp (std::string txt1, std::string txt2)
 {
     if ( txt1 != "" ) {
@@ -96,6 +106,7 @@ void editmap::uphelp (std::string txt1, std::string txt2)
     }
     wrefresh(w_help);
 }
+
 point editmap::edit(point coords)
 {
     target.x = g->u.posx + g->u.view_offset_x;
@@ -114,6 +125,7 @@ point editmap::edit(point coords)
 
         target_list.clear();
         target_list.push_back(target);
+        origin = target;
         update_view(true);
         uphelp("[t] add trap, [f] add field effect", "[g] edit m_ter, edit [i]tem");
         ch = (int)getch();
@@ -134,8 +146,6 @@ point editmap::edit(point coords)
             edit_trp( target );
             lastop = 't';
         } else {
-            //get_direction(mx, my, input);
-            //if (mx != -2 && my != -2) {     // Directional key pressed
             if ( eget_direction(mx, my, input, ch ) == true ) {
                 target.x += mx;
                 target.y += my;
@@ -152,10 +162,7 @@ point editmap::edit(point coords)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////
+///// redraw map and info (or not)
 void editmap::update_view(bool update_info)
 {
     werase(g->w_terrain);
@@ -173,8 +180,9 @@ void editmap::update_view(bool update_info)
     int boff = infoHeight - 2;
 
     target_ter = g->m.ter(target.x, target.y);
-    ter_t terrain_type = terlist[g->m.ter(target.x, target.y)];
-    furn_t furniture_type = furnlist[g->m.furn(target.x, target.y)];
+    ter_t terrain_type = terlist[target_ter];
+    target_frn = g->m.furn(target.x, target.y);
+    furn_t furniture_type = furnlist[target_frn];
 
     cur_field = &g->m.field_at(target.x, target.y);
     cur_trap = g->m.tr_at(target.x, target.y);
@@ -189,20 +197,7 @@ void editmap::update_view(bool update_info)
     } else {
         g->m.drawsq(g->w_terrain, g->u, target.x, target.y, true, true, target.x, target.y);
     }
-    /*
-    int c=0;
-        for ( int x = target.x-3; x < target.x+4; x++ ) {
-            for ( int y = target.y-3; y < target.y+4; y++ ) {
-                target_list.push_back(point(x,y));
-                int wx=getmaxx(g->w_terrain)/2 + x - target.x;
-                int wy=getmaxy(g->w_terrain)/2 + y - target.y;
 
-    //            mvprintz(c, 1, c_red, "%d,%d = %d,%d // %d,%d", x,y, wx,wy,VIEWX,VIEWY);
-                c++;
-            }
-        }
-    */
-    //    blink = true;
     if ( blink && target_list.size() > 1 ) {
         for ( int i = 0; i < target_list.size(); i++ ) {
             int x = target_list[i].x;
@@ -233,6 +228,7 @@ void editmap::update_view(bool update_info)
             }
         }
     }
+
     if ( blink && altblink ) {
         int mpx = (tmaxx / 2) + 1;
         int mpy = (tmaxy / 2) + 1;
@@ -240,21 +236,7 @@ void editmap::update_view(bool update_info)
         mvwputch(g->w_terrain, mpy, tmaxx - 1, c_yellow, '>');
         mvwputch(g->w_terrain, 1, mpx, c_yellow, '^');
         mvwputch(g->w_terrain, tmaxy - 1, mpx, c_yellow, 'v');
-
     }
-    
-    /*        for (int i = 0; i <= TERRAIN_WINDOW_WIDTH; i++) {
-                for (int j = 0; j <= TERRAIN_WINDOW_HEIGHT; j++) {
-                    if ( false ) {
-                        char ter_sym = terlist[g->m.ter(i + target.x - VIEWX, j + target.y - VIEWY)].sym;
-                        nc_color ter_col = cyan_background ( terlist[g->m.ter(i + target.x - VIEWX, j + target.y - VIEWY)].color );
-                        mvwputch(g->w_terrain, j, i, ter_col, ter_sym);
-
-                    }
-                }
-            }
-    */
-    //    }
 
     wrefresh(g->w_terrain);
 
@@ -271,9 +253,9 @@ void editmap::update_view(bool update_info)
                   rc.abs_pos.x, rc.abs_pos.y, rc.abs_sub.x, rc.abs_sub.y, rc.abs_om.x, rc.abs_om.y
                  );
 #else
-        mvwprintz(w_info, 0, 2 , c_ltgray, "< d,%d >--", target.x, target.y);
+        mvwprintz(w_info, 0, 2 , c_ltgray, "< %d,%d >--", target.x, target.y);
 #endif
-        for (int i = 1; i < infoHeight-2; i++) {
+        for (int i = 1; i < infoHeight - 2; i++) {
             mvwprintz(w_info, i, 1, c_white, padding.c_str());
         }
 
@@ -369,44 +351,68 @@ void editmap::update_view(bool update_info)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////
+///// edit terrain type / furniture
 int editmap::edit_ter(point coords)
 {
-    ///////////////////////////////////////////
-    ///// tile edit
     int ret = 0;
-    int pwh = TERMY;
+    int pwh = TERMY - 4;
     int pww = width;
     int pwy = 0;
     int pwx = VIEWX * 2 + 8 + VIEW_OFFSET_X;
 
-    WINDOW *w_pickter = newwin(TERMY, width, VIEW_OFFSET_Y, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
+    WINDOW *w_pickter = newwin(pwh, width, VIEW_OFFSET_Y, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
     wborder(w_pickter, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
             LINE_OXXO, LINE_OOXX, LINE_XXOO, LINE_XOOX );
     wrefresh(w_pickter);
 
-    int pickh = TERMY - 2;
-    int pickw = width - 2;
+    int pickh = pwh - 2;
+    int pickw = width - 4;
     int cur_t = 0;
+    int cur_f = 0;
 
     if( sel_ter < 0 ) {
         sel_ter = target_ter;
     }
+
+    if( sel_frn < 0 ) {
+        sel_frn = target_frn;
+    }
+
     int lastsel_ter = sel_ter;
-    int xmax = pickw; //int(pickw/2);
-    int ymax = int(num_terrain_types / xmax);
+    int lastsel_frn = sel_frn;
+
+    int xmax = pickw;
+    int tymax = int(num_terrain_types / xmax);
+    int fymax = int(num_furniture_types / xmax);
+    if ( fymax == 0 ) {
+        fymax = 1;
+    }
     int subch = 0;
     point sel_terp = point(-1, -1);
     point lastsel_terp = point(-1, -1);
     point target_terp = point(-1, -1);
+    point sel_frnp = point(-1, -1);
+    point lastsel_frnp = point(-1, -1);
+    point target_frnp = point(-1, -1);
 
+
+    int mode = ter_frn_mode;
     do {
+        if ( mode != ter_frn_mode ) {
+            mode = ter_frn_mode;
+            wrefresh(w_pickter);
+        }
+
+        nc_color c_tercurs = ( ter_frn_mode == 0 ? c_ltgreen : c_dkgray );
+        nc_color c_frncurs = ( ter_frn_mode == 1 ? c_ltgreen : c_dkgray );
+
         cur_t = 0;
-        for (int y = 2; y < pickh && cur_t < num_terrain_types; y += 2) {
-            for (int x = 2; x < pickw && cur_t < num_terrain_types; x++, cur_t++) {
+        int tstart = 2;
+        for (int y = tstart; y < pickh && cur_t < num_terrain_types; y += 2) {
+            for (int x = 3; x < pickw && cur_t < num_terrain_types; x++, cur_t++) {
 
                 ter_t ttype = terlist[cur_t];
-                mvwputch(w_pickter, y, x, ttype.color, ttype.sym);
+                mvwputch(w_pickter, y, x, ( ter_frn_mode == 0 ? ttype.color : c_dkgray ) , ttype.sym);
 
                 if(cur_t == sel_ter) {
                     sel_terp = point(x, y);
@@ -417,67 +423,189 @@ int editmap::edit_ter(point coords)
                 }
             }
         }
-
-        mvwputch(w_pickter, lastsel_terp.y + 1, lastsel_terp.x - 1, c_ltgreen, ' ');
-        mvwputch(w_pickter, lastsel_terp.y - 1, lastsel_terp.x + 1, c_ltgreen, ' ');
-        mvwputch(w_pickter, lastsel_terp.y + 1, lastsel_terp.x + 1, c_ltgreen, ' ');
-        mvwputch(w_pickter, lastsel_terp.y - 1, lastsel_terp.x - 1, c_ltgreen, ' ');
+        mvwputch(w_pickter, lastsel_terp.y + 1, lastsel_terp.x - 1, c_tercurs, ' ');
+        mvwputch(w_pickter, lastsel_terp.y - 1, lastsel_terp.x + 1, c_tercurs, ' ');
+        mvwputch(w_pickter, lastsel_terp.y + 1, lastsel_terp.x + 1, c_tercurs, ' ');
+        mvwputch(w_pickter, lastsel_terp.y - 1, lastsel_terp.x - 1, c_tercurs, ' ');
 
         mvwputch(w_pickter, target_terp.y + 1, target_terp.x, c_ltgray, '^');
         mvwputch(w_pickter, target_terp.y - 1, target_terp.x, c_ltgray, 'v');
 
-        mvwputch(w_pickter, sel_terp.y + 1, sel_terp.x - 1, c_ltgreen, LINE_XXOO);
-        mvwputch(w_pickter, sel_terp.y - 1, sel_terp.x + 1, c_ltgreen, LINE_OOXX);
-        mvwputch(w_pickter, sel_terp.y + 1, sel_terp.x + 1, c_ltgreen, LINE_XOOX);
-        mvwputch(w_pickter, sel_terp.y - 1, sel_terp.x - 1, c_ltgreen, LINE_OXXO);
+        mvwputch(w_pickter, sel_terp.y + 1, sel_terp.x - 1, c_tercurs, LINE_XXOO);
+        mvwputch(w_pickter, sel_terp.y - 1, sel_terp.x + 1, c_tercurs, LINE_OOXX);
+        mvwputch(w_pickter, sel_terp.y + 1, sel_terp.x + 1, c_tercurs, LINE_XOOX);
+        mvwputch(w_pickter, sel_terp.y - 1, sel_terp.x - 1, c_tercurs, LINE_OXXO);
 
         wborder(w_pickter, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
                 LINE_OXXO, LINE_OOXX, LINE_XXOO, LINE_XOOX );
 
-        ter_t pttype = terlist[sel_ter];
+        int tlen = tymax * 3;
+        int off = tlen + 1;
+        mvwprintw(w_pickter, off, 1, "%s", padding.c_str());
+        if( ter_frn_mode == 0 ) {
+            ter_t pttype = terlist[sel_ter];
 
-        mvwprintz(w_pickter, 0, 2, c_white, "< %d: %s >-----------", sel_ter, pttype.name.c_str());
-        int off = ymax * 3;
-        for (int i = off; i < 3; i++) {
-            mvwprintw(w_pickter, i, 1, "%s", padding.c_str());
+            mvwprintw(w_pickter, 0, 2, "< %d: %s >-----------", sel_ter, pttype.name.c_str());
+            mvwprintz(w_pickter, off, 2, c_white, _("movecost %d"), pttype.movecost);
+            std::string extras = "";
+            if(pttype.flags & mfb(indoors)) {
+                extras += _("[indoors] ");
+            }
+            if(pttype.flags & mfb(supports_roof)) {
+                extras += _("[roof] ");
+            }
+            wprintw(w_pickter, " %s", extras.c_str());
         }
-        mvwprintz(w_pickter, off, 2, c_white, _("movecost %d"), pttype.movecost);
-        //mvwprintw(w_pickter, off+1, 2, "%s", g->m.features(target.x, target.y).c_str());
-        std::string extras = "";
-        if(pttype.flags & mfb(indoors)) {
-            extras += _("[indoors] ");
-        }
-        if(pttype.flags & mfb(supports_roof)) {
-            extras += _("[roof] ");
-        }
-        mvwprintw(w_pickter, off + 2, 2, "%s", extras.c_str());
+        off++;
 
-        wrefresh(w_pickter);
-        ///////////////////////
-        /// 0: 0 1 2 3
-        /// 1: 4 5 6 7
-        /// 3: 8 9
-        subch = (int)getch();
-        lastsel_ter = sel_ter;
-        if( subch == KEY_LEFT ) {
-            sel_ter = (sel_ter - 1 >= 0 ? sel_ter - 1 : num_terrain_types - 1);
-        } else if( subch == KEY_RIGHT ) {
-            sel_ter = (sel_ter + 1 < num_terrain_types ? sel_ter + 1 : 0 );
-        } else if( subch == KEY_UP ) {
-            sel_ter = ( sel_ter - xmax + 2 > 0 ? sel_ter - xmax + 2 : 0 );
-        } else if( subch == KEY_DOWN ) {
-            sel_ter = ( sel_ter + xmax - 2 < num_terrain_types ? sel_ter + xmax - 2 : num_terrain_types - 1);
+        cur_f = 0;
+        int fstart = off + 2;
+        for (int y = fstart; y < pickh && cur_f < num_furniture_types; y += 2) {
+            for (int x = 3; x < pickw && cur_f < num_furniture_types; x++, cur_f++) {
+
+                furn_t ftype = furnlist[cur_f];
+                mvwputch(w_pickter, y, x, ( ter_frn_mode == 1 ? ftype.color : c_dkgray ), ftype.sym);
+
+                if(cur_f == sel_frn) {
+                    sel_frnp = point(x, y);
+                } else if(cur_f == lastsel_frn) {
+                    lastsel_frnp = point(x, y);
+                } else if (cur_f == target_frn) {
+                    target_frnp = point(x, y);
+                }
+            }
         }
-    } while (subch == KEY_UP || subch == KEY_DOWN || subch == KEY_LEFT || subch == KEY_RIGHT );
+
+        mvwputch(w_pickter, lastsel_frnp.y + 1, lastsel_frnp.x - 1, c_frncurs, ' ');
+        mvwputch(w_pickter, lastsel_frnp.y - 1, lastsel_frnp.x + 1, c_frncurs, ' ');
+        mvwputch(w_pickter, lastsel_frnp.y + 1, lastsel_frnp.x + 1, c_frncurs, ' ');
+        mvwputch(w_pickter, lastsel_frnp.y - 1, lastsel_frnp.x - 1, c_frncurs, ' ');
+
+        mvwputch(w_pickter, target_frnp.y + 1, target_frnp.x, c_ltgray, '^');
+        mvwputch(w_pickter, target_frnp.y - 1, target_frnp.x, c_ltgray, 'v');
+
+        mvwputch(w_pickter, sel_frnp.y + 1, sel_frnp.x - 1, c_frncurs, LINE_XXOO);
+        mvwputch(w_pickter, sel_frnp.y - 1, sel_frnp.x + 1, c_frncurs, LINE_OOXX);
+        mvwputch(w_pickter, sel_frnp.y + 1, sel_frnp.x + 1, c_frncurs, LINE_XOOX);
+        mvwputch(w_pickter, sel_frnp.y - 1, sel_frnp.x - 1, c_frncurs, LINE_OXXO);
+        int flen = fymax * 3;
+        off += flen + 1;
+        mvwprintw(w_pickter, off, 1, "%s", padding.c_str());
+
+
+        if( ter_frn_mode == 1 ) {
+
+            furn_t pftype = furnlist[sel_frn];
+
+            mvwprintw(w_pickter, 0, 2, "< %d: %s >-----------", sel_frn, pftype.name.c_str());
+            mvwprintz(w_pickter, off, 2, c_white, _("movecost %d"), pftype.movecost);
+            std::string fextras = "";
+            if(pftype.flags & mfb(indoors)) {
+                fextras += _("[indoors] ");
+            }
+            if(pftype.flags & mfb(supports_roof)) {
+                fextras += _("[roof] ");
+            }
+            wprintw(w_pickter, " %s", fextras.c_str());
+        }
+
+
+        for (int y = tstart; y < tstart + tlen; y++ ) {
+            mvwputch(w_pickter, y, 1, c_ltgreen, ( ter_frn_mode == 0 ? '|' : ' ' ) );
+            mvwputch(w_pickter, y, width - 2, c_ltgreen, ( ter_frn_mode == 0 ? '|' : ' ' ) );
+        }
+        for (int y = fstart; y < fstart + flen; y++ ) {
+            mvwputch(w_pickter, y, 1, c_ltgreen, ( ter_frn_mode == 1 ? '|' : ' ' ) );
+            mvwputch(w_pickter, y, width - 2, c_ltgreen, ( ter_frn_mode == 1 ? '|' : ' ' ) );
+        }
+
+
+        if( ter_frn_mode == 0 ) {
+            uphelp("[s]hape select, [<,>,^,v] select, [tab] furniture",
+                   "[enter] edit, [g] edit/close, [q] abort");
+            wrefresh(w_pickter);
+
+            subch = (int)getch();
+            lastsel_ter = sel_ter;
+            if( subch == KEY_LEFT ) {
+                sel_ter = (sel_ter - 1 >= 0 ? sel_ter - 1 : num_terrain_types - 1);
+            } else if( subch == KEY_RIGHT ) {
+                sel_ter = (sel_ter + 1 < num_terrain_types ? sel_ter + 1 : 0 );
+            } else if( subch == KEY_UP ) {
+                if (sel_ter - xmax + 3 > 0 ) {
+                    sel_ter = sel_ter - xmax + 3;
+                } else {
+                    ter_frn_mode = ( ter_frn_mode == 0 ? 1 : 0 );
+                }
+            } else if( subch == KEY_DOWN ) {
+                if (sel_ter + xmax - 3 < num_terrain_types ) {
+                    sel_ter = sel_ter + xmax - 3;
+                } else {
+                    ter_frn_mode = ( ter_frn_mode == 0 ? 1 : 0 );
+                }
+            } else if( subch == KEY_ENTER || subch == '\n' || subch == 'g' ) {
+                ter_t tset = terlist[sel_ter];
+                for(int t = 0; t < target_list.size(); t++ ) {
+                    g->m.ter_set(target_list[t].x, target_list[t].y, (ter_id)sel_ter);
+                }
+                if ( subch == 'g' ) {
+                    subch = KEY_ESCAPE;
+                }
+                update_view(false);
+            } else if ( subch == 's' ) {
+                int sel_tmp = sel_ter;
+                int rret = select_shape(editshape);
+                sel_ter = sel_tmp;
+            } else if ( subch == '\t' ) {
+                ter_frn_mode = ( ter_frn_mode == 0 ? 1 : 0 );
+            }
+        } else { // todo: cleanup
+            uphelp("[s]hape select, [<,>,^,v] select, [tab] terrain",
+                   "[enter] edit, [g] edit/close, [q] abort");
+            wrefresh(w_pickter);
+
+            subch = (int)getch();
+            lastsel_frn = sel_frn;
+            if( subch == KEY_LEFT ) {
+                sel_frn = (sel_frn - 1 >= 0 ? sel_frn - 1 : num_furniture_types - 1);
+            } else if( subch == KEY_RIGHT ) {
+                sel_frn = (sel_frn + 1 < num_furniture_types ? sel_frn + 1 : 0 );
+            } else if( subch == KEY_UP ) {
+                if ( sel_frn - xmax + 3 > 0 ) {
+                    sel_frn = sel_frn - xmax + 3;
+                } else {
+                    ter_frn_mode = ( ter_frn_mode == 0 ? 1 : 0 );
+                }
+            } else if( subch == KEY_DOWN ) {
+                if ( sel_frn + xmax - 3 < num_furniture_types ) {
+                    sel_frn = sel_frn + xmax - 3;
+                } else {
+                    ter_frn_mode = ( ter_frn_mode == 0 ? 1 : 0 );
+                }
+            } else if( subch == KEY_ENTER || subch == '\n' || subch == 'g' ) {
+                furn_t tset = furnlist[sel_frn];
+                for(int t = 0; t < target_list.size(); t++ ) {
+                    g->m.furn_set(target_list[t].x, target_list[t].y, (furn_id)sel_frn);
+                }
+                if ( subch == 'g' ) {
+                    subch = KEY_ESCAPE;
+                }
+                update_view(false);
+            } else if ( subch == 's' ) {
+                int sel_tmp = sel_frn;
+                int rret = select_shape(editshape);
+                sel_frn = sel_tmp;
+            } else if ( subch == '\t' ) {
+                ter_frn_mode = ( ter_frn_mode == 0 ? 1 : 0 );
+            }
+
+        }
+    } while ( ! menu_escape ( subch ) );
 
     werase(w_pickter);
     wrefresh(w_pickter);
 
     delwin(w_pickter);
-    if( ( subch == KEY_ENTER || subch == '\n' || subch == 'g' ) && sel_ter != target_ter) {
-        ter_t tset = terlist[sel_ter];
-        g->m.ter_set(target.x, target.y, (ter_id)sel_ter);
-    }
     return ret;
 }
 
@@ -519,11 +647,6 @@ void editmap::setup_fmenu(uimenu *fmenu, field *field)
     if ( sel_field >= 0 ) {
         fmenu->selected = sel_field;
     }
-}
-
-bool change_fld(std::vector<point> coords, field_id fid, int density)
-{
-    return true;
 }
 
 int editmap::edit_fld(point coords)
@@ -610,13 +733,13 @@ int editmap::edit_fld(point coords)
             for(int t = 0; t < target_list.size(); t++ ) {
                 field *t_field = &g->m.field_at(target_list[t].x, target_list[t].y);
                 if ( t_field->fieldCount() > 0 ) {
-                    for ( std::map<field_id, field_entry *>::iterator field_list_it = cur_field->getFieldStart();
-                          field_list_it != cur_field->getFieldEnd(); ++field_list_it
+                    for ( std::map<field_id, field_entry *>::iterator field_list_it = t_field->getFieldStart();
+                          field_list_it != t_field->getFieldEnd(); ++field_list_it
                         ) {
                         field_id rmid = field_list_it->first;
-                        cur_field->removeField( rmid );
+                        t_field->removeField( rmid );
                         if ( target_list[t].x == target.x && target_list[t].y == target.y ) {
-                            update_fmenu_entry( &fmenu, cur_field, (int)rmid );
+                            update_fmenu_entry( &fmenu, t_field, (int)rmid );
                         }
                     }
                 }
@@ -638,7 +761,7 @@ int editmap::edit_fld(point coords)
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////
+///// edit traps
 int editmap::edit_trp(point coords)
 {
     int ret = 0;
@@ -659,6 +782,9 @@ int editmap::edit_trp(point coords)
     std::string trids[num_trap_types];
     trids[0] = _("-clear-");
     do {
+        uphelp("[s]hape select",
+               "[enter] edit, [t] edit/quit, [q] abort");
+
         if( trsel < tshift ) {
             tshift = trsel;
         } else if ( trsel > tshift + tmax ) {
@@ -680,6 +806,23 @@ int editmap::edit_trp(point coords)
             trsel--;
         } else if (subch == KEY_DOWN) {
             trsel++;
+        } else if ( subch == KEY_ENTER || subch == '\n' || subch == 't' ) {
+            if ( trsel < num_trap_types && trsel >= 0 ) {
+                trset = trsel;
+            }
+            for(int t = 0; t < target_list.size(); t++ ) {
+                //g->m.furn_set(target_list[t].x, target_list[t].y, (furn_id)sel_frn);
+                g->m.add_trap(target_list[t].x, target_list[t].y, trap_id(trset));
+
+            }
+            if ( subch == 't' ) {
+                subch = KEY_ESCAPE;
+            }
+            update_view(false);
+        } else if ( subch == 's' ) {
+            int sel_tmp = trsel;
+            int rret = select_shape(editshape);
+            sel_frn = trsel;
         }
         if( trsel < 0 ) {
             trsel = num_trap_types - 1;
@@ -687,16 +830,7 @@ int editmap::edit_trp(point coords)
             trsel = 0;
         }
 
-    } while (subch == KEY_UP || subch == KEY_DOWN || subch == KEY_LEFT || subch == KEY_RIGHT );
-    if( ( subch == KEY_ENTER || subch == '\n' || subch == 't' ) && cur_trap != trsel ) {
-        if ( trsel == 0 ) {
-            trset = trsel;
-            g->m.add_trap(target.x, target.y, trap_id(trset));
-        } else if ( trsel < num_trap_types - 1 ) {
-            trset = trsel;
-            g->m.add_trap(target.x, target.y, trap_id(trset));
-        }
-    }
+    } while ( ! menu_escape ( subch ) );
     werase(w_picktrap);
     wrefresh(w_picktrap);
     delwin(w_picktrap);
@@ -706,68 +840,116 @@ int editmap::edit_trp(point coords)
     return ret;
 }
 
-
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/////
+///// edit items
+enum editmap_imenu_ent {
+    imenu_bday, imenu_damage, imenu_burnt,
+#ifdef item_luminance
+    imenu_sep, imenu_luminance, imenu_direction, imenu_width,
+#endif
+    imenu_exit,
+};
+
 int editmap::edit_itm(point coords)
 {
     int ret = 0;
-    uimenu imenu;
-    imenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
-    imenu.w_y = 0;
-    imenu.w_width = width;
-    imenu.w_height = TERMY - infoHeight - 1;
-    imenu.return_invalid = true;
+    uimenu ilmenu;
+    ilmenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
+    ilmenu.w_y = 0;
+    ilmenu.w_width = width;
+    ilmenu.w_height = TERMY - infoHeight - 1;
+    ilmenu.return_invalid = true;
     std::vector<item>& items = g->m.i_at(target.x , target.y );
     for(int i = 0; i < items.size(); i++) {
-        imenu.addentry(i, true, 0, "%s%s", items[i].tname(g).c_str(), items[i].light.luminance > 0 ? " L" : "" );
+#ifdef item_luminance
+        ilmenu.addentry(i, true, 0, "%s%s", items[i].tname(g).c_str(), items[i].light.luminance > 0 ? " L" : "" );
+#else
+        ilmenu.addentry(i, true, 0, "%s", items[i].tname(g).c_str());
+#endif
     }
-    // todo; imenu.addentry(imenu.entries.size(), true, 'a', "Add item");
-    imenu.addentry(-10, true, 'q', "Cancel");
+    // todo; ilmenu.addentry(ilmenu.entries.size(), true, 'a', "Add item");
+    ilmenu.addentry(-10, true, 'q', "Cancel");
     do {
-        imenu.query();
-        if ( imenu.ret >= 0 && imenu.ret < items.size() ) {
-            item *it = &items[imenu.ret];
-            uimenu lmenu;
-            lmenu.w_x = imenu.w_x;
-            lmenu.w_y = imenu.w_height;
-            lmenu.w_height = TERMX - imenu.w_height;
-            lmenu.w_width = imenu.w_width;
-            lmenu.addentry("lum: %f", (float)it->light.luminance);
-            lmenu.addentry("dir: %d", (int)it->light.direction);
-            lmenu.addentry("width: %d", (int)it->light.width);
-            lmenu.addentry("exit");
+        ilmenu.query();
+        if ( ilmenu.ret >= 0 && ilmenu.ret < items.size() ) {
+            item *it = &items[ilmenu.ret];
+            uimenu imenu;
+            imenu.w_x = ilmenu.w_x;
+            imenu.w_y = ilmenu.w_height;
+            imenu.w_height = TERMX - ilmenu.w_height;
+            imenu.w_width = ilmenu.w_width;
+            imenu.addentry(imenu_bday, true, -1, "bday: %d", (int)it->bday);
+            imenu.addentry(imenu_damage, true, -1, "damage: %d", (int)it->damage);
+            imenu.addentry(imenu_burnt, true, -1, "burnt: %d", (int)it->burnt);
+#ifdef item_luminance
+            imenu.addentry(imenu_sep, false, 0, "-[ light emission ]-");
+            imenu.addentry(imenu_luminance, true, -1, "lum: %f", (float)it->light.luminance);
+            imenu.addentry(imenu_direction, true, -1, "dir: %d", (int)it->light.direction);
+            imenu.addentry(imenu_width, true, -1, "width: %d", (int)it->light.width);
+#endif
+            imenu.addentry(imenu_exit, true, -1, "exit");
             do {
-                lmenu.query();
-                if ( lmenu.ret >= 0 && lmenu.ret < 3 ) {
+                imenu.query();
+                if ( imenu.ret >= 0 && imenu.ret < imenu_exit ) {
                     int intval = -1;
-                    intval = ( lmenu.ret == 0 ? (int)it->light.luminance :
-                               lmenu.ret == 1 ? (int)it->light.direction : (int)it->light.width );
+                    switch(imenu.ret) {
+                        case imenu_bday:
+                            intval = (int)it->bday;
+                            break;
+                        case imenu_damage:
+                            intval = (int)it->damage;
+                            break;
+                        case imenu_burnt:
+                            intval = (int)it->burnt;
+                            break;
+#ifdef item_luminance
+                        case imenu_luminance:
+                            intval = (int)it->light.luminance;
+                            break;
+                        case imenu_direction:
+                            intval = (int)it->light.direction;
+                            break;
+                        case imenu_width:
+                            intval = (int)it->light.width;
+                            break;
+#endif
+                    }
                     int retval = helper::to_int (
                                      string_input_popup( "set: ", 20, helper::to_string(  intval ) )
                                  );
                     if ( intval != retval ) {
-                        if (lmenu.ret == 0 ) {
+                        if (imenu.ret == imenu_bday ) {
+                            it->bday = retval;
+                            imenu.entries[imenu_bday].txt = stringfmt("bday: %d", it->bday);
+                        } else if (imenu.ret == imenu_damage ) {
+                            it->damage = retval;
+                            imenu.entries[imenu_damage].txt = stringfmt("damage: %d", it->damage);
+                        } else if (imenu.ret == imenu_burnt ) {
+                            it->burnt = retval;
+                            imenu.entries[imenu_burnt].txt = stringfmt("burnt: %d", it->burnt);
+#ifdef item_luminance
+                        } else if (imenu.ret == imenu_luminance ) {
                             it->light.luminance = (unsigned short)retval;
-                            lmenu.entries[0].txt = stringfmt("lum: %f", (float)it->light.luminance);
-                        } else if (lmenu.ret == 1 ) {
+                            imenu.entries[imenu_luminance].txt = stringfmt("lum: %f", (float)it->light.luminance);
+                        } else if (imenu.ret == imenu_direction ) {
                             it->light.direction = (short)retval;
-                            lmenu.entries[1].txt = stringfmt("dir: %d", (int)it->light.direction);
-                        } else if (lmenu.ret == 2 ) {
+                            imenu.entries[imenu_direction].txt = stringfmt("dir: %d", (int)it->light.direction);
+                        } else if (imenu.ret == imenu_width ) {
                             it->light.width = (short)retval;
-                            lmenu.entries[2].txt = stringfmt("width: %d", (int)it->light.width);
+                            imenu.entries[imenu_width].txt = stringfmt("width: %d", (int)it->light.width);
+#endif
                         }
                         werase(g->w_terrain);
                         g->draw_ter(target.x, target.y);
                     }
+                    wrefresh(ilmenu.window);
                     wrefresh(imenu.window);
-                    wrefresh(lmenu.window);
                     wrefresh(g->w_terrain);
                 }
-            } while(lmenu.ret != 3);
+            } while(imenu.ret != imenu_exit);
             wrefresh(w_info);
         }
-    } while (imenu.ret >= 0 || imenu.ret == UIMENU_INVALID);
+    } while (ilmenu.ret >= 0 || ilmenu.ret == UIMENU_INVALID);
     return ret;
 
 }

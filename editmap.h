@@ -35,6 +35,7 @@ class editmap {
   int height;
   int infoHeight;
 
+  int ter_frn_mode;
   int sel_ter;
   int target_ter;
   int sel_frn;
@@ -80,6 +81,7 @@ class editmap {
       target_ter = -1;
       sel_frn = -1;
       target_frn = -1;
+      ter_frn_mode = 0;
       sel_field = -1;
       sel_fdensity = -1;
       sel_trap = -1;
@@ -104,7 +106,7 @@ class editmap {
     fids[fd_shock_vent] = "shock_vent";
     fids[fd_acid_vent] = "acid_vent";
     target_list.clear();
-
+    
   };
   ~editmap() {
       delwin(w_info);
