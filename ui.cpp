@@ -284,6 +284,9 @@ void uimenu::show() {
                mvwprintz(window, estart + si, pad_left + 2, ( ei == selected ? hilight_color : hotkey_color ) , "%c", entries[ ei ].hotkey);
             }
             mvwprintz(window, estart + si, pad_left + 4, co, "%s", entries[ ei ].txt.c_str() );
+            if ( entries[ ei ].extratxt.txt.size() > 0 ) {
+                mvwprintz(window, estart + si, pad_left + 1 + entries[ ei ].extratxt.left, entries[ ei ].extratxt.color, "%s", entries[ ei ].extratxt.txt.c_str() );
+            }
         } else {
             mvwprintz(window, estart + si, pad_left + 1, c_ltgray , "%s", padspaces.c_str());
         }
