@@ -438,28 +438,18 @@ int editmap::apply_mapgen(point coords)
             for(int omsy = 0; omsy < 3; omsy++) {
                 std::string lstr = std::string("");
                 for (int omsx = 0; omsx < 3; omsx++) {
-                    int lox = omsx - 1;
-                    int loy = omsy - 1;
-                    tz.fromabs(tc.abs_pos.x + (lox*24), tc.abs_pos.y + (loy*24) );
-                    int ompx = (tc.abs_om_pos.x + lox) % 180;
-                    int ompy = (tc.abs_om_pos.y + loy) % 180;
-                    int omx = tc.abs_om.x + ((tc.abs_om_pos.x + lox) / 180);
-                    int omy = tc.abs_om.y + ((tc.abs_om_pos.y + loy) / 180);
+                    tz.fromabs(tc.abs_pos.x + ((omsx-1)*24), tc.abs_pos.y + ((omsy-1)*24) );
+                    point omp = tz.abs_om_pos;
+                    point om = tz.abs_om;
 
-                    oms[omsx][omsy] = &overmap_buffer.get(g, omx, omy );
-                    orig_oters[omsx][omsy] = oms[omsx][omsy]->ter(ompx, ompy, 0);
-                    long ter_sym = oterlist[oms[omsx][omsy]->ter(ompx, ompy, 0)].sym;
+                    oms[omsx][omsy] = &overmap_buffer.get(g, om.x, om.y );
+                    orig_oters[omsx][omsy] = oms[omsx][omsy]->ter(omp.x, omp.y, 0);
+                    long ter_sym = oterlist[oms[omsx][omsy]->ter(omp.x, omp.y, 0)].sym;
                     lstr = stringfmt("%s%c", lstr.c_str(), ter_sym);
                     hehe.addentry("[%d][%d]: %d,%d %d,%d: [%c] %s",
-                                  omsx, omsy, omx, omy, ompx, ompy,
-                                  ter_sym, oterlist[oms[omsx][omsy]->ter(ompx, ompy, 0)].name.c_str()
+                                  omsx, omsy, om.x, om.y, omp.x, omp.y,
+                                  ter_sym, oterlist[oms[omsx][omsy]->ter(omp.x, omp.y, 0)].name.c_str()
                                  );
-hehe.addentry("[%d][%d]: %d,%d %d,%d",
-  omsx,omsy,
-  tz.abs_om.x, tz.abs_om.y,
-  tz.abs_om_pos.x, tz.abs_om_pos.y
-  
-);
                 }
                 omstr.push_back(lstr);
             }
