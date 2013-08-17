@@ -3747,24 +3747,12 @@ pf.start(pfm2);
  submap *tmpsub = MAPBUFFER.lookup_submap(absx, absy, worldz);
 pf.stop(pfm2);
  if ( gridx == 0 && gridy == 0 ) {
-//     set_abs_sub(absx, absy, worldz);
+     dbg(D_INFO) << stringfmt("grid0: [%d,%d] %d,%d -> %d,%d",
+         g->levx,g->levy, abs_sub.x, abs_sub.y, absx, absy
+     );
+     set_abs_sub(absx, absy, worldz);
  }
  if (tmpsub) {
- if ( gridx == 0 && gridy == 0 ) {
-   point oldasub=(-99,-99);
-   point oldsm=(-99,-99);
-   if ( grid[0] ) {
-     oldasub=point(get_abs_sub().x,get_abs_sub().y);
-     oldsm=point(grid[0]->x,grid[0]->y);
-   }
-//   set_abs_sub(absx, absy, worldz);
-   dbg(D_INFO) << this << stringfmt(" grid0: [%d,%d] %d,%d (%d,%d) -> %d,%d (%d,%d)",
-g->levx,g->levy,
-oldasub.x, oldasub.y,
-oldsm.x, oldsm.y,
-absx, absy, tmpsub->x, tmpsub->y
-);
- }
    grid[gridn] = tmpsub;
    if( update_vehicles ) {
      // Update vehicle data
@@ -3866,26 +3854,13 @@ pf.start(pfm2);
 pf.stop(pfm2);
 
  if ( gridx == 0 && gridy == 0 ) {
-//     set_abs_sub(absx, absy, worldz);
+     dbg(D_INFO) << stringfmt("grid0: [%d,%d] %d,%d -> %d,%d",
+         g->levx,g->levy, abs_sub.x, abs_sub.y, absx, absy
+     );
+     set_abs_sub(absx, absy, worldz);
  }
 
  if (tmpsub) {
- if ( gridx == 0 && gridy == 0 ) {
-   point oldasub=(-99,-99);
-   point oldsm=(-99,-99);
-   if ( grid[0] ) {
-     oldasub=point(get_abs_sub().x,get_abs_sub().y);
-     oldsm=point(grid[0]->x,grid[0]->y);
-   }
-   set_abs_sub(absx, absy, worldz);
-   dbg(D_INFO) << stringfmt("grid0: [%d,%d] %d,%d (%d,%d) -> %d,%d (%d,%d)",
-g->levx,g->levy,
-oldasub.x, oldasub.y,
-oldsm.x, oldsm.y,
-absx, absy, tmpsub->x, tmpsub->y
-);
- }
-
    grid[gridn] = tmpsub;
    // Update vehicle data
    if( update_vehicles ) {

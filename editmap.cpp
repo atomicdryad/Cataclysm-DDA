@@ -18,7 +18,9 @@
 #include "artifact.h"
 #include "trap.h"
 #include "mapdata.h"
+#include "overmapbuffer.h"
 
+#include <sstream>
 #include <map>
 #include <set>
 #include <algorithm>
@@ -32,14 +34,14 @@
 #define maplim 132
 #define inbounds(x, y) (x >= 0 && x < maplim && y >= 0 && y < maplim)
 #define pinbounds(p) ( p.x >= 0 && p.x < maplim && p.y >= 0 && p.y < maplim)
-/*
+//*
 // pending merge of absolute <=> local coordinate conversion functions
 #define has_real_coords 1
-*/
-/*
+//*/
+
 // pending merge of item.light PR
 #define item_luminance 1
-*/
+//*/
 
 
 void constrain ( point &p )
@@ -144,6 +146,9 @@ point editmap::edit(point coords)
         } else if ( ch == 't' ) {
             edit_trp( target );
             lastop = 't';
+        } else if ( ch == 'o' ) {
+            apply_mapgen( target );
+            lastop = 'o';
         } else {
             if ( eget_direction(mx, my, input, ch ) == true ) {
                 target.x += mx;
@@ -347,7 +352,213 @@ void editmap::update_view(bool update_info)
     }
 
 }
+/*
+inline void mkmaprect( ) {
+        target_list.clear();
+        for ( int x=target.x-11;x<target.x+14;x++) {
+            for ( int y=target.y-11;y<target.y+14;y++) {
+                if ( x % 12 == 0 || y % 12 == 0 ) {
+                    target_list.push_back(point(x,y));
+                }
+            }
+        }
+        blink=true;
+        update_view(false);
+}
+*/
+int editmap::mapgen_preview(point coords)
+{
+    int ret = 0;
+    return ret;
+}
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+///// edit terrain type / furniture
+int editmap::apply_mapgen(point coords)
+{
+    int ret = 0;
+    point orig = target;
+    uimenu gmenu;
+    gmenu.w_width = width;
+    gmenu.w_height = TERMY - infoHeight;
+    gmenu.w_y = 0;
+    gmenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
+    gmenu.return_invalid = true;
+    InputEvent input;
+    int omx = -2;
+    int omy = -2;
+    for(int i = 0; i < num_ter_types; i++) {
+        gmenu.addentry(-1, true, 0, "%s", oterlist[i].name.c_str());
+        gmenu.entries[i].extratxt.left = 1;
+        gmenu.entries[i].extratxt.color = oterlist[i].color;
+        gmenu.entries[i].extratxt.txt = string_format("%c", oterlist[i].sym);
+    }
+    real_coords tc;
+    real_coords tz;
+    do {
+        uphelp("[m]ove",
+               "[enter] change, [q]uit");
+        //        point msub=point(target.x/12, target.y/12);
 
+        tc.fromabs(g->m.getabs(target.x, target.y));
+        point omt = tc.abs_om_pos;
+        point omt_lpos = g->m.getlocal(omt.x * 2 * 12, omt.y * 2 * 12);
+        point om_ltarget = point(omt_lpos.x + 11, omt_lpos.y + 11);
+
+        uphelp(stringfmt("%d,%d <=> %d,%d : %d,%d ",
+                         target.x, target.y, omt_lpos.x, omt_lpos.y, omt.x, omt.y
+                        ));
+        if ( target.x != om_ltarget.x || target.y != om_ltarget.y ) {
+            target = om_ltarget;
+            tc.fromabs(g->m.getabs(target.x, target.y));
+        }
+        target_list.clear();
+        for ( int x = target.x - 11; x < target.x + 13; x++) {
+            for ( int y = target.y - 11; y < target.y + 13; y++) {
+                if ( x == target.x - 11 || x == target.x + 12 ||
+                     y == target.y - 11 || y == target.y + 12 ) {
+                    target_list.push_back(point(x, y));
+                }
+            }
+        }
+        blink = true;
+        update_view(false);
+/*                    timeout(BLINK_SPEED);
+                    ch = getch();
+                    input = get_input(ch);
+                    if(ch != ERR) {*/
+        gmenu.query();
+        if ( gmenu.ret > 0 ) {
+            ////////////////////
+            std::vector<std::string> omstr;
+            oter_id orig_oters[3][3];
+            overmap *oms[3][3];
+            uimenu hehe;
+            //            tz.fromabs(g->m.getabs(target.x, target.y));
+            //            hehe.addentry("%d,%d => %d,%d <=> %d,%d", target.x, target.y, tc.abs_om_sub.x, tc.abs_om_sub.y, tz.abs_om_sub.x, tz.abs_om_sub.y);
+            for(int omsy = 0; omsy < 3; omsy++) {
+                std::string lstr = std::string("");
+                for (int omsx = 0; omsx < 3; omsx++) {
+                    int lox = omsx - 1;
+                    int loy = omsy - 1;
+                    tz.fromabs(tc.abs_pos.x + (lox*24), tc.abs_pos.y + (loy*24) );
+                    int ompx = (tc.abs_om_pos.x + lox) % 180;
+                    int ompy = (tc.abs_om_pos.y + loy) % 180;
+                    int omx = tc.abs_om.x + ((tc.abs_om_pos.x + lox) / 180);
+                    int omy = tc.abs_om.y + ((tc.abs_om_pos.y + loy) / 180);
+
+                    oms[omsx][omsy] = &overmap_buffer.get(g, omx, omy );
+                    orig_oters[omsx][omsy] = oms[omsx][omsy]->ter(ompx, ompy, 0);
+                    long ter_sym = oterlist[oms[omsx][omsy]->ter(ompx, ompy, 0)].sym;
+                    lstr = stringfmt("%s%c", lstr.c_str(), ter_sym);
+                    hehe.addentry("[%d][%d]: %d,%d %d,%d: [%c] %s",
+                                  omsx, omsy, omx, omy, ompx, ompy,
+                                  ter_sym, oterlist[oms[omsx][omsy]->ter(ompx, ompy, 0)].name.c_str()
+                                 );
+hehe.addentry("[%d][%d]: %d,%d %d,%d",
+  omsx,omsy,
+  tz.abs_om.x, tz.abs_om.y,
+  tz.abs_om_pos.x, tz.abs_om_pos.y
+  
+);
+                }
+                omstr.push_back(lstr);
+            }
+            for ( int i = 0; i < omstr.size(); i++ ) {
+                hehe.entries.push_back(uimenu_entry(omstr[i]));
+            }
+            update_view(true);
+            oter_id orig_oter = oms[1][1]->ter(tc.abs_om_pos.x, tc.abs_om_pos.y, 0);
+            long orig_ter = oterlist[orig_oter].sym;
+            hehe.addentry("[%c] %s",
+                          orig_ter,
+                          oterlist[orig_oter].name.c_str()
+                         );
+            hehe.addentry(23, true, 'y', "apply [%c] %s",
+                          gmenu.ret,
+                          oterlist[(oter_id)gmenu.ret].name.c_str()
+                         );
+
+            hehe.query();
+            oms[1][1]->ter(tc.abs_om_pos.x, tc.abs_om_pos.y, 0) = (oter_id)gmenu.ret;
+            tinymap tmpmap(&g->traps);
+            tmpmap.load(g, tc.abs_om_sub.x, tc.abs_om_sub.y, 0, false, oms[1][1]);
+            //tmpmap.load(g, tc.abs_om_sub.x, tc.abs_om_sub.y, 0,true,oms[1][1]);
+            tmpmap.generate(g, oms[1][1], tc.abs_sub.x, tc.abs_sub.y, 0, int(g->turn));;
+            // const int n = gridx + gridy * my_MAPSIZE;
+            //  const int nonant = int(x / SEEX) + int(y / SEEY) * my_MAPSIZE;
+            //int nant=
+            /*
+            std::stringstream dbgout;
+            dbgout << "gen: " << &tmpmap.grid[0];
+            popup("%s",dbgout.str().c_str());
+            */
+            point pofs = pos2screen(target.x - 11, target.y - 11);
+            WINDOW *w_preview = newwin(24, 24,
+                                       pofs.y, pofs.x
+                                      );
+            //tmpmap.load(g, tc.abs_om_sub.x, tc.abs_om_sub.y, 0, false, oms[1][1]);
+            std::string d = "";
+            for(int x = 0; x < 24; x++) {
+                for(int y = 0; y < 24; y++) {
+                    d += stringfmt("%lc", terlist[tmpmap.ter(x, y)].sym);
+                    tmpmap.drawsq(w_preview, g->u, x, y, false, true, 12, 12, false, true);
+                }
+                d += '\n';
+            }
+            wrefresh(w_preview);
+            getch();
+            werase(w_preview);
+            wrefresh(w_preview);
+
+            delwin(w_preview);
+
+            //popup("%s",d.c_str());
+            //tmpmap.save(oms[1][1], g->turn, tc.abs_om_sub.x, tc.abs_om_sub.y, 0);
+            //g->m.loadn(g, g->m.get_abs_sub().x, g->m.get_abs_sub().y, 0, target.x/12, target.y/12, true);
+            update_view(true);
+
+            ////////////////////
+        } else {
+            //input = get_input(ch);
+            if ( gmenu.keypress == 'm' ) {
+                int ch = 0;
+                point origm = target;
+                do {
+                    timeout(BLINK_SPEED);
+                    ch = getch();
+                    input = get_input(ch);
+                    if(ch != ERR) {
+                        get_direction(omx, omy, input);
+                        if ( omx != -2 && omy != -2 ) {
+                            point ptarget = point( target.x + (omx * 24), target.y + (omy * 24) );
+                            if ( pinbounds(ptarget) && inbounds(ptarget.x + 24, ptarget.y + 24)) {
+                                target = ptarget;
+                                //                         update_view(false);
+                                target_list.clear();
+                                for ( int x = target.x - 11; x < target.x + 13; x++) {
+                                    for ( int y = target.y - 11; y < target.y + 13; y++) {
+                                        target_list.push_back(point(x, y));
+                                    }
+                                }
+                                blink = true;
+
+                            }
+                        }
+                    } else {
+                        blink = !blink;
+                    }
+                    update_view(false);
+                } while ( input != Close && input != Cancel && ch != 'q' && input != Confirm);
+                if ( input != Confirm ) {
+                    target = origm;
+                }
+                timeout(-1);
+                blink = true;
+            }
+        }
+    } while ( ! menu_escape( gmenu.keypress ) );
+    return ret;
+}
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///// edit terrain type / furniture
 int editmap::edit_ter(point coords)
@@ -718,7 +929,7 @@ int editmap::edit_fld(point coords)
                     }
                 }
                 update_fmenu_entry( &fmenu, cur_field, idx );
-                update_view(false);
+                update_view(true);
                 sel_field = fmenu.selected;
                 sel_fdensity = fsel_dens;
             }
@@ -737,7 +948,7 @@ int editmap::edit_fld(point coords)
                     }
                 }
             }
-            update_view(false);
+            update_view(true);
             sel_field = fmenu.selected;
             sel_fdensity = 0;
         } else if ( fmenu.keypress == 's' ) {

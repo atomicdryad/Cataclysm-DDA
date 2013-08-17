@@ -26,6 +26,8 @@ class editmap
         int edit_itm(point coords);
         int edit_mon(point coords);
         int edit_npc(point coords);
+        int apply_mapgen(point coords);
+        int mapgen_preview(point coords);
         int select_shape(shapetype shape);
         void update_fmenu_entry(uimenu *fmenu, field *field, int idx);
         void setup_fmenu(uimenu *fmenu, field *field);

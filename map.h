@@ -189,8 +189,10 @@ struct real_coords {
  * When the player moves between submaps, the whole map is shifted, so that if the player moves one submap to the right,
  * (0, 0) now points to a tile one submap to the right from before
  */
+
 class map
 {
+ friend class editmap;
  public:
 
 // Constructors & Initialization
@@ -539,6 +541,7 @@ std::vector<point> closest_points_first(int radius,int x,int y);
 
 class tinymap : public map
 {
+friend class editmap;
 public:
  tinymap();
  tinymap(std::vector<trap*> *trptr);
