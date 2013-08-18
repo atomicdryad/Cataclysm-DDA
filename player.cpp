@@ -20,6 +20,10 @@
 #include "name.h"
 #include "cursesdef.h"
 #include "catacharset.h"
+#include "disease.h"
+#include "get_version.h"
+
+#include <ctime>
 
 nc_color encumb_color(int level);
 bool activity_is_suspendable(activity_type type);
@@ -1608,10 +1612,8 @@ int player::current_speed(game *g)
  int newmoves = 100; // Start with 100 movement points...
 // Minus some for weight...
  int carry_penalty = 0;
- if (weight_carried() > int(weight_capacity() * .25))
-  carry_penalty = 75 * double((weight_carried() - int(weight_capacity() * .25))/
-                              (weight_capacity() * .75));
-
+ if (weight_carried() > weight_capacity())
+  carry_penalty = 50 * (weight_carried() - weight_capacity()) / (weight_capacity());
  newmoves -= carry_penalty;
 
  if (pain > pkill) {
@@ -1735,7 +1737,7 @@ int player::run_cost(int base_cost, bool diag)
 
 int player::swim_speed()
 {
-  int ret = 440 + 2 * weight_carried() - 50 * skillLevel("swimming");
+  int ret = 440 + weight_carried() / 60 - 50 * skillLevel("swimming");
  if (has_trait(PF_WEBBED))
   ret -= 60 + str_cur * 5;
  if (has_trait(PF_TAIL_FIN))
@@ -2006,6 +2008,175 @@ std::string player::save_info()
   dump << "c " << weapon.contents[j].save_info() << std::endl;
 
  return dump.str();
+}
+
+void player::memorial( std::ofstream &memorial_file )
+{
+    //Size of indents in the memorial file
+    const std::string indent = "  ";
+
+    //Header
+    std::string version = string_format("%s", getVersionString());
+    memorial_file << _("Cataclysm - Dark Days Ahead version ") << version << _(" memorial file") << "\n";
+    memorial_file << "\n";
+    memorial_file << _("In memory of: ") << name << "\n";
+    memorial_file << _(season_name[g->turn.get_season()].c_str()) << _(" of year ") << (g->turn.years() + 1)
+                  << _(", day ") << (g->turn.days() + 1) << _(", ") << g->turn.print_time() << ".\n";
+    memorial_file << "\n";
+
+    //Misc
+    memorial_file << _("Cash on hand: ") << "$" << cash << "\n";
+    memorial_file << "\n";
+
+    //HP
+    memorial_file << _("Final HP:") << "\n";
+    memorial_file << indent << _(" Head: ") << hp_cur[hp_head] << "/" << hp_max[hp_head] << "\n";
+    memorial_file << indent << _("Torso: ") << hp_cur[hp_torso] << "/" << hp_max[hp_torso] << "\n";
+    memorial_file << indent << _("L Arm: ") << hp_cur[hp_arm_l] << "/" << hp_max[hp_arm_l] << "\n";
+    memorial_file << indent << _("R Arm: ") << hp_cur[hp_arm_r] << "/" << hp_max[hp_arm_r] << "\n";
+    memorial_file << indent << _("L Leg: ") << hp_cur[hp_leg_l] << "/" << hp_max[hp_leg_l] << "\n";
+    memorial_file << indent << _("R Leg: ") << hp_cur[hp_leg_r] << "/" << hp_max[hp_leg_r] << "\n";
+    memorial_file << "\n";
+
+    //Stats
+    memorial_file << _("Final Stats:") << "\n";
+    memorial_file << indent << _("Str ") << str_cur << indent << _("Dex ") << dex_cur << indent
+                  << _("Int ") << int_cur << indent << _("Per ") << per_cur << "\n";
+    memorial_file << _("Base Stats:") << "\n";
+    memorial_file << indent << _("Str ") << str_max << indent << _("Dex ") << dex_max << indent
+                  << _("Int ") << int_max << indent << _("Per ") << per_max << "\n";
+    memorial_file << "\n";
+
+    //Kill list
+    memorial_file << _("Kills:") << "\n";
+
+    int total_kills = 0;
+    for(int i = 0; i < num_monsters; i++) {
+        if(g->kill_count( (mon_id)(g->mtypes[i]->id) ) > 0) {
+        memorial_file << "  " << (char) g->mtypes[i]->sym << " - " << g->mtypes[i]->name <<
+            " x" << g->kill_count( (mon_id)(g->mtypes[i]->id) ) << "\n";
+        total_kills += g->kill_count( (mon_id)(g->mtypes[i]->id) );
+      }
+    }
+    if(total_kills == 0) {
+      memorial_file << indent << _("No monsters were killed.") << "\n";
+    } else {
+      memorial_file << _("Total kills: ") << total_kills << "\n";
+    }
+    memorial_file << "\n";
+
+    //Skills
+    memorial_file << _("Skills:") << "\n";
+    for (std::vector<Skill*>::iterator aSkill = Skill::skills.begin();
+      aSkill != Skill::skills.end(); ++aSkill) {
+      SkillLevel next_skill_level = skillLevel(*aSkill);
+      memorial_file << indent << (*aSkill)->name() << ": "
+              << next_skill_level.level() << " (" << next_skill_level.exercise() << "%)\n";
+    }
+    memorial_file << "\n";
+
+    //Traits
+    memorial_file << _("Traits:") << "\n";
+    for(int i = 1; i < PF_MAX2; i++) { //Don't start at i=0 or we get a 'null trait'
+      if(has_trait(i)) {
+        memorial_file << indent << traits[i].name << "\n";
+      }
+    }
+    memorial_file << "\n";
+
+    //Effects (illnesses)
+    memorial_file << _("Ongoing Effects:") << "\n";
+    bool had_effect = false;
+    for(int i = 0; i < illness.size(); i++) {
+      disease next_illness = illness[i];
+      if(dis_name(next_illness).size() > 0) {
+        had_effect = true;
+        memorial_file << indent << dis_name(next_illness) << "\n";
+      }
+    }
+    //Various effects not covered by the illness list - from player.cpp
+    if(morale_level() >= 100) {
+      had_effect = true;
+      memorial_file << indent << _("Elated") << "\n";
+    }
+    if(morale_level() <= -100) {
+      had_effect = true;
+      memorial_file << indent << _("Depressed") << "\n";
+    }
+    if(pain - pkill > 0) {
+      had_effect = true;
+      memorial_file << indent << _("Pain") << " (" << (pain - pkill) << ")";
+    }
+    if(stim > 0) {
+      had_effect = true;
+      int dexbonus = int(stim / 10);
+      if (abs(stim) >= 30) {
+        dexbonus -= int(abs(stim - 15) /  8);
+      }
+      if(dexbonus < 0) {
+        memorial_file << indent << _("Stimulant Overdose") << "\n";
+      } else {
+        memorial_file << indent << _("Stimulant") << "\n";
+      }
+    } else if(stim < 0) {
+      had_effect = true;
+      memorial_file << indent << _("Depressants") << "\n";
+    }
+    if(!had_effect) {
+      memorial_file << indent << _("(None)") << "\n";
+    }
+    memorial_file << "\n";
+
+    //Bionics
+    memorial_file << _("Bionics:") << "\n";
+    int total_bionics = 0;
+    for(int i = 0; i < my_bionics.size(); i++) {
+      bionic_id next_bionic_id = my_bionics[i].id;
+      memorial_file << indent << (i+1) << ": " << bionics[next_bionic_id]->name << "\n";
+      total_bionics++;
+    }
+    if(total_bionics == 0) {
+      memorial_file << indent << _("No bionics were installed.") << "\n";
+    } else {
+      memorial_file << _("Total bionics: ") << total_bionics << "\n";
+    }
+    memorial_file << _("Power: ") << power_level << "/" << max_power_level << "\n";
+    memorial_file << "\n";
+
+    //Equipment
+    memorial_file << _("Equipment:") << "\n";
+    for(int i = 0; i < worn.size(); i++) {
+      item next_item = worn[i];
+      memorial_file << indent << next_item.invlet << " - " << next_item.tname(g);
+      if(next_item.charges > 0) {
+        memorial_file << " (" << next_item.charges << ")";
+      } else if (next_item.contents.size() == 1
+              && next_item.contents[0].charges > 0) {
+        memorial_file << " (" << next_item.contents[0].charges << ")";
+      }
+      memorial_file << "\n";
+    }
+    memorial_file << "\n";
+
+    //Inventory
+    memorial_file << _("Inventory:") << "\n";
+    inv.sort();
+    inv.restack(this);
+    for(int i = 0; i < inv.size(); i++) {
+      invslice slice = inv.slice(i, 1);
+      item& next_item = slice[0]->front();
+      memorial_file << indent << next_item.invlet << " - " << next_item.tname(g);
+      if(slice[0]->size() > 1) {
+        memorial_file << " [" << slice[0]->size() << "]";
+      }
+      if(next_item.charges > 0) {
+        memorial_file << " (" << next_item.charges << ")";
+      } else if (next_item.contents.size() == 1
+              && next_item.contents[0].charges > 0) {
+        memorial_file << " (" << next_item.contents[0].charges << ")";
+      }
+      memorial_file << "\n";
+    }
 }
 
 void player::disp_info(game *g)
@@ -2437,9 +2608,8 @@ Strength - 4;    Dexterity - 4;    Intelligence - 4;    Dexterity - 4"));
  int newmoves = current_speed(g);
  int pen = 0;
  line = 3;
- if (weight_carried() > int(weight_capacity() * .25)) {
-  pen = 75 * double((weight_carried() - int(weight_capacity() * .25)) /
-                    (weight_capacity() * .75));
+ if (weight_carried() > weight_capacity()) {
+  pen = 50 * (weight_carried() - weight_capacity()) / (weight_capacity());
   mvwprintz(w_speed, line, 1, c_red, _("Overburdened        -%s%d%%%%"),
             (pen < 10 ? " " : ""), pen);
   line++;
@@ -2559,8 +2729,8 @@ Strength - 4;    Dexterity - 4;    Intelligence - 4;    Dexterity - 4"));
 // display player current STR effects
     mvwprintz(w_stats, 6, 2, c_magenta, _("Base HP: %d              "),
              hp_max[1]);
-    mvwprintz(w_stats, 7, 2, c_magenta, _("Carry weight: %d lbs     "),
-             weight_capacity(false) / 4);
+    mvwprintz(w_stats, 7, 2, c_magenta, _("Carry weight: %.1f %s     "), convert_weight(weight_capacity(false)),
+                      OPTIONS[OPT_USE_METRIC_WEIGHT]?"kg":"lbs");
     mvwprintz(w_stats, 8, 2, c_magenta, _("Melee damage: %d         "),
              base_damage(false));
 
@@ -3243,7 +3413,6 @@ void player::disp_status(WINDOW *w, WINDOW *w2, game *g)
               veh->turret_mode ? "auto" : "off ");
   }
 
-
   //
   // Draw the speedometer.
   //
@@ -3251,7 +3420,7 @@ void player::disp_status(WINDOW *w, WINDOW *w2, game *g)
   int speedox = sideStyle ? 0 : 33;
   int speedoy = sideStyle ? 5 :  3;
 
-  bool metric = OPTIONS[OPT_USE_METRIC_SYS];
+  bool metric = OPTIONS[OPT_USE_METRIC_SPEED];
   const char *units = metric ? "km/h" : "mph";
   int velx    = metric ?  5 : 4; // strlen(units) + 1
   int cruisex = metric ? 10 : 9; // strlen(units) + 6
@@ -3597,10 +3766,11 @@ int player::throw_range(signed char ch)
  else
   tmp = inv.item_by_letter(ch);
 
- if (tmp.weight() > int(str_cur * 15))
+ if ((tmp.weight() / 113) > int(str_cur * 15))
   return 0;
- int ret = int((str_cur * 8) / (tmp.weight() > 0 ? tmp.weight() : 10));
- ret -= int(tmp.volume() / 10);
+ // Increases as weight decreases until 150 g, then decreases again
+ int ret = (str_cur * 8) / (tmp.weight() > 150 ? tmp.weight() / 113 : 10 - int(tmp.weight() / 15));
+ ret -= int(tmp.volume() / 4);
  if (has_active_bionic("bio_railgun") && (tmp.made_of("iron") || tmp.made_of("steel")))
     ret *= 2;
  if (ret < 1)
@@ -4318,6 +4488,16 @@ void player::suffer(game *g)
     }
     if (!has_disease("sleep"))
     {
+        if (weight_carried() > weight_capacity())
+        {
+            // one in 11 with it reducing by 1 for every additional 20%, occurs constantly at 300%
+            // " + 1" is so that the shift occurs on the 20% instead of above it
+            if (one_in(10 - ((weight_carried() + 1) / (weight_capacity() / 5) - 7)) )
+            {
+                g->add_msg_if_player(this,"Your body strains under the weight!");
+                pain += 1;
+            }
+        }
         int timer = -3600;
         if (has_trait(PF_ADDICTIVE))
         {
@@ -4856,7 +5036,7 @@ int player::volume_carried()
 int player::weight_capacity(bool real_life)
 {
  int str = (real_life ? str_cur : str_max);
- int ret = 400 + str * 35;
+ int ret = 13000 + str * 4000;
  if (has_trait(PF_BADBACK))
   ret = int(ret * .65);
  if (has_trait(PF_LIGHT_BONES))
@@ -4864,7 +5044,7 @@ int player::weight_capacity(bool real_life)
  if (has_trait(PF_HOLLOW_BONES))
   ret = int(ret * .60);
  if (has_artifact_with(AEP_CARRY_MORE))
-  ret += 200;
+  ret += 22500;
  return ret;
 }
 
@@ -4885,13 +5065,33 @@ int player::volume_capacity()
  return ret;
 }
 
+double player::convert_weight(int weight)
+{
+    double ret;
+    ret = double(weight);
+    if (OPTIONS[OPT_USE_METRIC_WEIGHT]) {
+        ret /= 1000;
+    } else {
+        ret /= 453.6;
+    }
+    return ret;
+}
+
 bool player::can_pickVolume(int volume)
 {
     return (volume_carried() + volume <= volume_capacity());
 }
-bool player::can_pickWeight(int weight)
+bool player::can_pickWeight(int weight, bool safe)
 {
-    return (weight_carried() + weight <= weight_capacity());
+    if (!safe)
+    {
+        //Player can carry up to four times their maximum weight
+        return (weight_carried() + weight <= weight_capacity() * 4);
+    }
+    else
+    {
+        return (weight_carried() + weight <= weight_capacity());
+    }
 }
 
 // --- Library functions ---
@@ -5579,7 +5779,7 @@ int player::butcher_factor()
   lowest_factor = inv_factor;
  }
  if (weapon.damage_cut() >= 10 && !weapon.has_flag("SPEAR")) {
-  int factor = weapon.volume() * 5 - weapon.weight() * 1.5 -
+  int factor = weapon.volume() * 5 - weapon.weight() / 75 -
                weapon.damage_cut();
   if (weapon.damage_cut() <= 20)
    factor *= 2;
@@ -5935,7 +6135,7 @@ bool player::eat(game *g, signed char ch)
             if (book->type != NULL && !query_yn(_("Really eat %s?"), book->name.c_str()))
                 return false;
         }
-        int charge = (eaten->volume() + eaten->weight()) / 2;
+        int charge = (eaten->volume() + eaten->weight()) / 225;
         if (eaten->type->m1 == "leather" || eaten->type->m2 == "leather")
             charge /= 4;
         if (eaten->type->m1 == "wood"    || eaten->type->m2 == "wood")

@@ -58,6 +58,7 @@ public:
  virtual void load_info(game *g, std::string data);// Load from file 'name.sav'
  virtual std::string save_info();		// Save to file matching name
 
+ void memorial( std::ofstream &memorial_file ); // Write out description of player.
  void disp_info(game *g);	// '@' key; extended character info
  void disp_morale(game *g);		// '%' key; morale info
  void disp_status(WINDOW* w, WINDOW *w2, game *g = NULL);// On-screen data
@@ -251,8 +252,9 @@ public:
  int volume_carried();
  int weight_capacity(bool real_life = true);
  int volume_capacity();
+ double convert_weight(int weight);
  bool can_pickVolume(int volume);
- bool can_pickWeight(int weight);
+ bool can_pickWeight(int weight, bool safe = true);
  int net_morale(morale_point effect);
  int morale_level();	// Modified by traits, &c
  void add_morale(morale_type type, int bonus, int max_bonus = 0,

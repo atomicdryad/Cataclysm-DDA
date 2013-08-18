@@ -500,8 +500,8 @@ void game::create_starting_npcs()
 }
 
 void game::cleanup_at_end(){
- write_msg();
- if (uquit == QUIT_DIED || uquit == QUIT_SUICIDE || uquit == QUIT_SAVED)
+    write_msg();
+    if (uquit == QUIT_DIED || uquit == QUIT_SUICIDE || uquit == QUIT_SAVED)
 	{
 		// Save the factions's, missions and set the NPC's overmap coords
 		// Npcs are saved in the overmap.
@@ -514,8 +514,8 @@ void game::cleanup_at_end(){
 		save_maps(); //Omap also contains the npcs who need to be saved.
 	}
 
- // Clear the future weather for future projects
- future_weather.clear();
+    // Clear the future weather for future projects
+    future_weather.clear();
 
     if (uquit == QUIT_DIED)
     {
@@ -524,6 +524,7 @@ void game::cleanup_at_end(){
     if (uquit == QUIT_DIED || uquit == QUIT_SUICIDE)
     {
         death_screen();
+        write_memorial_file();
         if (OPTIONS[OPT_DELETE_WORLD] == 1
          || (OPTIONS[OPT_DELETE_WORLD] == 2 && query_yn(_("Delete saved world?"))))
         {
@@ -2442,8 +2443,8 @@ void game::load_artifacts()
 	    int_to_color(artifact.get(std::string("color")).as_int());
 	std::string m1 = artifact.get(std::string("m1")).as_string();
 	std::string m2 = artifact.get(std::string("m2")).as_string();
-	unsigned short volume = artifact.get(std::string("volume")).as_int();
-	unsigned short weight = artifact.get(std::string("weight")).as_int();
+	unsigned int volume = artifact.get(std::string("volume")).as_int();
+	unsigned int weight = artifact.get(std::string("weight")).as_int();
  signed char melee_dam = artifact.get(std::string("melee_dam")).as_int();
  signed char melee_cut = artifact.get(std::string("melee_cut")).as_int();
 	signed char m_to_hit = artifact.get(std::string("m_to_hit")).as_int();
@@ -2847,6 +2848,65 @@ void game::delete_save()
 #endif
 }
 
+/**
+ * Writes information about the character out to a text file timestamped with
+ * the time of the file was made. This serves as a record of the character's
+ * state at the time the memorial was made (usually upon death) and
+ * accomplishments in a human-readable format.
+ */
+void game::write_memorial_file() {
+
+    //Open the file first
+    DIR *dir = opendir("memorial");
+    if (!dir) {
+        #if (defined _WIN32 || defined __WIN32__)
+            mkdir("memorial");
+        #else
+            mkdir("memorial", 0777);
+        #endif
+        dir = opendir("memorial");
+        if (!dir) {
+            dbg(D_ERROR) << "game:write_memorial_file: Unable to make memorial directory.";
+            debugmsg("Could not make './memorial' directory");
+            return;
+        }
+    }
+
+    //To ensure unique filenames and to sort files, append a timestamp
+    time_t rawtime;
+    time (&rawtime);
+    std::string timestamp = ctime(&rawtime);
+
+    //Fun fact: ctime puts a \n at the end of the timestamp. Get rid of it.
+    size_t end = timestamp.find_last_of('\n');
+    timestamp = timestamp.substr(0, end);
+
+    //Colons are not usable in paths, so get rid of them
+    for(int index = 0; index < timestamp.size(); index++) {
+        if(timestamp[index] == ':') {
+            timestamp[index] = '-';
+        }
+    }
+
+    std::string memorial_file_path = string_format("memorial/%s-%s.txt",
+            u.name.c_str(), timestamp.c_str());
+
+    std::ofstream memorial_file;
+    memorial_file.open(memorial_file_path.c_str());
+
+    u.memorial( memorial_file );
+
+    if(!memorial_file.is_open()) {
+      dbg(D_ERROR) << "game:write_memorial_file: Unable to open " << memorial_file_path;
+      debugmsg("Could not open memorial file '%s'", memorial_file_path.c_str());
+    }
+
+
+    //Cleanup
+    memorial_file.close();
+
+}
+
 void game::advance_nextinv()
 {
   if (nextinv == inv_chars.end()[-1])
@@ -2921,7 +2981,7 @@ void game::add_msg_player_or_npc(player *p, const char* player_str, const char* 
         std::string processed_npc_string(buff);
         // These strings contain the substring <npcname>,
         // if present replace it with the actual npc name.
-        int offset = processed_npc_string.find("<npcname>");
+        size_t offset = processed_npc_string.find("<npcname>");
         if( offset != std::string::npos ) {
             processed_npc_string.replace(offset, sizeof("<npcname>"),  p->name);
         }
@@ -3087,11 +3147,88 @@ z.size(), active_npc.size(), events.size());
    }
    break;
 
-  case 11:
-    for (std::vector<Skill*>::iterator aSkill = Skill::skills.begin(); aSkill != Skill::skills.end(); ++aSkill)
-      u.skillLevel(*aSkill).level(u.skillLevel(*aSkill) + 3);
-    add_msg(_("Skils increased."));
-   break;
+  case 11: {
+      const int skoffset = 1;
+      uimenu skmenu;
+      skmenu.text = "Select a skill to modify";
+      skmenu.return_invalid = true;
+      skmenu.addentry(0, true, '1', "Set all skills to...");
+      int origskills[ Skill::skills.size()] ;
+
+      for (std::vector<Skill*>::iterator aSkill = Skill::skills.begin();
+           aSkill != Skill::skills.end(); ++aSkill) {
+        int skill_id = (*aSkill)->id();
+        skmenu.addentry( skill_id + skoffset, true, -1, "@ %d: %s  ",
+                         (int)u.skillLevel(*aSkill), (*aSkill)->ident().c_str() );
+        origskills[skill_id] = (int)u.skillLevel(*aSkill);
+      }
+      do {
+        skmenu.query();
+        int skill_id = -1;
+        int skset = -1;
+        int sksel = skmenu.selected - skoffset;
+        if ( skmenu.ret == -1 && ( skmenu.keypress == KEY_LEFT || skmenu.keypress == KEY_RIGHT ) ) {
+          if ( sksel >= 0 && sksel < Skill::skills.size() ) {
+            skill_id = sksel;
+            skset = (int)u.skillLevel( Skill::skills[skill_id]) +
+                ( skmenu.keypress == KEY_LEFT ? -1 : 1 );
+          }
+        } else if ( skmenu.selected == skmenu.ret &&  sksel >= 0 && sksel < Skill::skills.size() ) {
+          skill_id = sksel;
+          uimenu sksetmenu;
+          sksetmenu.w_x = skmenu.w_x + skmenu.w_width + 1;
+          sksetmenu.w_y = skmenu.w_y + 2;
+          sksetmenu.w_height = skmenu.w_height - 4;
+          sksetmenu.return_invalid = true;
+          sksetmenu.settext( "Set '%s' to..", Skill::skills[skill_id]->ident().c_str() );
+          int skcur = (int)u.skillLevel(Skill::skills[skill_id]);
+          sksetmenu.selected = skcur;
+          for ( int i = 0; i < 21; i++ ) {
+              sksetmenu.addentry( i, true, i + 48, "%d%s", i, (skcur == i ? " (current)" : "") );
+          }
+          sksetmenu.query();
+          skset = sksetmenu.ret;
+        }
+        if ( skset != -1 && skill_id != -1 ) {
+          u.skillLevel( Skill::skills[skill_id] ).level(skset);
+          skmenu.textformatted[0] = string_format("%s set to %d             ",
+              Skill::skills[skill_id]->ident().c_str(),
+              (int)u.skillLevel(Skill::skills[skill_id])).substr(0,skmenu.w_width - 4);
+          skmenu.entries[skill_id + skoffset].txt = string_format("@ %d: %s  ",
+              (int)u.skillLevel( Skill::skills[skill_id]), Skill::skills[skill_id]->ident().c_str() );
+          skmenu.entries[skill_id + skoffset].text_color =
+              ( (int)u.skillLevel(Skill::skills[skill_id]) == origskills[skill_id] ?
+                skmenu.text_color : c_yellow );
+        } else if ( skmenu.ret == 0 && sksel == -1 ) {
+          int ret = menu(true, "Set all skills...",
+                         "+3","+1","-1","-3","To 0","To 5","To 10","(Reset changes)",NULL);
+          if ( ret > 0 ) {
+              int skmod = 0;
+              int skset = -1;
+              if (ret < 5 ) {
+                skmod=( ret < 3 ? ( ret == 1 ? 3 : 1 ) :
+                    ( ret == 3 ? -1 : -3 )
+                );
+              } else if ( ret < 8 ) {
+                skset=( ( ret - 5 ) * 5 );
+              }
+              for (int skill_id = 0; skill_id < Skill::skills.size(); skill_id++ ) {
+                int changeto = ( skmod != 0 ? u.skillLevel( Skill::skills[skill_id] ) + skmod :
+                                 ( skset != -1 ? skset : origskills[skill_id] ) );
+                u.skillLevel( Skill::skills[skill_id] ).level( changeto );
+                skmenu.entries[skill_id + skoffset].txt =
+                    string_format("@ %d: %s  ", (int)u.skillLevel(Skill::skills[skill_id]),
+                                  Skill::skills[skill_id]->ident().c_str() );
+                skmenu.entries[skill_id + skoffset].text_color =
+                    ( (int)u.skillLevel(Skill::skills[skill_id]) == origskills[skill_id] ?
+                      skmenu.text_color : c_yellow );
+              }
+          }
+        }
+      } while ( ! ( skmenu.ret == -1 && ( skmenu.keypress == 'q' || skmenu.keypress == ' ' ||
+                                          skmenu.keypress == KEY_ESCAPE ) ) );
+    }
+    break;
 
   case 12:
     for(std::vector<std::string>::iterator it = martial_arts_itype_ids.begin();
@@ -6368,15 +6505,31 @@ void advprintItems(advanced_inv_pane &pane, advanced_inv_area* squares, bool act
     bool compact=(TERMX<=100);
 
     if(isinventory) {
-        mvwprintz( window, 4, rightcol, c_ltgreen, "%3d %3d", g->u.weight_carried(), g->u.volume_carried() );
+        int hrightcol=rightcol; // intentionally -not- shifting rightcol since heavy items are rare, and we're stingy on screenspace
+        if (g->u.convert_weight(g->u.weight_carried()) > 9.9 ) {
+          hrightcol--;
+          if (g->u.convert_weight(g->u.weight_carried()) > 99.9 ) { // not uncommon
+            hrightcol--;
+            if (g->u.convert_weight(g->u.weight_carried()) > 999.9 ) {
+              hrightcol--;
+              if (g->u.convert_weight(g->u.weight_carried()) > 9999.9 ) { // hohum. time to consider tile destruction and sinkholes elsewhere?
+                hrightcol--;
+              }
+            }
+          }
+        }
+        mvwprintz( window, 4, hrightcol, c_ltgreen, "%3.1f %3d", g->u.convert_weight(g->u.weight_carried()), g->u.volume_carried() );
     } else {
         int hrightcol=rightcol; // intentionally -not- shifting rightcol since heavy items are rare, and we're stingy on screenspace
-        if ( squares[pane.area].weight > 999 ) { // this is potentially the total of 9 tiles
+        if (g->u.convert_weight(squares[pane.area].weight) > 9.9 ) {
           hrightcol--;
-          if ( squares[pane.area].weight > 9999 ) { // not uncommon
+          if (g->u.convert_weight(squares[pane.area].weight) > 99.9 ) { // not uncommon
             hrightcol--;
-            if ( squares[pane.area].weight > 99999 ) { // hohum. time to consider tile destruction and sinkholes elsewhere?
+            if (g->u.convert_weight(squares[pane.area].weight) > 999.9 ) {
               hrightcol--;
+              if (g->u.convert_weight(squares[pane.area].weight) > 9999.9 ) { // hohum. time to consider tile destruction and sinkholes elsewhere?
+                hrightcol--;
+              }
             }
           }
         }
@@ -6387,7 +6540,7 @@ void advprintItems(advanced_inv_pane &pane, advanced_inv_area* squares, bool act
           }
         }
 
-        mvwprintz( window, 4, hrightcol, norm, "%3d %3d", squares[pane.area].weight, squares[pane.area].volume);
+        mvwprintz( window, 4, hrightcol, norm, "%3.1f %3d", g->u.convert_weight(squares[pane.area].weight), squares[pane.area].volume);
     }
 
     mvwprintz( window, 5, ( compact ? 1 : 4 ), c_ltgray, _("Name (charges)") );
@@ -6426,10 +6579,13 @@ void advprintItems(advanced_inv_pane &pane, advanced_inv_area* squares, bool act
         }
 //mvwprintz(window, 6 + x, amount_column-3, thiscolor, "%d", items[i].cat);
         int xrightcol=rightcol;
-        if ( items[i].weight > 999 ) { // rare. bear = 2000
+        if (g->u.convert_weight(items[i].weight) > 9.9 ) {
           xrightcol--;
-          if ( items[i].weight > 9999 ) { // anything beyond this is excessive. Enjoy your clear plastic bottle of neutronium
+          if (g->u.convert_weight(items[i].weight) > 99.9 ) {
             xrightcol--;
+            if (g->u.convert_weight(items[i].weight) > 999.9 ) { // anything beyond this is excessive. Enjoy your clear plastic bottle of neutronium
+              xrightcol--;
+            }
           }
         }
         if ( items[i].volume > 999 ) { // does not exist, but can fit in 1024 tile limit
@@ -6438,8 +6594,8 @@ void advprintItems(advanced_inv_pane &pane, advanced_inv_area* squares, bool act
             xrightcol--;
           }
         }
-        mvwprintz(window, 6 + x, xrightcol, (items[i].weight > 0 ? thiscolor : thiscolordark),
-            "%3d", items[i].weight );
+        mvwprintz(window, 6 + x, xrightcol, (g->u.convert_weight(items[i].weight) > 0 ? thiscolor : thiscolordark),
+            "%3.1f", g->u.convert_weight(items[i].weight) );
 
         wprintz(window, (items[i].volume > 0 ? thiscolor : thiscolordark), " %3d", items[i].volume );
         if(active && items[i].autopickup==true) {
@@ -7156,7 +7312,7 @@ void game::advanced_inv()
                             popup(_("There's no room in your inventory."));
                             continue;
                         }
-                        else if(!u.can_pickWeight(src_items[item_pos].weight()))
+                        else if(!u.can_pickWeight(src_items[item_pos].weight(), false))
                         {
                             popup(_("This is too heavy!"));
                             continue;
@@ -8463,7 +8619,7 @@ void game::pickup(int posx, int posy, int min)
    add_msg(_("You cannot pick up items with your claws out!"));
   return;
  }
- bool weight_is_okay = (u.weight_carried() <= u.weight_capacity() * .25);
+ bool weight_is_okay = (u.weight_carried() <= u.weight_capacity());
  bool volume_is_okay = (u.volume_carried() <= u.volume_capacity() -  2);
  bool from_veh = false;
  int veh_part = 0;
@@ -8516,10 +8672,10 @@ void game::pickup(int posx, int posy, int min)
   if (iter > inv_chars.size()) {
    add_msg(_("You're carrying too many items!"));
    return;
-  } else if (u.weight_carried() + newit.weight() > u.weight_capacity()) {
+  } else if (!u.can_pickWeight(newit.weight(), false)) {
    add_msg(_("The %s is too heavy!"), newit.tname(this).c_str());
    decrease_nextinv();
-  } else if (u.volume_carried() + newit.volume() > u.volume_capacity()) {
+  } else if (!u.can_pickVolume(newit.volume())) {
    if (u.is_armed()) {
     if (!u.weapon.has_flag("NO_UNWIELD")) {
      if (newit.is_armor() && // Armor can be instantly worn
@@ -8575,7 +8731,7 @@ void game::pickup(int posx, int posy, int min)
    u.moves -= 100;
    add_msg("%c - %s", newit.invlet, newit.tname(this).c_str());
   }
-  if (weight_is_okay && u.weight_carried() >= u.weight_capacity() * .25)
+  if (weight_is_okay && u.weight_carried() >= u.weight_capacity())
    add_msg(_("You're overburdened!"));
   if (volume_is_okay && u.volume_carried() > u.volume_capacity() - 2) {
    add_msg(_("You struggle to carry such a large volume!"));
@@ -8810,10 +8966,10 @@ void game::pickup(int posx, int posy, int min)
     update = false;
     mvwprintw(w_pickup, 0,  7, "                           ");
     mvwprintz(w_pickup, 0,  9,
-              (new_weight >= u.weight_capacity() * .25 ? c_red : c_white),
-              _("Wgt %d"), new_weight);
-    wprintz(w_pickup, c_white, "/%d", int(u.weight_capacity() * .25));
-    mvwprintz(w_pickup, 0, 22,
+              (new_weight >= u.weight_capacity() ? c_red : c_white),
+              _("Wgt %.1f"), u.convert_weight(new_weight));
+    wprintz(w_pickup, c_white, "/%.1f", u.convert_weight(u.weight_capacity()));
+    mvwprintz(w_pickup, 0, 24,
               (new_volume > u.volume_capacity() - 2 ? c_red : c_white),
               _("Vol %d"), new_volume);
     wprintz(w_pickup, c_white, "/%d", u.volume_capacity() - 2);
@@ -8865,10 +9021,10 @@ void game::pickup(int posx, int posy, int min)
     wrefresh(w_pickup);
     delwin(w_pickup);
     return;
-   } else if (u.weight_carried() + here[i].weight() > u.weight_capacity()) {
+   } else if (!u.can_pickWeight(here[i].weight(), false)) {
     add_msg(_("The %s is too heavy!"), here[i].tname(this).c_str());
     decrease_nextinv();
-   } else if (u.volume_carried() + here[i].volume() > u.volume_capacity()) {
+   } else if (!u.can_pickVolume(here[i].volume())) {
     if (u.is_armed()) {
      if (!u.weapon.has_flag("NO_UNWIELD")) {
       if (here[i].is_armor() && // Armor can be instantly worn
@@ -8955,7 +9111,7 @@ void game::pickup(int posx, int posy, int min)
 
  if (got_water)
   add_msg(_("You can't pick up a liquid!"));
- if (weight_is_okay && u.weight_carried() >= u.weight_capacity() * .25)
+ if (weight_is_okay && u.weight_carried() >= u.weight_capacity())
   add_msg(_("You're overburdened!"));
  if (volume_is_okay && u.volume_carried() > u.volume_capacity() - 2) {
   add_msg(_("You struggle to carry such a large volume!"));
@@ -10036,8 +10192,7 @@ void game::unload(item& it)
                     new_contents.push_back(content);// Put it back in (we canceled)
                 }
             } else {
-                if (u.volume_carried() + content.volume() <= u.volume_capacity() &&
-                    u.weight_carried() + content.weight() <= u.weight_capacity() &&
+                if (u.can_pickVolume(content.volume()) && u.can_pickWeight(content.weight(), !OPTIONS[OPT_DANGEROUS_PICKUPS]) &&
                     iter < inv_chars.size())
                 {
                     add_msg(_("You put the %s in your inventory."), content.tname(this).c_str());
@@ -10107,8 +10262,8 @@ void game::unload(item& it)
    advance_nextinv();
    iter++;
   }
-  if (u.weight_carried() + newam.weight() < u.weight_capacity() &&
-      u.volume_carried() + newam.volume() < u.volume_capacity() && iter < inv_chars.size()) {
+  if (u.can_pickWeight(newam.weight(), !OPTIONS[OPT_DANGEROUS_PICKUPS]) &&
+      u.can_pickVolume(newam.volume()) && iter < inv_chars.size()) {
    u.i_add(newam, this);
   } else {
    m.add_item_or_charges(u.posx, u.posy, newam, 1);
