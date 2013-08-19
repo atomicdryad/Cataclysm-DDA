@@ -63,7 +63,7 @@ item::item(itype* it, unsigned int turn)
  active = false;
  light = nolight;
  curammo = NULL;
- corpse = NULL;
+ corpse = ( it->corpse != NULL ? it->corpse : NULL );
  owned = -1;
  mission_id = -1;
  player_id = -1;
@@ -154,7 +154,7 @@ item::item(itype *it, unsigned int turn, char let)
   bigness= rng( engine->min_bigness, engine->max_bigness);
  }
  curammo = NULL;
- corpse = NULL;
+ corpse = ( it->corpse != NULL ? it->corpse : NULL );
  owned = -1;
  invlet = let;
  mission_id = -1;
@@ -996,8 +996,13 @@ std::string item::tname(game *g)
 
 nc_color item::color() const
 {
- if (typeId() == "corpse")
+ if (typeId() == "corpse") {
+  if ( ! corpse ) { // should have done 'if ( corpse != NULL ) { ...
+     debugmsg("Bad corpse %s",typeId());
+     return c_black;
+  }
   return corpse->color;
+ }
  if( is_null() )
   return c_black;
  return type->color;
