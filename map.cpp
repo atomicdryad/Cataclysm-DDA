@@ -4388,6 +4388,10 @@ point map::getlocal(const int x, const int y) {
   return point ( x - ( abs_min.x ), y - ( abs_min.y ) );
 }
 
+submap * map::getsubmap( const int grididx ) {
+    return grid[grididx];
+}
+
 //this returns points in a spiral pattern starting at center_x/center_y until it hits the radius. clockwise fashion
 //credit to Tom J Nowell; http://stackoverflow.com/a/1555236/1269969
 std::vector<point> closest_points_first(int radius, int center_x, int center_y)

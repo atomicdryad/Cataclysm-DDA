@@ -508,6 +508,7 @@ protected:
  int world_z;
  void set_abs_sub(const int x, const int y, const int z);
 private:
+ submap * getsubmap(const int grididx);
  long determine_wall_corner(const int x, const int y, const long orig_sym);
  void cache_seen(const int fx, const int fy, const int tx, const int ty, const int max_range);
  void apply_light_source(int x, int y, float luminance, bool trig_brightcalc);
