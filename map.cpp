@@ -12,6 +12,7 @@
 #include <fstream>
 #include "debug.h"
 #include "item_factory.h"
+#include "overmapbuffer.h"
 
 #define SGN(a) (((a)<0) ? -1 : 1)
 #define INBOUNDS(x, y) \
@@ -2559,18 +2560,24 @@ bool map::add_item_or_charges(const int x, const int y, item new_item, int overf
 // Place an item on the map, despite the parameter name, this is not necessaraly a new item.
 // WARNING: does -not- check volume or stack charges. player functions (drop etc) should use
 // map::add_item_or_charges
-void map::add_item(const int x, const int y, item new_item, const int maxitems)
+// allow_oob = true will call add_item_anywhere if x,y are OOB
+bool map::add_item(const int x, const int y, item new_item, const int maxitems, bool allow_oob)
 {
 
  if (new_item.is_style())
-     return;
+     return false;
  if (new_item.made_of(LIQUID) && has_flag(swimmable, x, y))
-     return;
- if (!INBOUNDS(x, y))
-     return;
+     return false;
+ if (!INBOUNDS(x, y)) {
+     if (allow_oob == true) {
+         return add_item_anywhere( getabs(x, y), world_z, new_item, maxitems );
+     } else {
+         return false;
+     }
+ }
  if (has_flag(destroy_item, x, y) || (i_at(x,y).size() >= maxitems))
  {
-     return;
+     return false;
  }
 
  const int nonant = int(x / SEEX) + int(y / SEEY) * my_MAPSIZE;
@@ -2579,6 +2586,51 @@ void map::add_item(const int x, const int y, item new_item, const int maxitems)
  grid[nonant]->itm[lx][ly].push_back(new_item);
  if (new_item.active)
   grid[nonant]->active_item_count++;
+ return true;
+}
+
+/*
+ * This is like add_item, but takes absolute coordinates.
+ */
+bool map::add_item_anywhere(point worldpos, const int z, item new_item, const int maxitems, bool generate_sub ) {
+  real_coords dropto;
+  dropto.fromabs( worldpos );
+  const int sx = dropto.abs_sub_pos.x, sy = dropto.abs_sub_pos.y;
+  submap *tmpsub = MAPBUFFER.lookup_submap( dropto.abs_sub.x, dropto.abs_sub.y, z);
+  if ( ! tmpsub ) {
+      dbg(D_WARNING) << "add_item_anywhere: trying to drop " << new_item.type->name << " in ungenerated submap " << worldpos.x << ", " << worldpos.y << ", " << z;
+      if ( ! generate_sub ) return false;
+      overmap * tmp_om;
+      if ( dropto.abs_om.x == g->cur_om->pos().x && dropto.abs_om.y == g->cur_om->pos().y ) {
+          tmp_om = g->cur_om;
+      } else {
+          tmp_om = &overmap_buffer.get(g, dropto.abs_om.x, dropto.abs_om.y );
+      }
+      tinymap * tmp_map = new tinymap(traps);
+      tmp_map->load(g, dropto.abs_om_pos.x * 2, dropto.abs_om_pos.y * 2, z, false, tmp_om);
+      point rel_pos = tmp_map->getlocal ( dropto.abs_pos.x, dropto.abs_pos.y );
+      bool success = tmp_map->add_item( rel_pos.x, rel_pos.y, new_item, maxitems, false );
+      delete tmp_map;
+      tmp_map=NULL;
+      tmp_om=NULL;
+      return success;
+  } else {
+      if ( ( terlist[ tmpsub->ter[sx][sy] ].flags & mfb(destroy_item) ) || ( furnlist[ tmpsub->frn[sx][sy] ].flags & mfb(destroy_item) ) ) {
+          return false;
+      }
+      if ( tmpsub->itm[sx][sy].size() >= maxitems ) {
+          return false;
+      }
+      tmpsub->itm[sx][sy].push_back(new_item);
+      if (new_item.active) {
+          tmpsub->active_item_count++;
+      }
+      return true;
+  }
+}
+
+point map::getlocal(const int x, const int y) {
+  return point ( x - ( abs_min.x ), y - ( abs_min.y ) );
 }
 
 void map::process_active_items(game *g)
@@ -3498,18 +3550,31 @@ void map::save(overmap *om, unsigned const int turn, const int x, const int y, c
  }
 }
 
-void map::load(game *g, const int wx, const int wy, const int wz, const bool update_vehicle)
+void map::load(game *g, const int wx, const int wy, const int wz, const bool update_vehicle, overmap *om)
 {
+if(om==NULL) {
  for (int gridx = 0; gridx < my_MAPSIZE; gridx++) {
   for (int gridy = 0; gridy < my_MAPSIZE; gridy++) {
    if (!loadn(g, wx, wy, wz, gridx, gridy, update_vehicle))
     loadn(g, wx, wy, wz, gridx, gridy, update_vehicle);
   }
  }
+} else {
+ for (int gridx = 0; gridx < my_MAPSIZE; gridx++) {
+  for (int gridy = 0; gridy < my_MAPSIZE; gridy++) {
+   if (!offloadn(g, wx, wy, wz, gridx, gridy, update_vehicle, om))
+    offloadn(g, wx, wy, wz, gridx, gridy, update_vehicle, om);
+  }
+ }
+}
+//
 }
 
 void map::shift(game *g, const int wx, const int wy, const int wz, const int sx, const int sy)
 {
+set_abs_sub( g->cur_om->pos().x * OMAPX * 2 + wx + sx, 
+  g->cur_om->pos().y * OMAPY * 2 + wy + sy, wz
+);
 // Special case of 0-shift; refresh the map
  if (sx == 0 && sy == 0) {
   return; // Skip this?
@@ -3626,7 +3691,8 @@ void map::saven(overmap *om, unsigned const int turn, const int worldx, const in
            abs_y = om->pos().y * OMAPY * 2 + worldy + gridy;
 
  dbg(D_INFO) << "map::saven abs_x: " << abs_x << "  abs_y: " << abs_y;
-
+ grid[n]->x = abs_x;
+ grid[n]->y = abs_y;
  MAPBUFFER.add_submap(abs_x, abs_y, worldz, grid[n]);
 }
 
@@ -3635,6 +3701,7 @@ void map::saven(overmap *om, unsigned const int turn, const int worldx, const in
 // 0,0  1,0  2,0
 // 0,1  1,1  2,1
 // 0,2  1,2  2,2 etc
+////////////////////////////////////////////////////////////////////////
 bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, const int gridx, const int gridy,
                 const bool update_vehicles)
 {
@@ -3648,62 +3715,42 @@ bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, c
             << "  gridn: " << gridn;
 
  submap *tmpsub = MAPBUFFER.lookup_submap(absx, absy, worldz);
+ if ( gridx == 0 && gridy == 0 ) {
+     set_abs_sub(absx, absy, worldz);
+ }
  if (tmpsub) {
   grid[gridn] = tmpsub;
-
+  if(update_vehicles) {
   // Update vehicle data
-  for( std::vector<vehicle*>::iterator it = tmpsub->vehicles.begin(),
-        end = tmpsub->vehicles.end(); update_vehicles && it != end; ++it ) {
+    for( std::vector<vehicle*>::iterator it = tmpsub->vehicles.begin(),
+          end = tmpsub->vehicles.end(); it != end; ++it ) {
 
-   // Only add if not tracking already.
-   if( vehicle_list.find( *it ) == vehicle_list.end() ) {
-    // gridx/y not correct. TODO: Fix
-    (*it)->smx = gridx;
-    (*it)->smy = gridy;
-    vehicle_list.insert(*it);
-    update_vehicle_cache(*it);
-   }
-  }
+     // Only add if not tracking already.
+     if( vehicle_list.find( *it ) == vehicle_list.end() ) {
+      // gridx/y not correct. TODO: Fix
+      (*it)->smx = gridx;
+      (*it)->smy = gridy;
+      vehicle_list.insert(*it);
+      update_vehicle_cache(*it);
+     }
+    }
 
-  // check spoiled stuff
-  for(int x = 0; x < 12; x++) {
-      for(int y = 0; y < 12; y++) {
-          for(std::vector<item, std::allocator<item> >::iterator it = tmpsub->itm[x][y].begin();
-              it != tmpsub->itm[x][y].end();) {
-              if(it->goes_bad()) {
-                  it_comest *food = dynamic_cast<it_comest*>(it->type);
-                  int maxShelfLife = it->bday + (food->spoils * 600)*2;
-                  if(g->turn >= maxShelfLife) {
-                      it = tmpsub->itm[x][y].erase(it);
-                  } else { ++it; }
-              } else { ++it; }
-          }
-      }
-  }
-
-  // plantEpoch is half a season; 3 epochs pass from plant to harvest
-  const int plantEpoch = 14400 * (int)OPTIONS["SEASON_LENGTH"] / 2;
-
-  // check plants
-  for (int x = 0; x < 12; x++) {
-    for (int y = 0; y < 12; y++) {
-      furn_id furn = tmpsub->frn[x][y];
-      if (furn && (furnlist[furn].flags & mfb(plant))) {
-        item seed = tmpsub->itm[x][y][0];
-
-        while (g->turn > seed.bday + plantEpoch && furn < f_plant_harvest) {
-          furn = (furn_id((int)furn + 1));
-          seed.bday += plantEpoch;
-
-          tmpsub->itm[x][y].resize(1);
-
-          tmpsub->itm[x][y][0].bday = seed.bday;
-          tmpsub->frn[x][y] = furn;
+    // check spoiled stuff
+    for(int x = 0; x < 12; x++) {
+        for(int y = 0; y < 12; y++) {
+            for(std::vector<item, std::allocator<item> >::iterator it = tmpsub->itm[x][y].begin();
+                it != tmpsub->itm[x][y].end();) {
+                if(it->goes_bad()) {
+                    it_comest *food = dynamic_cast<it_comest*>(it->type);
+                    int maxShelfLife = it->bday + (food->spoils * 600)*2;
+                    if(g->turn >= maxShelfLife) {
+                        it = tmpsub->itm[x][y].erase(it);
+                    } else { ++it; }
+                } else { ++it; }
+            }
         }
-      }
     }
   }
-
  } else { // It doesn't exist; we must generate it!
   dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating.";
   tinymap tmp_map(traps);
@@ -3739,6 +3786,122 @@ bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, c
  return true;
 }
 
+// same as offload with support for arbitrary overmap loading. will replace pending regression tests
+bool map::offloadn(game *g, const int worldx, const int worldy, const int worldz, const int gridx, const int gridy,
+                const bool update_vehicles, overmap *om )
+{
+
+ bool implicit_om = false;
+ if (om == NULL) {
+     om = g->cur_om;
+ } else {
+     implicit_om = true;
+ }
+
+ dbg(D_INFO) << "map::loadn(game[" << g << "], worldx["<<worldx<<"], worldy["<<worldy<<"], gridx["<<gridx<<"], gridy["<<gridy<<"])";
+
+ const int absx = om->pos().x * OMAPX * 2 + worldx + gridx,
+           absy = om->pos().y * OMAPY * 2 + worldy + gridy,
+           gridn = gridx + gridy * my_MAPSIZE;
+
+ dbg(D_INFO) << "map::loadn absx: " << absx << "  absy: " << absy
+            << "  gridn: " << gridn;
+
+ submap *tmpsub = MAPBUFFER.lookup_submap(absx, absy, worldz);
+
+ if ( gridx == 0 && gridy == 0 ) {
+     set_abs_sub(absx, absy, worldz);
+ }
+
+ if (tmpsub) {
+  grid[gridn] = tmpsub;
+  // Update vehicle data
+   if( update_vehicles ) {
+     for( std::vector<vehicle*>::iterator it = tmpsub->vehicles.begin(),
+           end = tmpsub->vehicles.end(); it != end; ++it ) {
+
+      // Only add if not tracking already.
+      if( vehicle_list.find( *it ) == vehicle_list.end() ) {
+       // gridx/y not correct. TODO: Fix
+       (*it)->smx = gridx;
+       (*it)->smy = gridy;
+       vehicle_list.insert(*it);
+       update_vehicle_cache(*it);
+      }
+     }
+
+     // check spoiled stuff
+     for(int x = 0; x < 12; x++) {
+         for(int y = 0; y < 12; y++) {
+             for(std::vector<item, std::allocator<item> >::iterator it = tmpsub->itm[x][y].begin();
+                 it != tmpsub->itm[x][y].end();) {
+                 if(it->goes_bad()) {
+                     it_comest *food = dynamic_cast<it_comest*>(it->type);
+                     int maxShelfLife = it->bday + (food->spoils * 600)*2;
+                     if(g->turn >= maxShelfLife) {
+                         it = tmpsub->itm[x][y].erase(it);
+                     } else { ++it; }
+                 } else { ++it; }
+             }
+         }
+     }
+   }
+ } else { // It doesn't exist; we must generate it!
+  dbg(D_INFO|D_WARNING) << "map::loadn: Missing mapbuffer data. Regenerating for " << absx << "," << absy;
+
+  map tmp_map(traps);
+
+// overx, overy is where in the overmap we need to pull data from
+// Each overmap square is two nonants; to prevent overlap, generate only at
+//  squares divisible by 2.
+  int newmapx = worldx + gridx - ((worldx + gridx) % 2);
+  int newmapy = worldy + gridy - ((worldy + gridy) % 2);
+  overmap* this_om = om;
+
+  int shx=0;
+  int shy=0;
+  if ( newmapx < 0 ) { // fixme: ensure %2
+    while ( newmapx < 0 ) {
+      shx--; newmapx += OMAPX*2;
+    }
+  } else if ( newmapx >= OMAPX*2 ) {
+    while ( newmapx >= OMAPX*2 ) {
+      shx++; newmapx -= OMAPX*2;
+    }
+  }
+  if ( newmapy < 0 ) {
+    while ( newmapy < 0 ) {
+      shy--; newmapy += OMAPX*2;
+    }
+  } else if ( newmapy >= OMAPX*2 ) {
+    while ( newmapy >= OMAPX*2 ) {
+      shy++; newmapy -= OMAPX*2;
+    }
+  }
+
+  if ( shx !=0 || shy != 0 ) {
+     // slightly out of bounds? to the east, south, or both?
+     // retain legacy hardcoding for +/- 1 om unless an om is provided (we might not be g.m).
+     if ( abs(shx) == 1 && implicit_om != true ) { 
+         this_om = g->om_hori;
+         if ( abs(shy) == 1 ) {
+             this_om = g->om_diag;
+         }
+     } else if ( abs(shy) == 1 && implicit_om != true ) {
+         this_om = g->om_vert;
+     } else {
+         // waaaaaay out of bounds? otay.
+         this_om = &overmap_buffer.get(g, om->pos().x + shx, om->pos().y + shy);
+     }
+  }
+
+  tmp_map.generate(g, this_om, newmapx, newmapy, worldz, int(g->turn));
+
+  return false;
+ }
+ return true;
+}
+
 void map::copy_grid(const int to, const int from)
 {
  grid[to] = grid[from];
@@ -3747,6 +3910,16 @@ void map::copy_grid(const int to, const int from)
   (*it)->smx = to % my_MAPSIZE;
   (*it)->smy = to / my_MAPSIZE;
  }
+}
+
+// for more...creative methods than merely .clear()ing. per submap
+std::vector<spawn_point>& map::getspawns(const int x, const int y) {
+ if (!INBOUNDS(x, y)) {
+  nulspawns.clear();
+  return nulspawns;
+ }
+ const int nonant = int(x / SEEX) + int(y / SEEY) * my_MAPSIZE;
+ return grid[nonant]->spawns;
 }
 
 void map::spawn_monsters(game *g)
@@ -3814,6 +3987,10 @@ void map::clear_traps()
 bool map::inbounds(const int x, const int y)
 {
  return (x >= 0 && x < SEEX * my_MAPSIZE && y >= 0 && y < SEEY * my_MAPSIZE);
+}
+
+bool map::inboundsabs(const int x, const int y) {
+  return ( x >= abs_min.x && x < abs_max.x && y >= abs_min.y && y < abs_max.y );
 }
 
 bool map::add_graffiti(game *g, int x, int y, std::string contents)
@@ -4037,6 +4214,30 @@ void map::build_map_cache(game *g)
 
  build_seen_cache(g);
  generate_lightmap(g);
+}
+
+void map::set_abs_sub( const int x, const int y, const int z ) {
+  abs_sub=point(x, y);
+  world_z = z;
+  abs_min=point(x*SEEX, y*SEEY);
+  abs_max=point(x*SEEX + (SEEX * my_MAPSIZE), y*SEEY + (SEEY * my_MAPSIZE) );
+}
+
+point map::getabs(const int x, const int y ) {
+    int ax=( abs_sub.x * SEEX ) + x;
+    int ay=( abs_sub.y * SEEY ) + y;
+#define sanity_test 1
+#ifdef sanity_test
+    int sx=( grid[0]->x * SEEX ) + x;
+    int sy=( grid[0]->y * SEEY ) + y;
+    if ( ax != sx || ay != sy ) {
+      debugmsg("getabs: grid[0]: %d,%d != abs_sub: %d,%d : grid[0]=%d,%d, abs_sub=%d,%d",
+        grid[0]->x,grid[0]->y,abs_sub.x,abs_sub.y,
+        sx,sy,ax,ay
+      );
+    }
+#endif
+    return point( ax, ay );
 }
 
 //this returns points in a spiral pattern starting at center_x/center_y until it hits the radius. clockwise fashion
