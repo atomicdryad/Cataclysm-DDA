@@ -41,7 +41,7 @@
 
 //*
 // pending merge of item.light PR
-#define item_luminance 1
+//#define item_luminance 1
 //*/
 
 /*

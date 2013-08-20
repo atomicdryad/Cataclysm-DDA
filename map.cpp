@@ -2633,6 +2633,10 @@ point map::getlocal(const int x, const int y) {
   return point ( x - ( abs_min.x ), y - ( abs_min.y ) );
 }
 
+submap * map::getsubmap( const int grididx ) {
+    return grid[grididx];
+}
+
 void map::process_active_items(game *g)
 {
  for (int gx = 0; gx < my_MAPSIZE; gx++) {
