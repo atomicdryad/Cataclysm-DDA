@@ -39,10 +39,10 @@
 #define has_real_coords 1
 //*
 
-//*
+/*
 // pending merge of item.light PR
 #define item_luminance 1
-//*/
+*/
 
 /*
  * map position to screen position
