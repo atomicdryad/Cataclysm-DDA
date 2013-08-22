@@ -1553,7 +1553,7 @@ int editmap::apply_mapgen(point coords)
     gmenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
     gmenu.return_invalid = true;
     for(int i = 0; i < num_ter_types; i++) {
-        gmenu.addentry(-1, true, 0, "%s%s", oterlist[i].name.c_str() );
+        gmenu.addentry(-1, true, 0, "%s", oterlist[i].name.c_str() );
         std::string special = "";
         if ( oter_special.find((oter_id)i) != oter_special.end() ) {
             unsigned long flags =  overmap_specials[ oter_special[(oter_id)i] ].flags;
