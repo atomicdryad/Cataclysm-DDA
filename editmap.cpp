@@ -133,10 +133,11 @@ point editmap::edit(point coords)
     int ch;
     InputEvent input;
 
+    uberdraw = uistate.editmap_nsa_viewmode;
     infoHeight = 14;
 
-    w_info = newwin(infoHeight, width, TERMY - infoHeight, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
-    w_help = newwin(3, width - 2, TERMY - 3, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X + 1);
+    w_info = newwin(infoHeight, width, TERRAIN_WINDOW_HEIGHT - infoHeight, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
+    w_help = newwin(3, width - 2, TERRAIN_WINDOW_HEIGHT - 3, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X + 1);
     for ( int i = 0; i < getmaxx(w_help); i++ ) {
         mvwaddch(w_help, 2, i, LINE_OXOX);
     }
@@ -185,6 +186,8 @@ point editmap::edit(point coords)
         }
     } while (input != Close && input != Cancel && ch != 'q');
 
+    uistate.editmap_nsa_viewmode = uberdraw;
+
     if (input == Confirm) {
         return point(target.x, target.y);
     }
@@ -231,9 +234,9 @@ void editmap::uber_draw_ter( WINDOW *w, map *m )
                     int mon_idx = g->mon_at(x, y);
                     int npc_idx = g->npc_at(x, y);
                     if ( mon_idx >= 0 ) {
-                        g->z[mon_idx].draw(w, x, y, true);
+                        g->z[mon_idx].draw(w, center.x, center.y, false);
                     } else if ( npc_idx >= 0 ) {
-                        g->active_npc[npc_idx]->draw(w, x, y, true);
+                        g->active_npc[npc_idx]->draw(w, center.x, center.y, false);
                     } else {
                         m->drawsq(w, g->u, x, y, false, draw_itm, center.x, center.y, false, true);
                     }
@@ -448,7 +451,7 @@ void editmap::update_view(bool update_info)
 int editmap::edit_ter(point coords)
 {
     int ret = 0;
-    int pwh = TERMY - 4;
+    int pwh = TERRAIN_WINDOW_HEIGHT - 4;
 
     WINDOW *w_pickter = newwin(pwh, width, VIEW_OFFSET_Y, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
     wborder(w_pickter, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
@@ -614,7 +617,7 @@ int editmap::edit_ter(point coords)
         }
 
         uphelp("[s/tab] shape select, [m]ove, [<>^v] select",
-               "[enter] change, [g] change/quit, [q]uit",
+               "[enter] change, [g] change/quit, [q]uit, [v] showall",
                "Terrain / Furniture");
 
         wrefresh(w_pickter);
@@ -652,6 +655,9 @@ int editmap::edit_ter(point coords)
                 int sel_tmp = sel_ter;
                 select_shape(editshape, ( subch == 'm' ? 1 : 0 ) );
                 sel_ter = sel_tmp;
+            } else if ( subch == 'v' ) {
+                uberdraw = !uberdraw;
+                update_view(false);
             }
         } else { // todo: cleanup
             if( subch == KEY_LEFT ) {
@@ -685,6 +691,9 @@ int editmap::edit_ter(point coords)
                 select_shape(editshape, ( subch == 'm' ? 1 : 0 ) );
                 sel_frn = sel_frn_tmp;
                 sel_ter = sel_ter_tmp;
+            } else if ( subch == 'v' ) {
+                uberdraw = !uberdraw;
+                update_view(false);
             }
         }
     } while ( ! menu_escape ( subch ) );
@@ -739,7 +748,7 @@ int editmap::edit_fld(point coords)
     int ret = 0;
     uimenu fmenu;
     fmenu.w_width = width;
-    fmenu.w_height = TERMY - infoHeight;
+    fmenu.w_height = TERRAIN_WINDOW_HEIGHT - infoHeight;
     fmenu.w_y = 0;
     fmenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
     fmenu.return_invalid = true;
@@ -747,7 +756,7 @@ int editmap::edit_fld(point coords)
 
     do {
         uphelp("[s/tab] shape select, [m]ove, [<,>] density",
-               "[enter] edit, [q]uit", "Field effects");
+               "[enter] edit, [q]uit, [v] showall", "Field effects");
 
         fmenu.query(false);
         if ( fmenu.selected > 0 && fmenu.selected < num_fields &&
@@ -838,6 +847,9 @@ int editmap::edit_fld(point coords)
                 setup_fmenu(&fmenu, cur_field);
             }
             fmenu.selected = sel_tmp;
+        } else if ( fmenu.keypress == 'v' ) {
+            uberdraw = !uberdraw;
+            update_view(false);
         }
     } while ( ! menu_escape ( fmenu.keypress ) );
     wrefresh(w_info);
@@ -849,7 +861,7 @@ int editmap::edit_fld(point coords)
 int editmap::edit_trp(point coords)
 {
     int ret = 0;
-    int pwh = TERMY - infoHeight - 1;
+    int pwh = TERRAIN_WINDOW_HEIGHT - infoHeight - 1;
 
     WINDOW *w_picktrap = newwin(pwh, width, VIEW_OFFSET_Y, TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X);
     wborder(w_picktrap, LINE_XOXO, LINE_XOXO, LINE_OXOX, LINE_OXOX,
@@ -863,7 +875,7 @@ int editmap::edit_trp(point coords)
     std::string trids[num_trap_types];
     trids[0] = _("-clear-");
     do {
-        uphelp("[s/tab] shape select, [m]ove",
+        uphelp("[s/tab] shape select, [m]ove, [v] showall",
                "[enter] change, [t] change/quit, [q]uit", "Traps");
 
         if( trsel < tshift ) {
@@ -902,7 +914,11 @@ int editmap::edit_trp(point coords)
             int sel_tmp = trsel;
             select_shape(editshape, ( subch == 'm' ? 1 : 0 ) );
             sel_frn = sel_tmp;
+        } else if ( subch == 'v' ) {
+            uberdraw = !uberdraw;
+            update_view(false);
         }
+
         if( trsel < 0 ) {
             trsel = num_trap_types - 1;
         } else if ( trsel >= num_trap_types ) {
@@ -938,7 +954,7 @@ int editmap::edit_itm(point coords)
     ilmenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
     ilmenu.w_y = 0;
     ilmenu.w_width = width;
-    ilmenu.w_height = TERMY - infoHeight - 1;
+    ilmenu.w_height = TERRAIN_WINDOW_HEIGHT - infoHeight - 1;
     ilmenu.return_invalid = true;
     std::vector<item>& items = g->m.i_at(target.x , target.y );
     for(int i = 0; i < items.size(); i++) {
@@ -1170,7 +1186,7 @@ int editmap::select_shape(shapetype shape, int mode)
         uphelp(
             ( moveall == true ? "[s] resize, [y] swap" :
               "[m]move, [s]hape, [y] swap, [z] to start" ),
-            "[enter] accept, [q] abort",
+            "[enter] accept, [q] abort, [v] showall",
             ( moveall == true ? "Moving selection" : "Resizing selection" ) );
         ch = getch();
         timeout(BLINK_SPEED);
@@ -1213,6 +1229,8 @@ int editmap::select_shape(shapetype shape, int mode)
                 update = true;
             } else if ( ch == 'm' ) {
                 moveall = true;
+            } else if ( ch == 'v' ) {
+                uberdraw = !uberdraw;
             } else if ( ch == '\t' ) {
                 if ( moveall ) {
                     moveall = false;
@@ -1319,6 +1337,7 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
     gpmenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
     gpmenu.return_invalid = true;
     gpmenu.addentry("Regenerate");
+    gpmenu.addentry("Rotate");
     gpmenu.addentry("Apply");
     gpmenu.addentry("Abort");
 
@@ -1363,6 +1382,9 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
                     tmpmap.generate(g, oms[1][1], tc.abs_sub.x, tc.abs_sub.y, zlevel, int(g->turn));;
                     showpreview = true;
                 } else if ( gpmenu.ret == 1 ) {
+                    tmpmap.rotate(1);
+                    showpreview = true;
+                } else if ( gpmenu.ret == 2 ) {
                     point target_sub(target.x / 12, target.y / 12);
 
 
@@ -1457,7 +1479,7 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
         } else {
             showpreview = !showpreview;
         }
-    } while ( gpmenu.ret != 1 && gpmenu.ret != 2 );
+    } while ( gpmenu.ret != 2 && gpmenu.ret != 3 );
 
     timeout(-1);
     werase(w_preview);
@@ -1465,7 +1487,7 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
     delwin(w_preview);
 
     update_view(true);
-    if ( gpmenu.ret != 1 ) { // we didn't apply, so restore the original om_ter
+    if ( gpmenu.ret != 2 ) { // we didn't apply, so restore the original om_ter
         oms[1][1]->ter(tc.abs_om_pos.x, tc.abs_om_pos.y, zlevel) = orig_oters[1][1];
     }
     return ret;
@@ -1526,7 +1548,7 @@ int editmap::apply_mapgen(point coords)
     point orig = target;
     uimenu gmenu;
     gmenu.w_width = width;
-    gmenu.w_height = TERMY - infoHeight;
+    gmenu.w_height = TERRAIN_WINDOW_HEIGHT - infoHeight;
     gmenu.w_y = 0;
     gmenu.w_x = TERRAIN_WINDOW_WIDTH + VIEW_OFFSET_X;
     gmenu.return_invalid = true;
