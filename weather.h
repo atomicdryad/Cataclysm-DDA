@@ -93,4 +93,29 @@ std::string weather_forecast(game *g, radio_tower tower);
 // Use the decimals parameter to set number of decimal places returned in string.
 std::string print_temperature(float fahrenheit, int decimals = 0);
 
+////////////////////////////////// weather log
+
+struct saved_weather_ent {
+    int temperature;
+    weather_type weather;
+    int climate_zone;
+};
+
+struct hourly_weather_ent {
+    int temperature;
+    int rot;               // rot points @ hour, based off temperature as per rot_chart
+    int rain;              // rain
+    int acid;              // acid rain
+    int sun;               // sunlight, adjusted for cloud cover etc. 
+    int rot_since;         // rot points since hour for cheap lookup; 
+    int rain_since;
+    int acid_since;
+    int sun_since;
+};
+
+//////
+hourly_weather_ent mk_weather_log_ent(int temp, weather_type weathertype, int hour);
+void weather_log_cumulative_update( std::map <int, hourly_weather_ent> &wlog );
+int wtype_to_hourly_precip (const weather_type wt);
+int true_sunlight( const calendar& cal, const weather_type wtype );
 #endif // _WEATHER_H_

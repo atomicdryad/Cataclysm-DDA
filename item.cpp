@@ -37,6 +37,9 @@ item::item()
  owned = -1;
  mission_id = -1;
  player_id = -1;
+ last_rot_check = -1;
+ accumulated_rot = 0;
+
 }
 
 item::item(itype* it, unsigned int turn)
@@ -59,6 +62,8 @@ item::item(itype* it, unsigned int turn)
  owned = -1;
  mission_id = -1;
  player_id = -1;
+ last_rot_check = -1;
+ accumulated_rot = 0;
  if (it == NULL)
   return;
  name = it->name;
@@ -114,6 +119,8 @@ item::item(itype *it, unsigned int turn, char let)
  mode = "NULL";
  item_counter = 0;
  active = false;
+ last_rot_check = -1;
+ accumulated_rot = 0;
  if (it->is_gun()) {
   charges = 0;
  } else if (it->is_ammo()) {
@@ -171,6 +178,8 @@ void item::make_corpse(itype* it, mtype* mt, unsigned int turn)
   type = it;
  corpse = mt;
  bday = turn;
+ last_rot_check = -1;
+ accumulated_rot = 0;
 }
 
 itype * item::nullitem_m = new itype();
@@ -253,7 +262,7 @@ bool item::stacks_with(item rhs)
                 item_tags == rhs.item_tags &&
                 item_vars == rhs.item_vars &&
                 contents.size() == rhs.contents.size() &&
-                (!goes_bad() || bday == rhs.bday));
+                (!goes_bad() || ( bday == rhs.bday && accumulated_rot == rhs.accumulated_rot && last_rot_check == rhs.last_rot_check ) ));
 
  if ((corpse == NULL && rhs.corpse != NULL) ||
      (corpse != NULL && rhs.corpse == NULL)   )
@@ -305,17 +314,30 @@ std::string item::save_info() const
  std::stringstream dump;
  dump << " " << int(invlet) << " " << typeId() << " " <<  int(charges) <<
      " " << int(damage) << " ";
-/////
- int stags=item_tags.size() + item_vars.size();
-/////
+
+ std::map<std::string, std::string> ivc=item_vars; // this || deconst function
+
+ if ( accumulated_rot != 0 ) {
+     std::ostringstream ssar;
+     ssar << accumulated_rot;
+     ivc[std::string("accumulated_rot")]=ssar.str();
+ }
+ if ( last_rot_check != -1 ) {
+     std::ostringstream sslrc;
+     sslrc << last_rot_check;
+     ivc[std::string("last_rot_check")]=sslrc.str();
+ }
+
+ int stags=item_tags.size() + ivc.size();
  dump << stags << " ";
+
  for( std::set<std::string>::const_iterator it = item_tags.begin();
       it != item_tags.end(); ++it )
  {
      dump << *it << " ";
  }
-/////
- for( std::map<std::string, std::string>::const_iterator it = item_vars.begin(); it != item_vars.end(); ++it ) {
+
+ for( std::map<std::string, std::string>::const_iterator it = ivc.begin(); it != ivc.end(); ++it ) {
     std::string itstr="";
     std::string itval="";
     dump << ivaresc << it->first << "=";
@@ -353,7 +375,7 @@ std::string item::save_info() const
  return dump.str();
 }
 
-bool itag2ivar( std::string &item_tag, std::map<std::string, std::string> &item_vars ) {
+bool item::itag2ivar( std::string &item_tag ) { //, std::map<std::string, std::string> &item_vars ) {
    if(item_tag.at(0) == ivaresc && item_tag.find('=') != -1 && item_tag.find('=') >= 2 ) {
      std::string var_name, val_decoded;
      int svarlen, svarsep;
@@ -380,6 +402,13 @@ bool itag2ivar( std::string &item_tag, std::map<std::string, std::string> &item_
          }
      }
      item_vars[var_name]=val_decoded;
+     /* These take advantage of item_var's universal compatibility, but are int vars during runtime for speed. */
+     if( var_name == "accumulated_rot" ) {
+         accumulated_rot = atoi(val_decoded.c_str());
+     } else if ( var_name == "last_rot_check" ) {
+         last_rot_check = atoi(val_decoded.c_str());
+     }
+
      return true;
    } else {
      return false;
@@ -395,10 +424,13 @@ void item::load_info(std::string data, game *g)
  int lettmp, damtmp, acttmp, corp, tag_count;
  dump >> lettmp >> idtmp >> charges >> damtmp >> tag_count;
 
+ last_rot_check = -1;
+ accumulated_rot = 0;
+
  for( int i = 0; i < tag_count; ++i )
  {
      dump >> item_tag;
-   if( itag2ivar(item_tag, item_vars ) == false ) {
+   if( itag2ivar(item_tag) == false ) {
      item_tags.insert( item_tag );
    }
  }
@@ -922,8 +954,10 @@ std::string item::tname(game *g)
   ret << _(" (fresh)");
  if (food != NULL && g != NULL && food->has_flag("HOT"))
   ret << _(" (hot)");
+/* fixme: implement accumulated rot and climate zone check */
  if (food != NULL && g != NULL && food_type->spoils != 0 &&
-   int(g->turn) - (int)(food->bday) > food_type->spoils * 600)
+   (g->get_rot_since((int)bday, 0) > food_type->spoils * 600) )
+// old system //   int(g->turn) - (int)(food->bday) > food_type->spoils * 600)
    ret << _(" (rotten)");
 
  if (has_flag("FIT")){
@@ -1155,7 +1189,31 @@ bool item::rotten(game *g)
  if (!is_food() || g == NULL)
   return false;
  it_comest* food = dynamic_cast<it_comest*>(type);
- return (food->spoils != 0 && int(g->turn) - (int)bday > food->spoils * 600);
+
+ if ( food->spoils != 0 ) {
+   /* calculate decay based on weather_log[hour]rot_since. 
+      Hour is determined by when this was last run, and 'rot points' are
+      added to the total every run. This is so one can take food out of
+      one environment and put it in another, ie from a fridge (which rots + 10 an hour)
+      into a hot summer day (several orders of magnitude higher decay rate).
+      This requires item->rotten to be run whenever an item is 'moved', which is
+      trivial to add to the various map / vehicle / inventory add functions.
+      Unfortunately, there is no easy way to determine an item's (previous) location 
+      without parent refs or variables, and/or a one-function-many-locations 'move' that handles
+item_to_move.rotten(g, climatezone ); // to stash current decay
+*->add_item(item_to_move); // which would set new_item_instance.climatezone
+     for functions that can't determine item location, so for now:
+   */
+   int climate_zone_stub = 0; // 0: the global 'outside' weather_log[]
+   if ( last_rot_check != int(g->turn) ) {
+     int chktime = ( last_rot_check == -1 ? (int)bday : last_rot_check );
+     accumulated_rot += g->get_rot_since(chktime, climate_zone_stub);
+     last_rot_check = int(g->turn);
+   }
+   return ( accumulated_rot > food->spoils * 600);
+ }
+ return false;
+ // old system // return (food->spoils != 0 && int(g->turn) - (int)bday > food->spoils * 600);
 }
 
 bool item::ready_to_revive(game *g)

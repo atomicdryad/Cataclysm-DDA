@@ -42,6 +42,8 @@
 #include <sys/stat.h>
 #include "debug.h"
 #include "artifactdata.h"
+#include "weather.h"
+#include "weather_const.h"
 
 #if (defined _WIN32 || defined __WIN32__)
 #include <windows.h>
@@ -675,6 +677,30 @@ bool game::do_turn()
      autosave();
 
  update_weather();
+/* fixme: make function */
+ if (turn % 600 == 0) {
+   int turnh=(int(turn)/600)-1;
+   int lturn=turnh*600;
+   int temp=temperature;
+   weather_type pastwt=weather;
+   if ( turnh > 0 ) {
+       for( 
+           std::map<int, saved_weather_ent>::reverse_iterator it = saved_weather.rbegin();
+           it != saved_weather.rend();
+           ++it
+       ) {
+          if ( it->first <= lturn ) {
+              temp=it->second.temperature;
+              pastwt=it->second.weather;
+              break;
+          }
+       }
+       // climate_zone[0].weather_log
+       weather_log[turnh]=mk_weather_log_ent(temp, pastwt, turnh);
+       weather_log_cumulative_update(weather_log);
+   }
+ }
+
 
 // The following happens when we stay still; 10/40 minutes overdue for spawn
  if ((!u.has_trait("INCONSPICUOUS") && turn > nextspawn +  100) ||
@@ -1191,6 +1217,12 @@ void game::update_weather()
         weather_type old_weather = weather;
         weather = future_weather.front().weather;
         temperature = future_weather.front().temperature;
+
+        //add_msg("h %d %d temp %d",turn.hours(),(int)turn,temperature);
+        saved_weather[(int)turn].temperature=temperature;
+        saved_weather[(int)turn].weather=weather;
+        saved_weather[(int)turn].climate_zone=0;
+
         nextweather = future_weather.front().deadline;
         future_weather.pop_front();
         if (weather != old_weather && weather_data[weather].dangerous &&
@@ -2659,6 +2691,71 @@ void game::load_weather(std::ifstream &fin)
     }
 }
 
+void game::load_weatherlog() {
+  std::stringstream wlfile;
+  std::string data;
+  std::ifstream fin;
+  std::string junk;
+  const std::string savedir="save";
+  wlfile << savedir << "/weather." << u.name << ".log";
+  saved_weather.clear();
+  saved_weather[0].temperature=65;
+  saved_weather[0].weather=weather_type(WEATHER_CLEAR);
+  saved_weather[0].climate_zone=0;
+
+  fin.open(wlfile.str().c_str());
+  if(fin.is_open()) {
+      int wlversion;
+      getline ( fin, data );
+      if(!fin.eof()) {
+         std::stringstream wline;
+         wline.str(data);
+         wline >> junk >> junk >> junk >> wlversion;
+         getline( fin, data );
+
+         while(!fin.eof()) {
+            std::stringstream wl;
+            wl.str(data);
+            
+            int inturn, intemp, inweather, inzone;
+            if ( wlversion == 1 ) {
+               wl >> inturn >> intemp >> inweather; inzone=0;
+            } else {
+               wl >> inturn >> intemp >> inweather >> inzone;
+            }
+
+            saved_weather[(int)inturn].temperature=(int)intemp;
+            saved_weather[(int)inturn].weather=(weather_type)inweather;
+            saved_weather[(int)inturn].climate_zone=(int)inzone;
+
+            getline( fin, data );
+         }
+      }
+      fin.close();
+  }
+  int turnh=int(turn)/600;
+
+  std::map<int, saved_weather_ent>::const_iterator lb,ub;
+  int temp;
+  weather_type weathertype;
+  lb=saved_weather.lower_bound(0);           // saved_weather[0].temperature should always = 65;
+  ub=saved_weather.upper_bound(600);
+  temp=lb->second.temperature;
+  weathertype=lb->second.weather;
+
+  for (int i = 0; i < turnh; i++) { // iterate through the last n hours, filling in gaps with last recorded hour
+    if(ub != saved_weather.end() && i == ub->first/600) {
+       // todo; partial values for raid/acid/sun. For now, use only last entry in hr
+       lb=ub;
+       temp=lb->second.temperature;
+       weathertype=lb->second.weather;
+       ub=saved_weather.upper_bound((1+i)*600);
+    }
+    weather_log[i]=mk_weather_log_ent(temp, weathertype, i);
+  }
+  weather_log_cumulative_update(weather_log);
+}
+
 void game::load(std::string name)
 {
  std::ifstream fin;
@@ -2770,6 +2867,7 @@ void game::load(std::string name)
  load_uistate();
 // Now load up the master game data; factions (and more?)
  load_master();
+ load_weatherlog();
  update_map(u.posx, u.posy);
  set_adjacent_overmaps(true);
  MAPBUFFER.set_dirty();
@@ -2846,7 +2944,25 @@ std::string game::save_weather() const
     }
     return weather_string.str();
 }
+void game::save_weatherlog() {
+  std::stringstream wlfile;
+  std::ofstream fout;
+  const std::string savedir="save";
+  const int wlversion=2;
+  wlfile << savedir << "/weather." << u.name << ".log";
 
+  fout.open(wlfile.str().c_str());
+  fout << "# version " << wlversion << std::endl;
+  for( std::map<int, saved_weather_ent>::const_iterator it = saved_weather.begin(); it != saved_weather.end(); ++it ) {
+    fout << it->first << 
+      " " << it->second.temperature <<
+      " " << it->second.weather <<
+      " " << it->second.climate_zone <<
+      std::endl;
+  }
+  fout << std::endl;
+  fout.close();
+}
 void game::save()
 {
  std::stringstream playerfile;
@@ -2884,6 +3000,7 @@ void game::save()
  fout << u.save_info() << std::endl;
  fout << std::endl;
  fout.close();
+ save_weatherlog();
  //factions, missions, and npcs, maps and artifact data is saved in cleanup_at_end()
  save_auto_pickup(true); // Save character auto pickup rules
  save_uistate();
@@ -3108,7 +3225,8 @@ void game::debug()
                    _("Spawn Clarivoyance Artifact"), //15
                    _("Map editor"), // 16
                    _("Change weather"),         // 17
-                   _("Cancel"),                 // 18
+                   _("Dump weather log"),       // 18
+                   _("Cancel"),                 // 19
                    NULL);
  int veh_num;
  std::vector<std::string> opts;
@@ -3322,12 +3440,10 @@ Current turn: %d; Next spawn %d.\n\
       u.i_add(artifact);
   }
   break;
-
   case 16: {
       point coord = look_debug();
   }
   break;
-
   case 17: {
       const int weather_offset = 1;
       uimenu weather_menu;
@@ -3349,6 +3465,38 @@ Current turn: %d; Next spawn %d.\n\
 
       }
   }
+  case 18: {
+      if ( weather_log.size() > 0 ) {
+
+        uimenu wl;
+
+        wl.settext("hour %d turn %d\nhour      | temp | rot / accum    | rain / accum | acid / accum | sun / acc",int(turn)/600,int(turn));
+        wl.addentry("--- hourly quick lookup table ---");
+        for( int i=weather_log.size()-1, c=0; i >=0; i--, c++ ) {
+            wl.addentry("hr %-4d | t:%-2d | r:%-4d %-7d | p:%-3d %-6d | a:%-3d %-6d | s:%-2d %-6d | %d",i,
+            weather_log[i].temperature,
+            weather_log[i].rot,
+            weather_log[i].rot_since,
+            weather_log[i].rain,
+            weather_log[i].rain_since,
+            weather_log[i].acid,
+            weather_log[i].acid_since,
+            weather_log[i].sun,
+            weather_log[i].sun_since, x_in_y(50,100)
+            );
+            if ( i % 2 ) { wl.entries[ c ].text_color=c_cyan;
+            } else { wl.entries[ c ].text_color=c_ltgray; }
+        }
+        wl.addentry("--- saved log below ---");
+        for( std::map<int, saved_weather_ent>::const_iterator it = saved_weather.begin(); it != saved_weather.end(); ++it ) {
+            wl.addentry("%-7d %-4d %-2d %-2d",it->first, it->second.temperature, it->second.weather, it->second.climate_zone );
+        }
+
+        wl.query();
+      } else {
+         popup("Wait an hour and try again.");
+      }
+    }
   break;
  }
  erase();

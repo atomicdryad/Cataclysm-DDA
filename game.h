@@ -100,6 +100,8 @@ class game
   bool game_error();
   quit_status uquit;    // used in main.cpp to determine what type of quit
   void save();
+  void load_weatherlog();
+  void save_weatherlog();
   void delete_save();
   void write_memorial_file();
   void cleanup_at_end();
@@ -279,8 +281,15 @@ class game
   signed char temperature;              // The air temperature
   int get_temperature();    // Returns outdoor or indoor temperature of current location
   weather_type weather;			// Weather pattern--SEE weather.h
-
+  int queued_move;
   std::list<weather_segment> future_weather;
+  ////// cached per hour logs for weather, spoilage, etc
+  std::map <int, saved_weather_ent> saved_weather; // saved temperature / weather_type every (random) turn
+  std::map <int, hourly_weather_ent> weather_log;  // log of various values, hourly and cumulative. not saved
+  int get_temp_at_hour( const int hour );
+  int calc_rot_at_hour( const int hour );
+  int get_rot_at_hour( const int hour );
+  int get_rot_since( const int start_turn, const int climate_zone );
 
   char nextinv;	// Determines which letter the next inv item will have
   overmap *cur_om;
