@@ -42,6 +42,7 @@
 #include <sys/stat.h>
 #include "debug.h"
 #include "artifactdata.h"
+#include "catalua.h"
 
 #if (defined _WIN32 || defined __WIN32__)
 #include <windows.h>
@@ -77,7 +78,6 @@ game::game() :
  gamemode(NULL)
 {
  dout() << "Game initialized.";
-
  try {
  if(!json_good())
   throw (std::string)"Failed to initialize a static variable";
@@ -90,6 +90,10 @@ game::game() :
  init_fields();
  init_faction_data();
  init_morale();
+// Gee, it sure is init-y around here!
+ #ifdef LUA
+  init_lua();                 // Set up lua                       (SEE catalua.cpp)
+ #endif
  init_skills();
  init_professions();
  init_bionics();              // Set up bionics                   (SEE bionics.cpp)
@@ -3050,7 +3054,10 @@ void game::debug()
                    _("Spawn Clarivoyance Artifact"), //15
                    _("Map editor"), // 16
                    _("Change weather"),         // 17
-                   _("Cancel"),                 // 18
+                   #ifdef LUA
+                       _("Lua Command"), // 18
+                   #endif
+                   _("Cancel"),
                    NULL);
  int veh_num;
  std::vector<std::string> opts;
@@ -3292,6 +3299,14 @@ Current turn: %d; Next spawn %d.\n\
       }
   }
   break;
+  
+  #ifdef LUA
+      case 18: {
+          std::string luacode = string_input_popup(_("Lua:"), 60, "");
+          call_lua(luacode);
+      }
+      break;
+  #endif
  }
  erase();
  refresh_all();
