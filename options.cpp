@@ -20,6 +20,7 @@ void initOptions() {
     vPages.push_back(std::make_pair("general", _("General")));
     vPages.push_back(std::make_pair("interface", _("Interface")));
     vPages.push_back(std::make_pair("debug", _("Debug")));
+    vPages.push_back(std::make_pair("advanced", _("Advanced")));
 
     OPTIONS.clear();
 
@@ -178,11 +179,6 @@ void initOptions() {
                                              false
                                             );
 
-    OPTIONS["REVIVE_ZOMBIES"] =         cOpt("debug", _("Revive zombies"),
-                                             _("Allow zombies to revive after a certain amount of time."),
-                                             true
-                                            );
-
     OPTIONS["SEASON_LENGTH"] =          cOpt("debug", _("Season length"),
                                              _("Season length, in days."),
                                              14, 127, 14
@@ -248,12 +244,31 @@ void initOptions() {
                                              true
                                              );
 
+    OPTIONS["Z_SHOW_ADVANCED"] =         cOpt("debug", _("Advanced options"),
+                                             _("Warning, setting these will affect gameplay balance in ways not intended by developers."),
+                                             false
+                                             );
+
+    OPTIONS["REVIVE_ZOMBIES"] =         cOpt("advanced", _("Revive zombies"),
+                                             _("Allow zombies to revive after a certain amount of time."),
+                                             true
+                                            );
+
+
     for (std::map<std::string, cOpt>::iterator iter = OPTIONS.begin(); iter != OPTIONS.end(); ++iter) {
         for (int i=0; i < vPages.size(); ++i) {
             if (vPages[i].first == (iter->second).getPage()) {
                 mPageItems[i].push_back(iter->first);
                 break;
             }
+        }
+    }
+}
+
+void setAllOptionsDefault(std::string category) {
+    for (std::map<std::string, cOpt>::iterator iter = OPTIONS.begin(); iter != OPTIONS.end(); ++iter) {
+        if ( (iter->second).getPage() == category ) {
+            (iter->second).setDefault();
         }
     }
 }
@@ -308,6 +323,7 @@ void game::show_options()
     int iCurrentLine = 0;
     int iStartPos = 0;
     bool bStuffChanged = false;
+    bool bMenuChanged = false;
     char ch = ' ';
 
     std::stringstream sTemp;
@@ -330,6 +346,8 @@ void game::show_options()
 
         calcStartPos(iStartPos, iCurrentLine, iContentHeight, mPageItems[iCurrentPage].size());
 
+        bool bOnAdvanced = (vPages[iCurrentPage].first == "advanced");
+
         //Draw options
         for (int i = iStartPos; i < iStartPos + ((iContentHeight > mPageItems[iCurrentPage].size()) ? mPageItems[iCurrentPage].size() : iContentHeight); i++) {
             nc_color cLineColor = c_ltgreen;
@@ -347,7 +365,9 @@ void game::show_options()
 
             wprintz(w_options, c_white, "%s", (OPTIONS[mPageItems[iCurrentPage][i]].getMenuText()).c_str());
 
-            if (OPTIONS[mPageItems[iCurrentPage][i]].getValue() == "False") {
+            if ( bOnAdvanced && ! OPTIONS[mPageItems[iCurrentPage][i]].isDefault() ) {
+                cLineColor = c_ltred;
+            } else if (OPTIONS[mPageItems[iCurrentPage][i]].getValue() == "False") {
                 cLineColor = c_ltred;
             }
 
@@ -361,12 +381,19 @@ void game::show_options()
         mvwprintz(w_options_header, 0, 7, c_white, "");
         for (int i = 0; i < vPages.size(); i++) {
             if (mPageItems[i].size() > 0) { //skip empty pages
-                wprintz(w_options_header, c_white, "[");
-                wprintz(w_options_header, (iCurrentPage == i) ? hilite(c_ltgreen) : c_ltgreen, (vPages[i].second).c_str());
-                wprintz(w_options_header, c_white, "]");
-                wputch(w_options_header, c_white, LINE_OXOX);
+                if ( OPTIONS["Z_SHOW_ADVANCED"] == true || vPages[i].first != "advanced" ) {
+                    wprintz(w_options_header, c_white, "[");
+                    wprintz(w_options_header, (iCurrentPage == i) ? hilite(c_ltgreen) : c_ltgreen, (vPages[i].second).c_str());
+                    wprintz(w_options_header, c_white, "]");
+                    wputch(w_options_header, c_white, LINE_OXOX);
+                } else if ( bMenuChanged == true && vPages[i].first == "advanced" ) {
+                    for ( int c = 0; c < (vPages[i].second).size()+2; c++ ) {
+                        wputch(w_options_header, c_white, LINE_OXOX);
+                    }
+                }
             }
         }
+        bMenuChanged = false;
 
         wrefresh(w_options_header);
 
@@ -393,10 +420,18 @@ void game::show_options()
                     break;
                 case 'l': //set to prev value
                     OPTIONS[mPageItems[iCurrentPage][iCurrentLine]].setNext();
+                    if ( mPageItems[iCurrentPage][iCurrentLine] == "Z_SHOW_ADVANCED" ) {
+                        setAllOptionsDefault("advanced");
+                        bMenuChanged = true;
+                    }
                     bStuffChanged = true;
                     break;
                 case 'h': //set to next value
                     OPTIONS[mPageItems[iCurrentPage][iCurrentLine]].setPrev();
+                    if ( mPageItems[iCurrentPage][iCurrentLine] == "Z_SHOW_ADVANCED" ) {
+                        setAllOptionsDefault("advanced");
+                        bMenuChanged = true;
+                    }
                     bStuffChanged = true;
                     break;
                 case '>':
@@ -407,7 +442,7 @@ void game::show_options()
                         if (iCurrentPage >= vPages.size()) {
                             iCurrentPage = 0;
                         }
-                    } while(mPageItems[iCurrentPage].size() == 0);
+                    } while(mPageItems[iCurrentPage].size() == 0 || ( OPTIONS["Z_SHOW_ADVANCED"] != true && vPages[iCurrentPage].first == "advanced" ) );
 
                     break;
                 case '<':
@@ -417,7 +452,7 @@ void game::show_options()
                         if (iCurrentPage < 0) {
                             iCurrentPage = vPages.size()-1;
                         }
-                    } while(mPageItems[iCurrentPage].size() == 0);
+                    } while(mPageItems[iCurrentPage].size() == 0 || ( OPTIONS["Z_SHOW_ADVANCED"] != true && vPages[iCurrentPage].first == "advanced" ) );
                     break;
             }
         }

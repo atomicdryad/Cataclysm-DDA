@@ -114,6 +114,31 @@ class cOpt
             return sType;
         };
 
+        void setDefault() {
+            if (sType == "string") {
+                sSet = sDefault;
+            } else if (sType == "bool") {
+                bSet = bDefault;
+            } else if (sType == "int") {
+                iSet = iDefault;
+            } else if (sType == "float") {
+                fSet = fDefault;
+            }
+        };
+
+        bool isDefault() {
+            if (sType == "string") {
+                return (sSet == sDefault);
+            } else if (sType == "bool") {
+                return (bSet == bDefault);
+            } else if (sType == "int") {
+                return (iSet == iDefault);
+            } else if (sType == "float") {
+                return (fSet == fDefault);
+            }
+            return false;
+        };
+
         std::string getValue() {
             if (sType == "string") {
                 return sSet;
