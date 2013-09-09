@@ -1339,7 +1339,7 @@ bool item::rotten(game *g)
 
 bool item::ready_to_revive(game *g)
 {
-    if ( OPTIONS["REVIVE_ZOMBIES"] == false ) {
+    if (! OPTIONS["REVIVE_ZOMBIES"] ) {
         return false;
     }
     if ( corpse == NULL ||  corpse->species != species_zombie || damage >= 4)
