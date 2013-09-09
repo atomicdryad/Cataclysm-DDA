@@ -388,7 +388,7 @@ void game::show_options()
                     wputch(w_options_header, c_white, LINE_OXOX);
                 } else if ( bMenuChanged == true && vPages[i].first == "advanced" ) {
                     for ( int c = 0; c < (vPages[i].second).size()+2; c++ ) {
-                        wputch(w_options_header, c_white, LINE_OXOX);
+                        wputch(w_options_header, c_ltgray, LINE_OXOX);
                     }
                 }
             }
