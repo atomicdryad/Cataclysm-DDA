@@ -5365,16 +5365,15 @@ bool player::process_single_active_item(game *g, item *it)
         }
         else if (it->is_tool())
         {
-            iuse use;
             it_tool* tmp = dynamic_cast<it_tool*>(it->type);
-            (use.*tmp->use)(g, this, it, true);
+            tmp->use.call(g, this, it, true);
             if (tmp->turns_per_charge > 0 && int(g->turn) % tmp->turns_per_charge == 0)
             {
                 it->charges--;
             }
             if (it->charges <= 0)
             {
-                (use.*tmp->use)(g, this, it, false);
+                tmp->use.call(g, this, it, false);
                 if (tmp->revert_to == "null")
                 {
                     return false;
@@ -6217,10 +6216,9 @@ bool player::eat(game *g, signed char ch)
                 stim += comest->stim;
         }
 
-        iuse use;
         if (comest->use != &iuse::none)
         {
-            (use.*comest->use)(g, this, eaten, false);
+            comest->use.call(g, this, eaten, false);
         }
         add_addiction(comest->add, comest->addict);
         if (addiction_craving(comest->add) != MORALE_NULL)
@@ -7438,8 +7436,7 @@ void player::use(game *g, char let)
 
   it_tool *tool = dynamic_cast<it_tool*>(used->type);
   if (tool->charges_per_use == 0 || used->charges >= tool->charges_per_use) {
-   iuse use;
-   (use.*tool->use)(g, this, used, false);
+   tool->use.call(g, this, used, false);
    used->charges -= tool->charges_per_use;
   } else
    g->add_msg(_("Your %s has %d charges but needs %d."), used->tname(g).c_str(),
@@ -7455,8 +7452,7 @@ void player::use(game *g, char let)
 
  } else if (used->type->use == &iuse::boots) {
 
-   iuse use;
-   (use.*used->type->use)(g, this, used, false);
+   used->type->use.call(g, this, used, false);
    if (replace_item)
     inv.add_item_keep_invlet(copy);
    return;
@@ -7719,8 +7715,7 @@ void player::read(game *g, char ch)
     }
     if (mac != NULL)
     {
-        iuse use;
-        (use.*mac->use)(g, this, it, false);
+        mac->use.call(g, this, it, false);
         return;
     }
 

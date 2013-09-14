@@ -24,6 +24,8 @@
 #  make TILES=1
 # Disable gettext, on some platforms the dependencies are hard to wrangle.
 #  make LOCALIZE=0
+# Enable lua debug support
+#  make LUA=1
 
 # comment these to toggle them as one sees fit.
 # WARNINGS will spam hundreds of warnings, mostly safe, if turned on
@@ -156,6 +158,13 @@ ifeq ($(TARGETSYSTEM),WINDOWS)
   endif
   W32FLAGS += -Wl,-stack,12000000,-subsystem,windows
   RFLAGS = -J rc -O coff
+endif
+
+ifdef LUA
+  # TODO: Support systems other than arch linux
+  #       (alternatively, expect them to use CMake =)
+  LDFLAGS += -llua5.1
+  CXXFLAGS += -I/usr/include/lua5.1 -DLUA
 endif
 
 ifdef TILES
