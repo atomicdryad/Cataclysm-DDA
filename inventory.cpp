@@ -11,6 +11,12 @@ const std::string inv_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVW
 // after all, if we're asking for the *entire* inventory,
 // that's probably a sign of a partial legacy conversion
 
+#include "debug.h"
+
+#define dbg(x) dout((DebugLevel)(x),D_GAME) << __FILE__ << ":" << __LINE__ << ": "
+#define dprint(...) dout(D_INFO,D_GAME) << __FILE__ << ":" << __LINE__ << ": " << string_format(__VA_ARGS__)
+
+
 invslice inventory::slice(int start, int length)
 {
     invslice stacks;
@@ -359,6 +365,7 @@ char inventory::get_invlet_for_item( std::string item_type ) {
 
 item& inventory::add_item(item newit, bool keep_invlet)
 {
+dprint(">>>>> add_item(%d) %s", keep_invlet, newit.name.c_str() );
     if (newit.is_style())
     {
         return nullitem; // Styles never belong in our inventory.
