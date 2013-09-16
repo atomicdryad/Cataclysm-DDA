@@ -12,6 +12,7 @@
 #include <fstream>
 #include "debug.h"
 #include "item_factory.h"
+#include "overmapbuffer.h"
 
 #define SGN(a) (((a)<0) ? -1 : 1)
 #define INBOUNDS(x, y) \
@@ -3791,7 +3792,7 @@ void map::saven(overmap *om, unsigned const int turn, const int worldx, const in
 // 0,1  1,1  2,1
 // 0,2  1,2  2,2 etc
 bool map::loadn(game *g, const int worldx, const int worldy, const int worldz, const int gridx, const int gridy,
-                const bool update_vehicles)
+                const bool update_vehicles, overmap *om)
 {
 
  bool implicit_om = false;
@@ -3941,8 +3942,7 @@ if ( ! implicit_om ) {
 
   if ( shx !=0 || shy != 0 ) {
      // slightly out of bounds? waaaaaaaay out of bounds? No problem.
-         this_om = &overmap_buffer.get(g, om->pos().x + shx, om->pos().y + shy);
-     }
+      this_om = &overmap_buffer.get(g, om->pos().x + shx, om->pos().y + shy);
   }
 
 }
@@ -4307,6 +4307,9 @@ void map::set_abs_sub( const int x, const int y, const int z ) {
   abs_max=point(x*SEEX + (SEEX * my_MAPSIZE), y*SEEY + (SEEY * my_MAPSIZE) );
 }
 
+submap * map::getsubmap( const int grididx ) {
+    return grid[grididx];
+}
 
 tinymap::tinymap()
 {

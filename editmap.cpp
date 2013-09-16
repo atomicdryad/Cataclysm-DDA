@@ -1365,7 +1365,7 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
 
 
 
-
+/*
                             s += stringfmt("%d,%d (%d)%2x %d [%d %d] <> %d,%d (%d)%2x %d : %d %d // %d\n",
                                            target_sub.x + x, target_sub.y + y, dnonant, sizeof(destsm), destsm,
                                            g->m.grid[dnonant]->x, g->m.grid[dnonant]->y,
@@ -1373,14 +1373,15 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
                                            sizeof(srcsm->ter), sizeof(tmpmap.grid[snonant]->ter),
                                            srcsm->ter[0][0]
                                           );
-
+*/
 
                             for (int i = 0; i < srcsm->vehicles.size(); i++ ) {
-                                s += stringfmt("   v[%d] pos: %d,%d,  sm=%d,%d => %d,%d\n", i,
+/*                                s += stringfmt("   v[%d] pos: %d,%d,  sm=%d,%d => %d,%d\n", i,
                                                target_sub.x + x, target_sub.y + y,
                                                srcsm->vehicles[i]->smx, srcsm->vehicles[i]->smy,
                                                srcsm->vehicles[i]->posx, srcsm->vehicles[i]->posy
                                               );
+*/
                                 vehicle *veh1 = srcsm->vehicles[i];
 
                                 //vehicle *veh1 = veh;   // fixme: is this required?
@@ -1396,7 +1397,7 @@ int editmap::mapgen_preview( real_coords &tc, uimenu &gmenu )
                             int spawns_todo = 0;
                             for (int i = 0; i < srcsm->spawns.size(); i++) {
                                 int mx = srcsm->spawns[i].posx, my = srcsm->spawns[i].posy;
-                                s += stringfmt("   m[%d] pos %d,%d\n", i, mx, my );
+                                s += string_format("   monster[%d] pos %d,%d\n", i, mx, my );
                                 destsm->spawns.push_back( srcsm->spawns[i] );
                                 spawns_todo++;
                             }

@@ -408,6 +408,7 @@ private:
  bool seen_cache[MAPSIZE*SEEX][MAPSIZE*SEEY];
  submap* grid[MAPSIZE * MAPSIZE];
  std::map<trap_id, std::set<point> > traplocs;
+ submap * getsubmap(const int grididx);
 };
 
 std::vector<point> closest_points_first(int radius,int x,int y);
