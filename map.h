@@ -62,8 +62,8 @@ typedef std::vector<wrapped_vehicle> VehicleList;
  */
 class map
 {
+ friend class editmap;
  public:
-
 // Constructors & Initialization
  map();
  map(std::vector<trap*> *trptr);
@@ -95,7 +95,7 @@ class map
 
 // File I/O
  virtual void save(overmap *om, unsigned const int turn, const int x, const int y, const int z);
- virtual void load(game *g, const int wx, const int wy, const int wz, const bool update_vehicles = true);
+ virtual void load(game *g, const int wx, const int wy, const int wz, const bool update_vehicles = true, overmap *om = NULL);
  void shift(game *g, const int wx, const int wy, const int wz, const int x, const int y);
  void spawn_monsters(game *g);
  void clear_spawns();
@@ -349,7 +349,7 @@ protected:
  void saven(overmap *om, unsigned const int turn, const int x, const int y, const int z,
             const int gridx, const int gridy);
  bool loadn(game *g, const int x, const int y, const int z, const int gridx, const int gridy,
-            const  bool update_vehicles = true);
+            const  bool update_vehicles = true, overmap *om = NULL);
  void copy_grid(const int to, const int from);
  void draw_map(const oter_id terrain_type, const oter_id t_north, const oter_id t_east,
                const oter_id t_south, const oter_id t_west, const oter_id t_above, const int turn,
@@ -413,6 +413,7 @@ private:
 std::vector<point> closest_points_first(int radius,int x,int y);
 class tinymap : public map
 {
+friend class editmap;
 public:
  tinymap();
  tinymap(std::vector<trap*> *trptr);
