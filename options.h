@@ -6,7 +6,6 @@
 #include <map>
 #include <vector>
 #include <algorithm> //atoi
-
 class cOpt
 {
     public:
@@ -89,4 +88,7 @@ void initOptions();
 void load_options();
 void save_options();
 
+
+
+void initExtraOptions();
 #endif

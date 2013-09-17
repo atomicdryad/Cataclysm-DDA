@@ -250,7 +250,7 @@ void map::draw_map(const oter_id terrain_type, const oter_id t_north, const oter
 //  that indicates whether items may spawn on grass & dirt, and finally an
 //  integer that indicates on which turn the items were created.  This final
 //  integer should be 0, unless the items are "fresh-grown" like wild fruit.
-
+int perc_veh=(int)OPTIONS["CAR_CLUTTER"];
 //these variables are used in regular house generation. Placed here by Whales
  int rn = 0;
  int lw = 0;
@@ -525,6 +525,9 @@ void map::draw_map(const oter_id terrain_type, const oter_id t_north, const oter
   if (rn > 0) {
    int maxwrecks = rng (0,3);
    for (int nv = 0; nv < maxwrecks; nv++) {
+//
+if ( perc_veh < 100 && rng(1,100) > perc_veh) break;
+//
     int vx = rng (0, 3) * 4 + 5;
     int vy = rng (0, 3) * 4 + 5;
     int rc = rng(1, 100);
@@ -596,6 +599,9 @@ void map::draw_map(const oter_id terrain_type, const oter_id t_north, const oter
   if (rn > 0) {
    int maxwrecks = rng (0,3);
    for (int nv = 0; nv < maxwrecks; nv++) {
+//
+if ( perc_veh < 100 && rng(1,100) > perc_veh) break;
+//
     int vx = rng (0, 3) * 4 + 5;
     int vy = rng (0, 3) * 4 + 5;
     int rc = rng(1, 100);
@@ -671,6 +677,9 @@ void map::draw_map(const oter_id terrain_type, const oter_id t_north, const oter
   if (rn > 0) {
    int maxwrecks = rng (0,3);
    for (int nv = 0; nv < maxwrecks; nv++) {
+//
+if ( perc_veh < 100 && rng(1,100) > perc_veh) break;
+//
     int vx = rng (0, 3) * 4 + 5;
     int vy = rng (0, 3) * 4 + 5;
     int rc = rng(1, 100);
@@ -744,6 +753,9 @@ void map::draw_map(const oter_id terrain_type, const oter_id t_north, const oter
   if (rn > 0) {
    int maxwrecks = rng (1,3);
    for (int nv = 0; nv < maxwrecks; nv++) {
+//
+if ( perc_veh < 100 && rng(1,100) > perc_veh) break;
+//
     int vx = rng (0, 3) * 4 + 5;
     int vy = rng (0, 3) * 4 + 5;
     int rc = rng(1, 100);
@@ -12589,6 +12601,17 @@ void map::add_spawn(mon_id type, int count, int x, int y, bool friendly,
      // Don't spawn non-classic monsters in classic zombie mode.
      return;
  }
+
+ if( OPTIONS["MONSTERS_SUPERZOMBIE"] < 99 && g->mtypes[type]->species == species_zombie && !g->mtypes[type]->in_category(MC_CLASSIC) ) {
+     int dospawn = rng(1,100);
+     dbg(D_INFO) << string_format("add_spawn('%s', %d, %d,%d): %d > %d",
+         g->mtypes[type]->name.c_str(), count, x, y, dospawn, (int)OPTIONS["MONSTERS_SUPERZOMBIE"]
+     );
+     if ( dospawn > (int)OPTIONS["MONSTERS_SUPERZOMBIE"] ) {
+         return;
+     }
+ }
+
  x %= SEEX;
  y %= SEEY;
  spawn_point tmp(type, count, x, y, faction_id, mission_id, friendly, name);

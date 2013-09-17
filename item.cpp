@@ -1300,6 +1300,8 @@ bool item::rotten(game *g)
 
 bool item::ready_to_revive(game *g)
 {
+if ( ! OPTIONS["REVIVE_MONSTERS"] ) return false;
+
     if ( corpse == NULL || !corpse->has_flag(MF_REVIVES) || damage >= 4)
     {
         return false;

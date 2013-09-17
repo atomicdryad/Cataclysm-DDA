@@ -3035,6 +3035,10 @@ void overmap::place_specials()
    sectors.push_back(point(x, y));
  }
 
+//////
+int mfun = (int)OPTIONS["MONSTERS_FUNGUS"]; int mtrif = (int)OPTIONS["MONSTERS_TRIFFID"];
+//////
+
  while (!sectors.empty()) {
   int sector_pick = rng(0, sectors.size() - 1);
   int x = sectors[sector_pick].x, y = sectors[sector_pick].y;
@@ -3059,6 +3063,12 @@ void overmap::place_specials()
     point pt(p.x, p.y);
     // Skip non-classic specials if we're in classic mode
     if (OPTIONS["CLASSIC_ZOMBIES"] && !(special.flags & mfb(OMS_FLAG_CLASSIC))) continue;
+
+////////
+if ( special.ter == ot_triffid_grove && mtrif == 0 ) continue;
+if ( special.ter == ot_fungal_bloom && mfun == 0 ) continue;
+////////
+
     if ((placed[ omspec_id(i) ] < special.max_appearances || special.max_appearances <= 0) &&
         (min == -1 || dist_from_city(pt) >= min) &&
         (max == -1 || dist_from_city(pt) <= max) &&
@@ -3339,13 +3349,32 @@ void overmap::place_special(overmap_special special, tripoint p)
 
   int population = rng(special.monster_pop_min, special.monster_pop_max);
   int radius     = rng(special.monster_rad_min, special.monster_rad_max);
+//////
+int perc = 100;
+if (special.monsters == "GROUP_FUNGUS" ) {
+  perc = (int)OPTIONS["MONSTERS_FUNGUS"];
+} else if (special.monsters == "GROUP_TRIFFID" ) {
+  perc = (int)OPTIONS["MONSTERS_FUNGUS"];
+}
+if ( perc != 100 ) {
+  radius = ( perc * radius ) / 100;
+  population = ( perc * radius ) / 100;
+  
+}
+//////
   zg.push_back(
      mongroup(special.monsters, p.x * 2, p.y * 2, p.z, radius, population));
  }
 }
 
+#define _pct(x,y) int ( (x * y) / 100 )
+
 void overmap::place_mongroups()
 {
+int perc_worm=(int)OPTIONS["MONSTERS_WORM"];
+int perc_swamp=(int)OPTIONS["MONSTERS_SWAMP"];
+int perc_eyebot=(int)OPTIONS["MONSTERS_EYEBOT"];
+
  if (!OPTIONS["STATIC_SPAWN"]) {
   // Cities are full of zombies
   for (unsigned int i = 0; i < cities.size(); i++) {
@@ -3355,7 +3384,7 @@ void overmap::place_mongroups()
   }
  }
 
- if (!OPTIONS["CLASSIC_ZOMBIES"]) {
+ if (!OPTIONS["CLASSIC_ZOMBIES"] && perc_swamp > 0 ) {
   // Figure out where swamps are, and place swamp monsters
   for (int x = 3; x < OMAPX - 3; x += 7) {
    for (int y = 3; y < OMAPY - 3; y += 7) {
@@ -3370,18 +3399,18 @@ void overmap::place_mongroups()
     }
     if (swamp_count >= 25) // ~25% swamp or ~50% river
      zg.push_back(mongroup("GROUP_SWAMP", x * 2, y * 2, 0, 3,
-                           rng(swamp_count * 8, swamp_count * 25)));
+                           _pct( rng(swamp_count * 8, swamp_count * 25),perc_swamp ) ));
    }
   }
  }
 
- if (!OPTIONS["CLASSIC_ZOMBIES"]) {
+ if (!OPTIONS["CLASSIC_ZOMBIES"] && perc_worm > 0 ) {
   // Place the "put me anywhere" groups
   int numgroups = rng(0, 3);
   for (int i = 0; i < numgroups; i++) {
    zg.push_back(
 	 mongroup("GROUP_WORM", rng(0, OMAPX * 2 - 1), rng(0, OMAPY * 2 - 1), 0,
-	          rng(20, 40), rng(30, 50)));
+	          rng(20, 40), _pct( rng(30, 50),perc_worm  ) ));
   }
  }
 

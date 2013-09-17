@@ -566,6 +566,7 @@ void initOptions() {
                                              _("If true, replaces some TTF rendered text with Tiles. Only applicable on SDL builds. Requires restart."),
                                              true
                                              );
+    initExtraOptions();
 
     for (std::map<std::string, cOpt>::iterator iter = OPTIONS.begin(); iter != OPTIONS.end(); ++iter) {
         for (int i=0; i < vPages.size(); ++i) {
@@ -826,3 +827,63 @@ void save_options()
     trigdist = OPTIONS["CIRCLEDIST"]; // update trigdist as well
 }
 
+
+void initExtraOptions() {
+    std::string ccat="advanced";
+/*
+
+    RULES[RANGED_MULT]=1;//2;		// def=1
+    RULES[DEATH_DELETE]=0;		// def=1: delete character on death, 0: don't delete
+    RULES[CAR_STABLE]=0;		// def=0: "You fumble with the car's controls", 1: cars are always stable
+    RULES[SPECIAL_PLACES]=-1;		// science labs and such
+    RULES[MONSTERS_SWAMP]=-1;		// giant skeeters(tm)
+    RULES[MONSTERS_WORM]=0;		// graboids and junk
+    RULES[EYEBOT_EVENTS]=0;		// random floating eyebot attacks
+    RULES[MONSTERS_SUPERZOMBIES]=0;
+    RULES[VEHICLE_SPEED_MULT]=1.5;
+    RULES[REVIVE_BURNMAX]=1;
+    RULES[ZOMBIE_DENSITY_GEO]=1;
+    RULES[RANGED_NEG_DISPERSAL_FACTOR]=0;//0.866;
+
+*/
+    std::vector<std::pair<std::string, std::string> > exvPages;
+    exvPages.push_back(std::make_pair("advanced", _("Advanced")));
+
+    OPTIONS["CAR_CLUTTER"] = cOpt("advanced", _("Car clutter"),
+                                _("Multiplier for monster population"),
+                                0.0, 100.0, 100.0, 5.0
+                                );
+    OPTIONS["MONSTERS_SWAMP"] = cOpt("advanced", _("Monsters: swamp"),
+                                _("Multiplier for monster population"),
+                                0.0, 100.0, 100.0, 5.0
+                                );
+/*    OPTIONS["MONSTERS_EYEBOT"] = cOpt(ccat, _("Monsters: eyebots"),
+                                _("Multiplier for monster population"),
+                                0.0, 100.0, 100.0, 1.0
+                                );
+*/
+    OPTIONS["MONSTERS_WORM"] = cOpt(ccat, _("Monsters: worms"),
+                                _("Multiplier for monster population"),
+                                0.0, 100.0, 100.0, 5.0
+                                );
+    OPTIONS["MONSTERS_SUPERZOMBIE"] = cOpt(ccat, _("Monsters: 'super' zombies"),
+                                _("Multiplier for monster population"),
+                                0.0, 100.0, 100.0, 5.0
+                                );
+    OPTIONS["MONSTERS_TRIFFID"] = cOpt(ccat, _("Monsters: Triffid"),
+                                _("Multiplier for monster population"),
+                                0.0, 100.0, 100.0, 5.0
+                                );
+    OPTIONS["MONSTERS_FUNGUS"] = cOpt(ccat, _("Monsters: Fungaloid"),
+                                _("Multiplier for monster population"),
+                                0.0, 100.0, 100.0, 5.0
+                                );
+    OPTIONS["REVIVE_MONSTERS"] = cOpt(ccat, _("Zombie revival"),
+                                _("Do zombies rise from the dead?"),
+                                true
+                                );
+
+    for (int i=0; i < exvPages.size(); ++i) {
+        vPages.push_back(std::make_pair( exvPages[i].first , exvPages[i].second ));
+    }
+}
