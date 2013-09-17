@@ -850,12 +850,12 @@ void initExtraOptions() {
     exvPages.push_back(std::make_pair("advanced", _("Advanced")));
 
     OPTIONS["CAR_CLUTTER"] = cOpt("advanced", _("Car clutter"),
-                                _("Multiplier for monster population"),
+                                _("Car wreckage in city streets: Percentage of normal amount"),
                                 0.0, 100.0, 100.0, 5.0
                                 );
     OPTIONS["MONSTERS_SWAMP"] = cOpt("advanced", _("Monsters: swamp"),
-                                _("Multiplier for monster population"),
-                                0.0, 100.0, 100.0, 5.0
+                                _("Percentage of normal monster population. 0 disables"),
+                                0.0, 200.0, 100.0, 5.0
                                 );
 /*    OPTIONS["MONSTERS_EYEBOT"] = cOpt(ccat, _("Monsters: eyebots"),
                                 _("Multiplier for monster population"),
@@ -863,20 +863,20 @@ void initExtraOptions() {
                                 );
 */
     OPTIONS["MONSTERS_WORM"] = cOpt(ccat, _("Monsters: worms"),
-                                _("Multiplier for monster population"),
-                                0.0, 100.0, 100.0, 5.0
+                                _("Percentage of normal monster population. 0 disables"),
+                                0.0, 500.0, 100.0, 5.0
                                 );
     OPTIONS["MONSTERS_SUPERZOMBIE"] = cOpt(ccat, _("Monsters: 'super' zombies"),
-                                _("Multiplier for monster population"),
+                                _("Percentage of normal spawn chance. 0 disables"),
                                 0.0, 100.0, 100.0, 5.0
                                 );
     OPTIONS["MONSTERS_TRIFFID"] = cOpt(ccat, _("Monsters: Triffid"),
-                                _("Multiplier for monster population"),
-                                0.0, 100.0, 100.0, 5.0
+                                _("Percentage of normal monster population and range. 0 disables"),
+                                0.0, 500.0, 100.0, 5.0
                                 );
     OPTIONS["MONSTERS_FUNGUS"] = cOpt(ccat, _("Monsters: Fungaloid"),
-                                _("Multiplier for monster population"),
-                                0.0, 100.0, 100.0, 5.0
+                                _("Percentage of normal monster population and range. 0 disables"),
+                                0.0, 500.0, 100.0, 5.0
                                 );
     OPTIONS["REVIVE_MONSTERS"] = cOpt(ccat, _("Zombie revival"),
                                 _("Do zombies rise from the dead?"),
