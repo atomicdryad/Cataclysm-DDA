@@ -554,10 +554,12 @@ if ( perc_veh < 100 && rng(1,100) > perc_veh) break;
     int rc = rng(1, 10);
     if (rc <= 5)
         add_vehicle (g, "car", vx, vy, veh_spawn_heading, 0, -1);
-    else if (rc <= 9)
+    else if (rc <= 8)
         add_vehicle (g, "flatbed_truck", vx, vy, veh_spawn_heading, 0, -1);
-    else
+    else if (rc <= 9)
         add_vehicle (g, "semi_truck", vx, vy, veh_spawn_heading, 0, -1);
+    else
+        add_vehicle (g, "armored_vehicle", vx, vy, veh_spawn_heading, 0, -1);
    }
   }
 
@@ -627,10 +629,12 @@ if ( perc_veh < 100 && rng(1,100) > perc_veh) break;
     int rc = rng(1, 10);
 	if (rc <= 5)
      add_vehicle (g, "car", vx, vy, one_in(2)? 90 : 180, 0, -1);
-    else if (rc <= 9)
+    else if (rc <= 8)
      add_vehicle (g, "flatbed_truck", vx, vy, one_in(2)? 90 : 180, 0, -1);
-    else
+    else if (rc <= 9)
      add_vehicle (g, "semi_truck", vx, vy, one_in(2)? 90 : 180, 0, -1);
+    else
+     add_vehicle (g, "armored_vehicle", vx, vy, one_in(2)? 90 : 180, 0, -1);
    }
   }
 
@@ -705,10 +709,12 @@ if ( perc_veh < 100 && rng(1,100) > perc_veh) break;
     int rc = rng(0, 10);
     if (rc <= 5)
         add_vehicle (g, "car", vx, vy, one_in(2)? 90 : 180, 0, -1);
-    else if (rc <= 9)
+    else if (rc <= 8)
         add_vehicle (g, "flatbed_truck", vx, vy, one_in(2)? 90 : 180, 0, -1);
-    else
+    else if (rc <= 9)
         add_vehicle (g, "semi_truck", vx, vy, one_in(2)? 90 : 180, 0, -1);
+    else
+        add_vehicle (g, "armored_vehicle", vx, vy, one_in(2)? 90 : 180, 0, -1);
    }
   }
 
@@ -853,10 +859,12 @@ t   t\n\
     int rc = rng(1, 10);
     if (rc <= 5)
         add_vehicle (g, "car", vx, vy, one_in(2)? 90 : 180, 0, -1);
-    else if (rc <= 9)
+    else if (rc <= 8)
         add_vehicle (g, "flatbed_truck", vx, vy, one_in(2)? 90 : 180, 0, -1);
-    else
+    else if (rc <= 9)
         add_vehicle (g, "semi_truck", vx, vy, one_in(2)? 90 : 180, 0, -1);
+    else
+        add_vehicle (g, "armored_vehicle", vx, vy, one_in(2)? 90 : 180, 0, -1);
    }
 
   if (terrain_type == ot_bridge_ew)
@@ -891,10 +899,12 @@ t   t\n\
     int rc = rng(1, 10);
     if (rc <= 5)
         add_vehicle (g, "car", vx, vy, one_in(2)? 90 : 180, 0, -1);
-    else if (rc <= 9)
+    else if (rc <= 8)
         add_vehicle (g, "flatbed_truck", vx, vy, one_in(2)? 90 : 180, 0, -1);
-    else
+    else if (rc <= 9)
         add_vehicle (g, "semi_truck", vx, vy, one_in(2)? 90 : 180, 0, -1);
+    else
+        add_vehicle (g, "armored_vehicle", vx, vy, one_in(2)? 90 : 180, 0, -1);
    }
   break;
 
