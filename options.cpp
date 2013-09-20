@@ -888,6 +888,11 @@ void initExtraOptions() {
                                 true
                                 );
 
+    OPTIONS["ZOMBIE_DENSITY_GEO"] = cOpt(ccat, _("Zombie population by city radius"),
+                                _("true: by radius of city (sometimes empty areas). False: by tile (always set amount)"),
+                                false
+                                );
+
     for (int i=0; i < exvPages.size(); ++i) {
         vPages.push_back(std::make_pair( exvPages[i].first , exvPages[i].second ));
     }
