@@ -3342,15 +3342,18 @@ void overmap::place_special(overmap_special special, tripoint p)
   int radius     = rng(special.monster_rad_min, special.monster_rad_max);
 //////
 int perc = 100;
-if (special.monsters == "GROUP_FUNGUS" ) {
+if (special.monsters == "GROUP_FUNGI" ) {
   perc = (int)OPTIONS["MONSTERS_FUNGUS"];
 } else if (special.monsters == "GROUP_TRIFFID" ) {
-  perc = (int)OPTIONS["MONSTERS_FUNGUS"];
+  perc = (int)OPTIONS["MONSTERS_TRIFFID"];
 }
 if ( perc != 100 ) {
   radius = ( perc * radius ) / 100;
   population = ( perc * radius ) / 100;
-  
+  if ( perc != 0 ) {
+    if ( radius == 0 ) radius = 1;
+    if ( population == 0 ) population = 1;  
+  }
 }
 //////
   zg.push_back(
