@@ -7296,16 +7296,20 @@ void game::pickup(int posx, int posy, int min)
                 {
                     if (veh->fuel_left("battery") > 0)   //Will be -1 if no battery at all
                     {
-                        if (query_yn(_("Use hotplate?")))
-                        {
                             item tmp_hotplate( g->itypes["hotplate"], 0 );
                             // Drain a ton of power
                             tmp_hotplate.charges = veh->drain( "battery", 100 );
-                            u.use(this, // what to put here? //);
+                            if( tmp_hotplate.is_tool() ) {
+                                it_tool * tmptool = static_cast<it_tool*>((&tmp_hotplate)->type);
+                                if ( tmp_hotplate.charges >= tmptool->charges_per_use ) {
+                                    iuse tmpuse;
+                                    (tmpuse.*tmptool->use)(g, &u, &tmp_hotplate, false);
+                                    tmp_hotplate.charges -= tmptool->charges_per_use;
+                                    veh->refill( "battery", tmp_hotplate.charges );
+                                }
+                            }
                             // Return whatever is left.
-                            veh->refill( "battery", tmp_hotplate.charges );
                             got_water = true;
-                        }
                     }
                     else
                     {
