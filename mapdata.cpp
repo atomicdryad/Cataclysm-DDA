@@ -1,6 +1,6 @@
 #include "mapdata.h"
 #include "color.h"
-
+#include "init.h"
 #include <ostream>
 
 std::vector<ter_t> terlist;
@@ -51,6 +51,84 @@ std::ostream & operator<<(std::ostream & out, const submap & sm)
 {
  out << (&sm);
  return out;
+}
+
+bool jsonint(JsonObject &jsobj, const std::string & key, int & var) {
+    if ( jsobj.is_number(key) ) {
+        var = jsobj.get_int(key);
+    }
+    return false;
+}
+
+bool map_bash_info::load(JsonObject &jsobj, std::string member, bool isfurniture) {
+    if( jsobj.has_member(member) && jsobj.is_object(member) ) {
+        JsonObject j = jsobj.get_object(member);
+        if ( j.has_member("num_tests") ) {
+           num_tests = j.get_int("num_tests");
+        }
+        if  ( num_tests == -1 ) {
+           num_tests = ( isfurniture ? 1 : 2 );
+        }
+
+        if ( num_tests > 0 ) {
+           str_min = j.get_int("str_min");
+           str_max = j.get_int("str_max");
+        }
+
+        jsonint(jsobj,"str_min_blocked", str_min_blocked );
+
+        if ( j.has_member("chance") ) {
+           chance = j.get_int("chance");
+        }
+        if ( j.has_member("sound") ) {
+           sound = j.get_string("sound");
+        }
+        if ( j.has_member("sound_fail") ) {
+           sound_fail = j.get_string("sound_fail");
+        }
+        if ( j.has_member("ter_set") ) {
+           ter_set = j.get_string("ter_set");
+        } else if ( isfurniture == false ) {
+           debugmsg("terrain[\"%s\"].bash.ter_set is not set!",jsobj.get_string("id").c_str() );
+        }
+
+        if ( j.has_member("items") && j.is_array("items") ) {
+           JsonArray ja = j.get_array("items");
+           if (ja.size() > 0) {
+               int c=0;
+               while ( ja.has_more() ) {
+                   if ( ja.get_index_type(c) == JVT_OBJECT ) {
+                       JsonObject jio = ja.next_object();
+                       if ( jio.has_member("item") && jio.has_member("amount") ) {
+                           int tmpchance = -1;
+                           if ( jio.has_member("chance") ) {
+                               tmpchance = jio.get_int("chance");
+                           }
+                           if ( jio.has_member("minamount") ) {
+                               map_bash_item_drop drop( jio.get_string("item"), jio.get_int("amount"), jio.get_int("minamount") );
+                               drop.chance = chance;
+                               items.push_back(drop);
+                           } else {
+                               map_bash_item_drop drop( jio.get_string("item"), jio.get_int("amount") );
+                               drop.chance = chance;
+                               items.push_back(drop);
+                           }
+                       } else {
+                           debugmsg("terrain[\"%s\"].bash.items[%d]: invalid entry",jsobj.get_string("id").c_str(),c);
+                       }
+                   } else {
+                       debugmsg("terrain[\"%s\"].bash.items[%d]: invalid entry",jsobj.get_string("id").c_str(),c);
+                   } 
+                   c++;
+               }
+           }
+        }
+     
+//debugmsg("%d/%d %s %s/%s %d",str_min,str_max, ter_set.c_str(), sound.c_str(), sound_fail.c_str(), items.size() );
+    return true;
+  } else {
+    return false;
+  }
 }
 
 void load_furniture(JsonObject &jsobj)
@@ -152,6 +230,17 @@ void load_terrain(JsonObject &jsobj)
   if ( jsobj.has_member("close") ) {
       new_terrain.close = jsobj.get_string("close");
   }
+/*
+  if( jsobj.has_member("bash") ) {
+      if( jsobj.is_object("bash") ) {
+          JsonObject delayed(jsobj.get_object("bash"));
+          delayed_json["terrain_bash"][new_terrain.id] = delayed;//jsobj.get_object("bash");
+      } else if (jsobj.is_string("bash") ) {
+//          delayed_json["terrain_bash_link"][new_terrain.id] = jsobj.get_string("bash");
+      }
+  }
+*/
+  new_terrain.bash.load(jsobj, "bash", false);
 
   new_terrain.loadid=terlist.size();
   termap[new_terrain.id]=new_terrain;

@@ -1291,6 +1291,76 @@ bool map::bash(const int x, const int y, const int str, std::string &sound, int 
   return true;
  }
 
+/////
+bool jsfurn = false;
+bool jster = false;
+map_bash_info * bash = NULL;
+
+if ( has_furn(x, y) && furn_at(x, y).bash.str_max != -1 ) {
+  bash = &(furn_at(x,y).bash);
+  jsfurn = true;
+} else if ( ter_at(x, y).bash.str_max != -1 ) {
+  bash = &(ter_at(x,y).bash);
+  jster = true;
+}
+if ( bash != NULL ) {
+  
+  popup_nowait("Bash: %d/%d %s %s/%s %d",bash->str_min,bash->str_max, bash->ter_set.c_str(), bash->sound.c_str(), bash->sound_fail.c_str(), bash->items.size() );
+  bool success = ( bash->chance == -1 || rng(0, 100) >= bash->chance );
+  if ( success == true ) {
+     int smin = bash->str_min;
+     int smax = bash->str_max;
+
+     for( int i=0; i < bash->num_tests; i++ ) {
+         result = rng(smin, smax);
+         g->add_msg("bash[%d/%d]: %d >= %d", i+1,bash->num_tests, str, result);
+         if (i == 0 && res) *res = result;
+         if (str < result) {
+             success = false;
+             break;
+         }
+     }
+  }
+  if ( success == true ) {
+     int bday=int(time);
+     sound += _(bash->sound.c_str());
+     if ( jsfurn == true ) {
+        furn_set(x,y, f_null);
+     }
+     if ( bash->ter_set.size() > 0 ) {
+        ter_set(x, y, bash->ter_set );
+     } else if ( jster == true ) {
+        debugmsg("data/json/terrain.json does not have %s.bash.ter_set set!",ter_at(x,y).id.c_str());
+     }
+     for (int i = 0; i < bash->items.size(); i++) {
+        int chance = bash->items[i].chance;
+        if ( chance == -1 || rng(0, 100) >= chance ) {
+           int numitems = bash->items[i].amount;
+           
+           if ( bash->items[i].minamount != -1 ) {
+              numitems = rng( bash->items[i].minamount, bash->items[i].amount );
+           }
+g->add_msg(" it: %d/%d, == %d",bash->items[i].minamount, bash->items[i].amount,numitems);
+           if ( numitems > 0 ) {
+              // spawn_item(x,y, bash->items[i].itemtype, numitems); // doesn't abstract amount || charges
+              item new_item = item_controller->create(bash->items[i].itemtype, bday);
+              if ( new_item.count_by_charges() ) {
+                  new_item.charges = numitems;
+                  numitems = 1;
+              }
+              for(int a = 0; a < numitems; a++ ) {
+                  add_item(x, y, new_item, 1024);
+              }
+           }
+        }
+     }
+     return true;
+  } else {
+     sound += _(bash->sound_fail.c_str());
+     return true;
+  }
+} else {
+//////
 switch (oldfurn(x, y)) {
  case old_f_locker:
  case old_f_rack:
@@ -1867,6 +1937,7 @@ case old_t_wall_log:
   }
   break;
  }
+} //////
  if (res) *res = result;
  if (move_cost(x, y) <= 0) {
   sound += _("thump!");
