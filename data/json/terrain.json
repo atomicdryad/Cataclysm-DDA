@@ -529,11 +529,7 @@
         "color": "brown",
         "move_cost": 0,
         "flags": ["BASHABLE", "FLAMMABLE_ASH", "DOOR", "NOITEM", "SUPPORTS_ROOF"],
-        "open": "t_door_o",
-        "bash": {
-             "str_min": 5, "str_max": 40, "ter_set": "t_door_b", "sound": "crunch", "sound": "bash!!", "sound_fail": "thwack!!",
-        }
-        
+        "open": "t_door_o"
     },
     {
         "type": "terrain",
@@ -544,15 +540,7 @@
         "move_cost": 0,
         "flags": [
             "TRANSPARENT", "BASHABLE", "FLAMMABLE_ASH", "NOITEM", "SUPPORTS_ROOF"
-        ],
-        "bash": {
-             "str_min": 3, "str_max": 30, "ter_set": "t_floor", "sound": "crunch", "sound": "bash!!", "sound_fail": "thwack!!",
-             "items": [
-                  { "item": "nail", "minamount": 2, "amount": 22 },
-                  { "item": "2x4", "minamount": 1, "amount": 6 },
-                  { "item": "splinter", "amount": 1 },
-             ]
-        }
+        ]
     },
     {
         "type": "terrain",
