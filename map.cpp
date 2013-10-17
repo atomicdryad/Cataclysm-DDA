@@ -1303,6 +1303,7 @@ if ( has_furn(x, y) && furn_at(x, y).bash.str_max != -1 ) {
   bash = &(ter_at(x,y).bash);
   jster = true;
 }
+
 if ( bash != NULL && bash->num_tests > 0 && bash->str_min != -1 ) {
   bool success = ( bash->chance == -1 || rng(0, 100) >= bash->chance );
   if ( success == true ) {
@@ -1311,7 +1312,7 @@ if ( bash != NULL && bash->num_tests > 0 && bash->str_min != -1 ) {
 
      for( int i=0; i < bash->num_tests; i++ ) {
          result = rng(smin, smax);
-         //g->add_msg("bash[%d/%d]: %d >= %d", i+1,bash->num_tests, str, result);
+         //g->add_msg("bash[%d/%d]: %d >= %d (%d/%d)", i+1,bash->num_tests, str, result,bash->str_min,bash->str_max);
          if (i == 0 && res) *res = result;
          if (str < result) {
              success = false;

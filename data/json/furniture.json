@@ -72,7 +72,7 @@
         "examine_action": "toilet",
         "bash": {
             "str_min": 0, "str_max": 30,
-            "comment":, "originally result = dice(8, 4) - 8;",
+            "comment": "originally result = dice(8, 4) - 8;",
             "sound": "porcelain breaking!",
             "sound_fail": "whunk!",
             "items": [
@@ -101,7 +101,7 @@
         "flags": ["TRANSPARENT", "BASHABLE", "FLAMMABLE_HARD", "CONTAINER", "PLACE_ITEM"],
         "bash": {
             "str_min": 0, "str_max": 30,
-            "comment":, "originally result = dice(8, 4) - 8;",
+            "comment": "originally result = dice(8, 4) - 8;",
             "sound": "porcelain breaking!",
             "sound_fail": "whunk!",
             "items": [
@@ -163,7 +163,7 @@
         "flags": ["TRANSPARENT", "BASHABLE", "FLAMMABLE_HARD", "CONTAINER", "PLACE_ITEM"],
         "bash": {
             "str_min": 0, "str_max": 30,
-            "comment":, "originally result = dice(8, 4) - 8;",
+            "comment": "originally result = dice(8, 4) - 8;",
             "sound": "porcelain breaking!",
             "sound_fail": "whunk!",
             "items": [

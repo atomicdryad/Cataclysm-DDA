@@ -74,10 +74,10 @@ bool map_bash_info::load(JsonObject &jsobj, std::string member, bool isfurniture
         JsonObject j = jsobj.get_object(member);
 
         if ( jsonint(j, "num_tests", num_tests ) == false ) {
-           num_tests = ( isfurniture ? 1 : 2 );
-        }
-
-        if ( num_tests > 0 ) {
+           if ( jsonint(j, "str_min", str_min ) && jsonint(j, "str_max", str_max ) ) {
+               num_tests = 1;
+           }
+        } else if ( num_tests > 0 ) {
            str_min = j.get_int("str_min");
            str_max = j.get_int("str_max");
         }
@@ -177,6 +177,7 @@ void load_furniture(JsonObject &jsobj)
   if ( jsobj.has_member("close") ) {
       new_furniture.close = jsobj.get_string("close");
   }
+  new_furniture.bash.load(jsobj, "bash", true);
 
   new_furniture.loadid = furnlist.size();
   furnmap[new_furniture.id] = new_furniture;
@@ -232,6 +233,7 @@ void load_terrain(JsonObject &jsobj)
       new_terrain.close = jsobj.get_string("close");
   }
 /*
+  requires copying json object
   if( jsobj.has_member("bash") ) {
       if( jsobj.is_object("bash") ) {
           JsonObject delayed(jsobj.get_object("bash"));
