@@ -432,7 +432,7 @@
             "ter_set": "t_wall_wood_chipped",
             "items": [
                 { "item": "2x4", "amount": 1, "minamount": 8},
-                { "item": "nail", "amount": 0, 2 },
+                { "item": "nail", "amount": 2 },
                 { "item": "splinter", "amount": 1 }
             ]
         }
@@ -541,8 +541,7 @@
         "symbol": "LINE_XOXO",
         "color": "ltcyan",
         "move_cost": 0,
-        "flags": ["TRANSPARENT", "BASHABLE", "NOITEM", "SUPPORTS_ROOF"]
-,
+        "flags": ["TRANSPARENT", "BASHABLE", "NOITEM", "SUPPORTS_ROOF"],
         "bash": {
             "str_min": 0, "str_max": 20,
             "sound": "glass breaking!",
