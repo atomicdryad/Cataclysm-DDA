@@ -53,9 +53,18 @@ std::ostream & operator<<(std::ostream & out, const submap & sm)
  return out;
 }
 
-bool jsonint(JsonObject &jsobj, const std::string & key, int & var) {
+inline bool jsonint(JsonObject &jsobj, std::string key, int & var) {
     if ( jsobj.is_number(key) ) {
         var = jsobj.get_int(key);
+        return true;
+    }
+    return false;
+}
+
+inline bool jsonstring(JsonObject &jsobj, std::string key, std::string & var) {
+    if ( jsobj.is_string(key) ) {
+        var = jsobj.get_string(key);
+        return true;
     }
     return false;
 }
@@ -63,10 +72,8 @@ bool jsonint(JsonObject &jsobj, const std::string & key, int & var) {
 bool map_bash_info::load(JsonObject &jsobj, std::string member, bool isfurniture) {
     if( jsobj.has_member(member) && jsobj.is_object(member) ) {
         JsonObject j = jsobj.get_object(member);
-        if ( j.has_member("num_tests") ) {
-           num_tests = j.get_int("num_tests");
-        }
-        if  ( num_tests == -1 ) {
+
+        if ( jsonint(j, "num_tests", num_tests ) == false ) {
            num_tests = ( isfurniture ? 1 : 2 );
         }
 
@@ -75,20 +82,14 @@ bool map_bash_info::load(JsonObject &jsobj, std::string member, bool isfurniture
            str_max = j.get_int("str_max");
         }
 
-        jsonint(jsobj,"str_min_blocked", str_min_blocked );
+        jsonint(j, "str_min_blocked", str_min_blocked );
+        jsonint(j, "str_max_blocked", str_max_blocked );
+        jsonint(j, "chance", chance );
+        jsonstring(j, "sound", sound );
+        jsonstring(j, "sound_fail", sound_fail );
 
-        if ( j.has_member("chance") ) {
-           chance = j.get_int("chance");
-        }
-        if ( j.has_member("sound") ) {
-           sound = j.get_string("sound");
-        }
-        if ( j.has_member("sound_fail") ) {
-           sound_fail = j.get_string("sound_fail");
-        }
-        if ( j.has_member("ter_set") ) {
-           ter_set = j.get_string("ter_set");
-        } else if ( isfurniture == false ) {
+        if ( jsonstring(j, "ter_set", ter_set ) == false && isfurniture == false ) {
+           ter_set = "t_rubble";
            debugmsg("terrain[\"%s\"].bash.ter_set is not set!",jsobj.get_string("id").c_str() );
         }
 
