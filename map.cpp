@@ -1303,9 +1303,7 @@ if ( has_furn(x, y) && furn_at(x, y).bash.str_max != -1 ) {
   bash = &(ter_at(x,y).bash);
   jster = true;
 }
-if ( bash != NULL ) {
-  
-  popup_nowait("Bash: %d/%d %s %s/%s %d",bash->str_min,bash->str_max, bash->ter_set.c_str(), bash->sound.c_str(), bash->sound_fail.c_str(), bash->items.size() );
+if ( bash != NULL && bash->num_tests > 0 && bash->str_min != -1 ) {
   bool success = ( bash->chance == -1 || rng(0, 100) >= bash->chance );
   if ( success == true ) {
      int smin = bash->str_min;
@@ -1313,7 +1311,7 @@ if ( bash != NULL ) {
 
      for( int i=0; i < bash->num_tests; i++ ) {
          result = rng(smin, smax);
-         g->add_msg("bash[%d/%d]: %d >= %d", i+1,bash->num_tests, str, result);
+         //g->add_msg("bash[%d/%d]: %d >= %d", i+1,bash->num_tests, str, result);
          if (i == 0 && res) *res = result;
          if (str < result) {
              success = false;
@@ -1340,7 +1338,7 @@ if ( bash != NULL ) {
            if ( bash->items[i].minamount != -1 ) {
               numitems = rng( bash->items[i].minamount, bash->items[i].amount );
            }
-g->add_msg(" it: %d/%d, == %d",bash->items[i].minamount, bash->items[i].amount,numitems);
+           // g->add_msg(" it: %d/%d, == %d",bash->items[i].minamount, bash->items[i].amount,numitems);
            if ( numitems > 0 ) {
               // spawn_item(x,y, bash->items[i].itemtype, numitems); // doesn't abstract amount || charges
               item new_item = item_controller->create(bash->items[i].itemtype, bday);
@@ -1360,147 +1358,10 @@ g->add_msg(" it: %d/%d, == %d",bash->items[i].minamount, bash->items[i].amount,n
      return true;
   }
 } else {
-//////
-switch (oldfurn(x, y)) {
- case old_f_locker:
- case old_f_rack:
-  result = rng(0, 30);
-  if (res) *res = result;
-  if (str >= result) {
-   sound += _("metal screeching!");
-   furn_set(x, y, f_null);
-   spawn_item(x, y, "scrap", 0, rng(2, 8));
-   const int num_boards = rng(0, 3);
-   for (int i = 0; i < num_boards; i++)
-    spawn_item(x, y, "steel_chunk", 0);
-   spawn_item(x, y, "pipe", 0);
-   return true;
-  } else {
-   sound += _("clang!");
-   return true;
-  }
-  break;
-
- case old_f_oven:
-  result = rng(0, 30);
-  if (res) *res = result;
-  if (str >= result) {
-   sound += _("metal screeching!");
-   furn_set(x, y, f_null);
-   spawn_item(x, y, "scrap",       0, rng(0, 6));
-   spawn_item(x, y, "steel_chunk", 0, rng(0, 3));
-   spawn_item(x, y, "element", 0, rng(1, 3));
-   spawn_item(x, y, "sheet_metal", 0, 0, rng(2, 6));
-   spawn_item(x, y, "cable", 0, 0, rng(1,3));
-   spawn_item(x, y, "pilot_light", 0);
-
-   return true;
-  } else {
-   sound += _("clang!");
-   return true;
-  }
- break;
-
- case old_f_sink:
- case old_f_toilet:
- case old_f_bathtub:
-  result = dice(8, 4) - 8;
-  if (res) *res = result;
-  if (str >= result) {
-   sound += _("porcelain breaking!");
-   furn_set(x, y, f_null);
-   if(one_in(2)) { spawn_item(x, y, "cu_pipe", 0); }
-   return true;
-  } else {
-   sound += _("whunk!");
-   return true;
-  }
-  break;
-
- case old_f_pool_table:
- case old_f_bulletin:
- case old_f_dresser:
- case old_f_bookcase:
- case old_f_counter:
- case old_f_table:
-  result = rng(0, 45);
-  if (res) *res = result;
-  if (str >= result) {
-   sound += _("smash!");
-   furn_set(x, y, f_null);
-   spawn_item(x, y, "2x4", 0, rng(2, 6));
-   spawn_item(x, y, "nail", 0, 0, rng(4, 12));
-   spawn_item(x, y, "splinter", 0);
-   return true;
-  } else {
-   sound += _("whump.");
-   return true;
-  }
-  break;
-
- case old_f_fridge:
- case old_f_glass_fridge:
-  result = rng(0, 30);
-  if (res) *res = result;
-  if (str >= result) {
-   sound += _("metal screeching!");
-   furn_set(x, y, f_null);
-   spawn_item(x, y, "scrap", 0, rng(2, 8));
-   const int num_boards = rng(0, 3);
-   for (int i = 0; i < num_boards; i++)
-    spawn_item(x, y, "steel_chunk", 0);
-   spawn_item(x, y, "hose", 0);
-   spawn_item(x, y, "cu_pipe", 0, rng(2, 5));
-   return true;
-  } else {
-   sound += _("clang!");
-   return true;
-  }
-  break;
-
- case old_f_bench:
- case old_f_chair:
- case old_f_desk:
- case old_f_cupboard:
-  result = rng(0, 30);
-  if (res) *res = result;
-  if (str >= result) {
-   sound += _("smash!");
-   furn_set(x, y, f_null);
-   spawn_item(x, y, "2x4", 0, rng(1, 3));
-   spawn_item(x, y, "nail", 0, 0, rng(2, 6));
-   spawn_item(x, y, "splinter", 0);
-   return true;
-  } else {
-   sound += _("whump.");
-   return true;
-  }
-  break;
-
- case old_f_crate_c:
- case old_f_crate_o:
-  result = rng(4, 20);
-  if (res) *res = result;
-  if (str >= result) {
-   sound += _("smash!");
-   furn_set(x, y, f_null);
-   spawn_item(x, y, "2x4", 0, rng(1, 5));
-   spawn_item(x, y, "nail", 0, 0, rng(2, 10));
-   return true;
-  } else {
-   sound += _("wham!");
-   return true;
-  }
-  break;
-
- case old_f_skin_wall:
- case old_f_skin_door:
- case old_f_skin_door_o:
- case old_f_skin_groundsheet:
- case old_f_canvas_wall:
- case old_f_canvas_door:
- case old_f_canvas_door_o:
- case old_f_groundsheet:
+ furn_id furnid = furn(x, y);
+ if ( furnid == old_f_skin_wall || furnid == f_skin_door || furnid == f_skin_door_o || 
+      furnid == f_skin_groundsheet || furnid == f_canvas_wall || furnid == f_canvas_door ||
+      furnid == f_canvas_door_o || furnid == f_groundsheet ) {
   result = rng(0, 6);
   if (res) *res = result;
   if (str >= result)
@@ -1519,7 +1380,7 @@ switch (oldfurn(x, y)) {
      }
    // Never found tent center, bail out
    if (tentx == -1 && tenty == -1)
-    break;
+    return true;
    // Take the tent down
    for (int i = -1; i <= 1; i++)
     for (int j = -1; j <= 1; j++) {
