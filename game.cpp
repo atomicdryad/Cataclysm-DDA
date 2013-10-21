@@ -343,7 +343,7 @@ void game::setup()
  messages.clear();
  events.clear();
 
- turn.set_season(SUMMER);    // ... with winter conveniently a long ways off
+ turn.set_season(SUMMER);    // ... with winter conveniently a long ways off   (not sure if we need this...)
 
  // reset kill counts
  kills.clear();
@@ -368,6 +368,13 @@ void game::start_game(std::string worldname)
     load_artifacts(worldname);
     MAPBUFFER.load(worldname);
  turn = HOURS(ACTIVE_WORLD_OPTIONS["INITIAL_TIME"]);
+ if (ACTIVE_WORLD_OPTIONS["INITIAL_SEASON"].getValue() == "spring");
+ else if (ACTIVE_WORLD_OPTIONS["INITIAL_SEASON"].getValue() == "summer")
+    turn += DAYS( (int) ACTIVE_WORLD_OPTIONS["SEASON_LENGTH"]);
+ else if (ACTIVE_WORLD_OPTIONS["INITIAL_SEASON"].getValue() == "autumn")
+    turn += DAYS( (int) ACTIVE_WORLD_OPTIONS["SEASON_LENGTH"] * 2);
+ else
+    turn += DAYS( (int) ACTIVE_WORLD_OPTIONS["SEASON_LENGTH"] * 3);
  run_mode = (OPTIONS["SAFEMODE"] ? 1 : 0);
  mostseen = 0; // ...and mostseen is 0, we haven't seen any monsters yet.
 
@@ -1712,7 +1719,6 @@ bool game::handle_action()
 
         int iCh;
 
-        timeout(125);
         /*
         Location to add rain drop animation bits! Since it refreshes w_terrain it can be added to the animation section easily
         Get tile information from above's weather information:
@@ -1753,8 +1759,9 @@ bool game::handle_action()
             draw_weather(wPrint);
 
             wrefresh(w_terrain);
-        } while ((iCh = getch()) == ERR);
-        timeout(-1);
+            // Reset timeout before each call to input(), it sets it back to -1.
+            timeout(125);
+        } while ((iCh = input()) == ERR);
 
         ch = input(iCh);
     } else {
@@ -7233,7 +7240,7 @@ void game::list_items()
                     break;
                 case DirectionE:
                     iPage++;
-                    if (iPage >= filtered_items[iActive].vIG.size()) {
+                    if ( !filtered_items.empty() && iPage >= filtered_items[iActive].vIG.size()) {
                         iPage = filtered_items[iActive].vIG.size()-1;
                     }
                     break;
