@@ -335,4 +335,17 @@ global_functions = {
         args = {"int", "int", "item"},
         rval = nil
     },
+    line_furn = {
+        cpp_name = "line_furn",
+        args = {"map", "int", "int", "int", "int", "int"},
+        rval = nil
+    }
+}
+foo = {
+
+    add_corpse = {
+        cpp_name = "add_corpse",
+        args = {"game", "map", "int", "int"},
+        rval = nil
+    }
 }

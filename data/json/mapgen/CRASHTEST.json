@@ -1,0 +1,34 @@
+[
+    {
+        "type": "mapgen",
+        "om_terrain": "field",
+        "method": "lua", "weight": 500000, "comment": "Inlined, easier to edit", 
+        "script": [
+            "-- tertype, turn = ...",
+            "function g_or_d_or_p()",
+            "  if game.one_in(6) then",
+            "      return \"t_water_sh\"",
+            "  end",
+            "  if game.rng(1,4) == 1 then",
+            "    return \"t_grass\"",
+            "  end",
+            "  return \"t_dirt\"",
+            "end",
+            "x = 0",
+            "while x < 24 do",
+            "  y = 0",
+            "  while y < 24 do",
+            "    map:ter_set(x, y, g_or_d_or_p())",
+            "    y = y + 1",
+
+            "  end",
+            "  x = x + 1",
+            "end",
+            "map:place_items(\"field\", 60, 0, 0, 23, 23, 1, turn)",
+            "--map:square_furn(\"f_mutpoppy\", 10,10,13,13)",
+            "--map:line_furn(\"f_hay\", 1, 1, 22, 22)",
+            "game.line_furn(map,1,1,1,22,22)",
+            "game.add_msg(\"generated oter=\"..tertype..\" turn=\"..turn)"
+        ]
+    }
+]

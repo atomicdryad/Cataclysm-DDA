@@ -1,0 +1,23 @@
+Program received signal SIGSEGV, Segmentation fault.                          └─────┘
+0x082a06fd in map::furn_set (this=0xc56614c, x=2, y=2, new_furniture=1) at src/map.cpp:936
+936      grid[nonant]->frn[lx][ly] = new_furniture;
+(gdb) bt
+#0  0x082a06fd in map::furn_set (this=0xc56614c, x=2, y=2, new_furniture=1) at src/map.cpp:936
+#1  0x082a55ca in map::draw_line_furn (this=0xc56614c, type=1, x1=1, y1=1, x2=22, y2=22) at src/map.cpp:4370
+#2  0x0809082c in line_furn (L=0x89e28b0) at src/../lua/catabindings.cpp:757
+#3  0xb7fa81b7 in luaD_precall (L=0x89e28b0, func=0x89e2b14, nresults=0) at ldo.c:319
+#4  0xb7fb34f8 in luaV_execute (L=0x89e28b0, nexeccalls=1) at lvm.c:587
+#5  0xb7fa8778 in luaD_call (L=0x89e28b0, func=0x89e2b08, nResults=-1) at ldo.c:377
+#6  0xb7fa36d1 in f_call (L=0x89e28b0, ud=0xbffaa054) at lapi.c:800
+#7  0xb7fa7d43 in luaD_rawrunprotected (L=0x89e28b0, f=0xb7fa36b0 <f_call>, ud=0xbffaa054) at ldo.c:116
+#8  0xb7fa7da8 in luaD_pcall (L=0x89e28b0, func=0xb7fa36b0 <f_call>, u=0xbffaa054, old_top=48, ef=0) at ldo.c:463
+#9  0xb7fa34e8 in lua_pcall (L=0x89e28b0, nargs=0, nresults=-1, errfunc=0) at lapi.c:821
+#10 0x08091386 in lua_mapgen (m=0xbffad7f4, terrain_type=..., md=..., t=18204, d=0, scr=...) at src/catalua.cpp:118
+#11 0x082cf379 in mapgen_lua (m=0xbffad7f4, id=..., md=..., t=18204, d=0, scr=...) at src/mapgen.cpp:1026
+#12 0x082ed132 in map::draw_map (this=0xbffad7f4, terrain_type=..., t_north=..., t_east=..., t_south=..., t_west=..., t_neast=...,
+    t_seast=..., t_nwest=..., t_swest=..., t_above=..., turn=18204, g=0xb7949008, density=0, zlevel=0) at src/mapgen.cpp:1117
+#13 0x08343673 in map::generate (this=0xbffad7f4, g=0xb7949008, om=0x8c18798, x=178, y=14, z=0, turn=18204) at src/mapgen.cpp:266
+#14 0x082b23f9 in map::loadn (this=0xb79490b8, g=0xb7949008, worldx=179, worldy=15, worldz=0, gridx=0, gridy=0,
+    update_vehicles=true, om=0x8c18798) at src/map.cpp:3950
+#15 0x082b39eb in map::load (this=0xb79490b8, g=0xb7949008, wx=179, wy=15, wz=0, update_vehicle=true, om=0x0) at src/map.cpp:3642
+#
