@@ -1324,7 +1324,9 @@ void overmap::generate(overmap* north, overmap* east, overmap* south,
  for (int i = 0; i < cities.size(); i++)
   road_points.push_back(cities[i]);
 // And finally connect them via "highways"
+dbg(D_INFO) << "overmap::generate place_hiways start" << loc.x << "," << loc.y;
  place_hiways(road_points, 0, "road");
+dbg(D_INFO) << "overmap::generate place_hiways done" << loc.x << "," << loc.y;
 // Place specials
  place_specials();
 // Clean up our roads and rivers
